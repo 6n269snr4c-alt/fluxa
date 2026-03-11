@@ -1170,7 +1170,7 @@ async function rDiag(res){
 
   el.innerHTML='<div class="dload"><div class="spin"></div><span>Gerando diagnóstico executivo...</span></div>';
 
-  const kpiAll=all.map(d=>d.ind.name+': '+Math.round(d.pct)+'% da meta ('+d.value!=null?parseFloat(d.value.toFixed(2)):""+')').join('\n');
+  const kpiAll=all.map(d=>d.ind.name+': '+Math.round(d.pct)+'% da meta').join('\n');
   const scoreLabel=res.score>=80?'SAUDÁVEL':res.score>=60?'ATENÇÃO':res.score>=40?'CRÍTICO':'GRAVE';
 
   const prompt='Você é um CFO sênior com 20 anos de experiência consultando PMEs brasileiras.\n\n'+
