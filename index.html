@@ -1171,30 +1171,26 @@ async function rDiag(res){
   el.innerHTML='<div class="dload"><div class="spin"></div><span>Gerando diagnóstico executivo...</span></div>';
 
   const kpiAll=all.map(d=>d.ind.name+': '+Math.round(d.pct)+'% da meta').join('\n');
-  const scoreLabel=res.score>=80?'SAUDÁVEL':res.score>=60?'ATENÇÃO':res.score>=40?'CRÍTICO':'GRAVE';
+  var scoreCtx=res.score>=80?'Empresa em boa saude financeira. Destaque os KPIs que estao performando bem, aponte riscos de complacencia e oportunidades de crescimento nao exploradas.':
+    res.score>=60?'Empresa em zona de atencao. Dois ou mais KPIs estao abaixo da meta. Identifique as causas raiz e o que precisa de acao imediata nas proximas semanas.':
+    'Empresa em situacao critica com score abaixo de 60. Seja direto sobre a gravidade, quais KPIs estao mais comprometidos e o que precisa ser feito com urgencia.';
 
-  const prompt='Você é um CFO sênior com 20 anos de experiência consultando PMEs brasileiras.\n\n'+
-    'EMPRESA: '+S.company+(S.sector?' | Setor: '+S.sector:'')+'\n'+
-    'PERÍODO: '+mesLabel+' | SCORE: '+res.score+'/100 ('+scoreLabel+')\n'+
-    'CONFIABILIDADE: '+(cf?cf.p+'%':'Alta')+'\n\n'+
-    'KPIs DO PERÍODO:\n'+kpiAll+'\n\n'+
-    (worst.length?'PONTOS CRÍTICOS: '+worst.map(d=>d.ind.name+' em '+Math.round(d.pct)+'% da meta').join(', ')+'\n':'')+
-    (best.length?'PONTOS FORTES: '+best.map(d=>d.ind.name+' em '+Math.round(d.pct)+'% da meta').join(', ')+'\n':'')+
-    '\nGere um diagnóstico executivo COMPLETO com exatamente este formato:\n\n'+
-    'SITUAÇÃO\n'+
-    '[2-3 frases diretas descrevendo a realidade do negócio com dados específicos. '+
-    (res.score>=80?'Empresa saudável — destaque os pontos fortes e os riscos de complacência.':
-     res.score>=60?'Empresa em atenção — identifique o que está puxando o score para baixo.':
-     'Empresa em situação crítica — seja direto sobre a gravidade e urgência.')+
-    ' Use linguagem executiva, sem clichês.]\n\n'+
+  const prompt=
+    'Voce e um CFO senior consultando PMEs brasileiras. Analise os dados e escreva um diagnostico executivo.\n\n'+
+    'Empresa: '+S.company+(S.sector?' ('+S.sector+')':'')+' | Periodo: '+mesLabel+' | Score: '+res.score+'/100\n'+
+    'KPIs analisados: '+kpiAll+'\n\n'+
+    scoreCtx+'\n\n'+
+    'Responda EXATAMENTE neste formato (sem markdown, sem asteriscos, sem hashtags):\n\n'+
+    'SITUACAO\n'+
+    '[Escreva 2-3 frases diretas sobre a situacao real do negocio usando os numeros acima]\n\n'+
     'ALERTAS\n'+
-    '• [KPI mais preocupante e por que representa risco real ao negócio]\n'+
-    '• [2º ponto de atenção com consequência prática]\n\n'+
-    'AÇÕES\n'+
-    '1. [Ação específica, executável, com prazo — ex: "Revisar política de crédito em 30 dias para reduzir CAC"]\n'+
-    '2. [Ação específica, executável, com prazo]\n'+
-    '3. [Ação estratégica de médio prazo]\n\n'+
-    'Máximo 220 palavras. Seja direto, use os números reais, evite generalidades.';
+    '* [Primeiro risco ou ponto critico com explicacao do impacto no negocio]\n'+
+    '* [Segundo ponto de atencao com consequencia pratica]\n\n'+
+    'ACOES\n'+
+    '1. [Acao especifica com prazo - ex: Renegociar prazo de pagamento com fornecedores em 15 dias]\n'+
+    '2. [Segunda acao especifica com prazo]\n'+
+    '3. [Acao estrategica de medio prazo]\n\n'+
+    'Maximo 200 palavras. Use os numeros reais. Seja direto e pratico.';
 
   (async()=>{
     try{
@@ -1219,27 +1215,43 @@ async function rDiag(res){
 function _renderDiag(el,txt,res,worst,best,mesLabel){
   const g=grade(res.score);
   var situacao='', alertas=[], acoes=[];
-  var lines=txt.split('\n');
-  var section='';
+  var clean=txt.replace(/#+\s*/g,'').replace(/\*{2,}/g,'').trim();
+  var lines=clean.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var section='sit';
   lines.forEach(function(line){
-    var t=line.trim();
-    if(!t)return;
-    if(t==='SITUAÇÃO'||t==='SITUACAO')section='sit';
-    else if(t==='ALERTAS')section='alrt';
-    else if(t==='AÇÕES'||t==='ACOES')section='ac';
-    else if(section==='sit')situacao+=(situacao?' ':'')+t;
-    else if(section==='alrt'&&t.startsWith('•'))alertas.push(t.replace(/^•\s*/,''));
-    else if(section==='ac'&&/^\d\./.test(t))acoes.push(t.replace(/^\d\.\s*/,''));
+    var up=line.toUpperCase();
+    if(up==='SITUACAO'||up==='SITUAÇÃO'||up.startsWith('SITUAC')||up.startsWith('SITUAÇ')){section='sit';return;}
+    if(up==='ALERTAS'||up.startsWith('ALERTA')){section='alrt';return;}
+    if(up==='ACOES'||up==='AÇÕES'||up.startsWith('ACAO')||up.startsWith('AÇÃO')){section='ac';return;}
+    if(line.startsWith('*')||line.startsWith('•')){section='alrt';}
+    if(/^[123][\.]/.test(line)){section='ac';}
+    if(section==='sit'&&!line.startsWith('*')&&!line.startsWith('•')&&!/^[123][\.]/.test(line)){
+      situacao+=(situacao?' ':'')+line;
+    } else if(section==='alrt'&&(line.startsWith('*')||line.startsWith('•'))){
+      alertas.push(line.replace(/^[*•]\s*/,''));
+    } else if(section==='ac'&&/^[123][\.]/.test(line)){
+      acoes.push(line.replace(/^[123]\.\s*/,''));
+    }
   });
-  if(!situacao)situacao=txt.split('\n').filter(function(l){return l.trim()&&!['SITUAÇÃO','ALERTAS','AÇÕES','SITUACAO','ACOES'].includes(l.trim());})[0]||txt;
-
+  if(!situacao&&!alertas.length&&!acoes.length){situacao=clean;}
   var html='<div class="diag-box">';
-  html+='<div class="diag-score-badge"><span>'+mesLabel+'</span><span style="color:'+g.c+'">'+res.score+' pts · '+g.l+'</span></div>';
-  html+='<div class="diag-narrative">'+situacao+'</div>';
+  html+='<div class="diag-score-badge"><span>'+mesLabel+'</span><span style="color:'+g.c+'"> '+res.score+' pts · '+g.l+'</span></div>';
+  if(situacao)html+='<div class="diag-narrative">'+situacao+'</div>';
   if(alertas.length){
-    html+='<div class="diag-section-title" style="color:var(--amber)">⚠ Alertas</div>';
+    html+='<div class="diag-section-title" style="color:var(--amber)">Alertas</div>';
     alertas.forEach(function(a){html+='<div class="dalert">'+a+'</div>';});
   }
+  if(acoes.length){
+    html+='<div class="diag-section-title" style="color:var(--teal)">Acoes Prioritarias</div>';
+    acoes.forEach(function(a){html+='<div class="dact"><strong>›</strong> '+a+'</div>';});
+  }
+  var chips='';
+  worst.slice(0,2).forEach(function(d){chips+='<span class="dchip dcr">↓ '+d.ind.short+' '+Math.round(d.pct)+'%</span>';});
+  best.slice(-2).forEach(function(d){chips+='<span class="dchip dcg">✓ '+d.ind.short+' '+Math.round(d.pct)+'%</span>';});
+  if(chips)html+='<div class="dchips">'+chips+'</div>';
+  html+='</div>';
+  el.innerHTML=html;
+}
   if(acoes.length){
     html+='<div class="diag-section-title" style="color:var(--teal)">→ Ações Prioritárias</div>';
     acoes.forEach(function(a){html+='<div class="dact"><strong>›</strong> '+a+'</div>';});
