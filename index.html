@@ -1252,17 +1252,6 @@ function _renderDiag(el,txt,res,worst,best,mesLabel){
   html+='</div>';
   el.innerHTML=html;
 }
-  if(acoes.length){
-    html+='<div class="diag-section-title" style="color:var(--teal)">→ Ações Prioritárias</div>';
-    acoes.forEach(function(a){html+='<div class="dact"><strong>›</strong> '+a+'</div>';});
-  }
-  var chips='';
-  worst.slice(0,2).forEach(function(d){chips+='<span class="dchip dcr">↓ '+d.ind.short+' '+Math.round(d.pct)+'%</span>';});
-  best.slice(-2).forEach(function(d){chips+='<span class="dchip dcg">✓ '+d.ind.short+' '+Math.round(d.pct)+'%</span>';});
-  if(chips)html+='<div class="dchips">'+chips+'</div>';
-  html+='</div>';
-  el.innerHTML=html;
-}
 let _chatCtx=null,_chatHist=[];
 async function sendChat(){
   const inp=document.getElementById('chatInp');const msg=inp.value.trim();if(!msg)return;
