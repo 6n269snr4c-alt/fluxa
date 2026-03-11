@@ -27,6 +27,7 @@ nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 .page{display:none;flex:1;min-height:0;overflow:hidden}.page.active{display:flex}
 .scrollpage{display:none;flex:1;min-height:0;overflow-y:auto;flex-direction:column}.scrollpage.active{display:flex}
+#page-sim{overflow:hidden}
 .ph{flex-shrink:0;padding:16px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .pt{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--teal)}
 .ps{font-size:12px;color:var(--mut);margin-top:2px}
@@ -186,9 +187,9 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
 .dir-btn{padding:3px 8px;border-radius:5px;border:1px solid var(--bdr);background:transparent;color:var(--mut);font-size:10px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s}
 .dir-btn.active{background:var(--teal);border-color:var(--teal);color:#07101c;font-weight:700}
 /* SIMULATOR */
-.sim-layout{flex:1;display:flex;flex-direction:row;min-height:0;overflow:hidden}
-.sim-left{flex:0 0 50%;border-right:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;gap:16px;overflow:hidden;box-sizing:border-box}
-.sim-right{flex:1;overflow-y:auto;padding:16px 20px}
+.sim-layout{width:100%;height:100%;display:flex;flex-direction:row;overflow:hidden}
+.sim-left{width:50%;min-width:0;border-right:1px solid var(--bdr);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 24px;gap:16px;overflow:hidden;box-sizing:border-box;flex-shrink:0}
+.sim-right{flex:1;min-width:0;overflow-y:auto;padding:16px 20px}
 .ssb{display:flex;align-items:center;gap:6px;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;padding:5px 12px;background:var(--glass);border:1px solid var(--bdr);border-radius:9px;flex-wrap:wrap}
 #simWheelBox{position:relative;flex-shrink:0}
 .sim-wc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
@@ -761,6 +762,7 @@ async function loadUserData(uid){
       if(d.forecast)S.forecast=d.forecast;
       if(d.meetActions)S.meetActions=d.meetActions;
       if(d.sel)S.sel=d.sel;
+      if(d.diagCache){S.diagCache=d.diagCache;Object.assign(_diagCache,d.diagCache);}
     }
   }catch(e){console.warn('Load error:',e);}
 }
@@ -919,10 +921,11 @@ function sizeSimWheel(){
   const box=document.getElementById('simWheelBox');if(!box)return;
   const left=document.querySelector('.sim-left');
   if(!left)return;
-  const W=left.offsetWidth||left.clientWidth||300;
-  const H=left.offsetHeight||left.clientHeight||500;
+  // Se o offsetWidth for menor que 200, o layout ainda não renderizou — tenta de novo
+  const W=left.offsetWidth>200?left.offsetWidth:Math.floor(window.innerWidth*0.5)-48;
+  const H=left.offsetHeight>200?left.offsetHeight:window.innerHeight-120;
   const avail=Math.min(W-48, H-100);
-  const sz=Math.max(220,Math.min(avail,520));
+  const sz=Math.max(260,Math.min(avail,520));
   const svg=document.getElementById('simHw');
   svg.setAttribute('width',sz);svg.setAttribute('height',sz);svg.setAttribute('viewBox',`0 0 ${sz} ${sz}`);
   box.style.width=sz+'px';box.style.height=sz+'px';
@@ -1141,42 +1144,144 @@ function closeKpi(){document.getElementById('kpiModal').classList.remove('open')
 // ═══════════════════════════════════════════
 // DIAGNOSIS + CHAT
 // ═══════════════════════════════════════════
-async function rDiag(res){
-  const el=document.getElementById('diagC');
-  el.innerHTML='<div class="dload"><div class="spin"></div><span>Analisando...</span></div>';
-  const sorted=[...res.details].sort((a,b)=>a.adjPct-b.adjPct);
-  const worst=sorted.slice(0,3),best=sorted.slice(-2),lc=res.details.filter(d=>d.conf!=='high');
-  const cf=calcConf(res.details);const[y,mo]=S.sel.split('-');
-  const prompt=`CFO experiente. Diagnóstico executivo ${MES[parseInt(mo)-1]}/${y}. Máximo 100 palavras. Direto.
-Empresa: ${S.company}${S.sector?' · '+S.sector:''} | Saúde: ${res.score}% | Conf: ${cf?cf.p+'%':'N/A'}
-Críticos: ${worst.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
-Destaques: ${best.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
-Formato: diagnóstico (2 frases), 1. ação, 2. ação`;
-  try{
-    const r=await fetch("/api/diagnose",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
-    const data=await r.json();const txt=(data.text||'').trim();
-    if(!txt)throw new Error();
-    const lines=txt.split('\n').filter(l=>l.trim());const diag=lines[0]||'';
-    const acts=lines.filter(l=>/^[12][\.\)]\s/.test(l.trim())).slice(0,2);
-    el.innerHTML=`<div class="diag-box"><p>${diag}</p>${acts.map(a=>`<div class="dact">${a}</div>`).join('')}</div><div class="dchips">${worst.slice(0,2).map(d=>`<span class="dchip dcr">↓${d.ind.short}</span>`).join('')}${best.slice(-1).map(d=>`<span class="dchip dcg">✓${d.ind.short}</span>`).join('')}</div>`;
-    _chatCtx=res;
-  }catch(e){el.innerHTML=`<div class="diag-box"><p style="color:var(--amber)">Configure a API key para diagnósticos com IA.</p>${worst[0]?`<div class="dact">⚠️ Foco: ${worst[0].ind.name} em ${Math.round(worst[0].pct)}% da meta</div>`:''}</div>`;}
-}
+async // Cache de diagnóstico — evita chamadas desnecessárias à API
+let _diagCache={};  // key: "mk-score" → texto do diagnóstico
 let _chatCtx=null,_chatHist=[];
+
+function rDiag(res){
+  const el=document.getElementById('diagC');
+  const sorted=[...res.details].sort((a,b)=>a.adjPct-b.adjPct);
+  const worst=sorted.slice(0,3),best=sorted.slice(-2);
+  const cf=calcConf(res.details);
+  const[y,mo]=S.sel.split('-');
+  const cacheKey=S.sel+'-'+res.score;
+
+  // Se já tem diagnóstico em cache para este período+score, exibe direto sem chamar API
+  if(_diagCache[cacheKey]){
+    _renderDiag(el, _diagCache[cacheKey], worst, best);
+    _chatCtx=res;
+    return;
+  }
+
+  el.innerHTML='<div class="dload"><div class="spin"></div><span>Analisando...</span></div>';
+
+  const allKpis=sorted.map(d=>`${d.ind.name}: ${Math.round(d.pct)}% da meta`).join('\n');
+  const prompt=`Você é o CFO virtual de ${S.company}${S.sector?' ('+S.sector+')':''}. Fale na primeira pessoa do plural ("nossa empresa", "precisamos"). Seja brutal e honesto como um sócio faria em reunião fechada.
+
+PERÍODO: ${MES[parseInt(mo)-1]}/${y} | SCORE: ${res.score}/100 (${grade(res.score).l}) | CONFIANÇA: ${cf?cf.p+'%':'Alta'}
+
+TODOS OS KPIs:
+${allKpis}
+
+CRÍTICOS: ${worst.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
+DESTAQUES: ${best.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
+
+Escreva com EXATAMENTE este formato (sem introduções, direto ao ponto):
+
+**DIAGNÓSTICO**
+[3 frases de impacto que descrevam a situação real. Mencione números específicos. A primeira frase deve ser uma declaração forte sobre o estado atual do negócio. A segunda aponta o maior risco. A terceira aponta o maior ponto positivo.]
+
+**ALERTAS PRIORITÁRIOS**
+⚠ [Nome do KPI mais crítico] em [X]%: [consequência concreta se não agir — seja específico, sem clichês]
+⚠ [Nome do 2º KPI crítico] em [X]%: [o que isso significa operacionalmente para o negócio]
+
+**AÇÕES DOS PRÓXIMOS 30 DIAS**
+1. [Ação cirúrgica e específica para o KPI mais crítico — com número meta]
+2. [Ação específica para o 2º problema — com responsável sugerido]
+3. [Ação para proteger ou ampliar o maior ponto forte]
+
+Máximo 220 palavras. Linguagem direta, executiva, sem rodeios.`;
+
+  (async()=>{
+    try{
+      const r=await fetch("/api/diagnose",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt})});
+      const data=await r.json();
+      const txt=(data.text||'').trim();
+      if(!txt)throw new Error('empty');
+      _diagCache[cacheKey]=txt;
+      _renderDiag(el, txt, worst, best);
+      // Salva no estado para persistir entre sessões
+      if(!S.diagCache)S.diagCache={};
+      S.diagCache[cacheKey]=txt;
+      sv();
+      _chatCtx=res;
+    }catch(e){
+      el.innerHTML=`<div class="diag-box"><p style="color:var(--amber)">⚠ Configure a API key para diagnósticos com IA.</p>${worst[0]?`<div class="dact">Foco imediato: ${worst[0].ind.name} está em ${Math.round(worst[0].pct)}% da meta</div>`:''}</div>`;
+    }
+  })();
+}
+
+function _renderDiag(el, txt, worst, best){
+  // Parse das seções do diagnóstico
+  const sections=txt.split(/\*\*([^*]+)\*\*/g).filter(s=>s.trim());
+  let html='<div class="diag-box" style="font-size:12px;line-height:1.7">';
+  let i=0;
+  while(i<sections.length){
+    const s=sections[i].trim();
+    if(['DIAGNÓSTICO','ALERTAS PRIORITÁRIOS','AÇÕES IMEDIATAS'].includes(s)){
+      const content=(sections[i+1]||'').trim();
+      if(s==='DIAGNÓSTICO'){
+        html+=`<div style="font-size:13px;color:#dce8ff;margin-bottom:10px;line-height:1.6">${content.replace(/
+/g,'<br>')}</div>`;
+      } else if(s==='ALERTAS PRIORITÁRIOS'){
+        html+=`<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);font-weight:700;margin:10px 0 6px">⚠ Alertas</div>`;
+        content.split('
+').filter(l=>l.trim()).forEach(l=>{
+          html+=`<div style="font-size:11px;color:#f4a522;margin-bottom:4px;padding-left:8px;border-left:2px solid #f4a52244">${l.replace(/^⚠\s*/,'')}</div>`;
+        });
+      } else if(s==='AÇÕES IMEDIATAS'){
+        html+=`<div style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--teal);font-weight:700;margin:10px 0 6px">→ Ações</div>`;
+        content.split('
+').filter(l=>l.trim()).forEach(l=>{
+          html+=`<div class="dact">${l.replace(/^\d+\.\s*/,'')}</div>`;
+        });
+      }
+      i+=2;
+    } else { i++; }
+  }
+  // Fallback se o formato não vier estruturado
+  if(html==='<div class="diag-box" style="font-size:12px;line-height:1.7">'){
+    html+=`<div style="font-size:12px;color:#dce8ff;line-height:1.7">${txt.replace(/
+/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>`;
+  }
+  html+=`</div><div class="dchips" style="margin-top:8px">${worst.slice(0,2).map(d=>`<span class="dchip dcr">↓ ${d.ind.short} ${Math.round(d.pct)}%</span>`).join('')}${best.slice(-1).map(d=>`<span class="dchip dcg">✓ ${d.ind.short} ${Math.round(d.pct)}%</span>`).join('')}</div>`;
+  el.innerHTML=html;
+}
+
 async function sendChat(){
-  const inp=document.getElementById('chatInp');const msg=inp.value.trim();if(!msg)return;
-  inp.value='';_chatHist.push({role:'user',content:msg});
-  const[y,mo]=(S.sel||'-').split('-');
-  const sys=`Consultor de gestão de ${S.company}. Saúde: ${_chatCtx?.score||'?'}%. Mês: ${MES[parseInt(mo)-1]||''}/${y}. Máximo 70 palavras.`;
+  const inp=document.getElementById('chatInp');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  _chatHist.push({role:'user',content:msg});
+  const[y,mo]=(S.sel||'2000-01').split('-');
+  const sorted=_chatCtx?[..._chatCtx.details].sort((a,b)=>a.pct-b.pct):[];
+  const kpiSummary=sorted.map(d=>d.ind.name+': '+Math.round(d.pct)+'%').join(' | ');
+  const sys=`Você é um consultor financeiro sênior assessorando ${S.company}${S.sector?' ('+S.sector+')':''}.
+Período analisado: ${MES[parseInt(mo)-1]}/${y} | Score de saúde: ${_chatCtx?.score||'?'}/100
+KPIs: ${kpiSummary||'dados não disponíveis'}
+Responda de forma direta e executiva. Máximo 120 palavras. Use dados específicos quando relevante.`;
   const el=document.getElementById('chatOut');
-  el.innerHTML+='<div style="color:var(--teal);font-size:10px;margin-top:4px">→ '+msg+'</div>';
+  el.innerHTML+='<div style="color:var(--teal);font-size:11px;margin-top:8px;padding:6px 8px;background:rgba(0,232,155,.06);border-radius:6px;border-left:2px solid var(--teal)">→ '+msg+'</div>';
+  el.innerHTML+='<div id="chatTyping" style="font-size:11px;color:var(--mut);margin-top:4px">...</div>';
+  el.scrollTop=el.scrollHeight;
   try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,system:sys,messages:_chatHist})});
-    const data=await r.json();const reply=(data.content||[]).map(c=>c.text||'').join('').trim();
+    const r=await fetch("/api/diagnose",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:msg, system:sys, history:_chatHist.slice(-6)})
+    });
+    const data=await r.json();
+    const reply=(data.text||'').trim();
     _chatHist.push({role:'assistant',content:reply});
-    el.innerHTML+='<div style="font-size:10px;color:#9ab8d8;margin-top:3px;line-height:1.5">'+reply+'</div>';
+    const typing=document.getElementById('chatTyping');
+    if(typing)typing.remove();
+    el.innerHTML+='<div style="font-size:11px;color:#9ab8d8;margin-top:4px;line-height:1.6;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px">'+reply.replace(/
+/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')+'</div>';
     el.scrollTop=el.scrollHeight;
-  }catch(e){el.innerHTML+='<div style="font-size:10px;color:var(--red)">Erro na API</div>';}
+  }catch(e){
+    const typing=document.getElementById('chatTyping');
+    if(typing)typing.innerHTML='<span style="color:var(--red)">Erro na API. Tente novamente.</span>';
+  }
 }
 function chatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
 
@@ -1496,7 +1601,7 @@ function initSim(){
   window._simMk=S.sel;
   _simBase=(S.raw&&S.sel&&S.raw[S.sel])?{...S.raw[S.sel]}:{};
   _simRaw={..._simBase};
-  requestAnimationFrame(()=>requestAnimationFrame(sizeSimWheel));
+  requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(sizeSimWheel,50)));
   const right=document.getElementById('simRight');right.innerHTML='';
   if(!S.sel||!Object.keys(_simBase).length){
     right.innerHTML='<div style="font-size:12px;color:var(--mut)">Selecione um período com dados no Dashboard para simular cenários.</div>';
