@@ -524,7 +524,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
           <button id="rmLogoBtn" class="bs ghost" style="display:none;font-size:11px;padding:5px 10px" onclick="removeLogo()">✕ Remover</button>
         </div>
       </div>
-      <div class="cfg-row"><label>Benchmarks IA</label><div style="display:flex;gap:5px"><button class="bb active" id="bai" onclick="setBM('ai',this)">🤖 Automático</button><button class="bb" id="bman" onclick="setBM('manual',this)">✏️ Manual</button></div></div>
+
       <div class="cfg-row"><label>Dados</label><button class="bs ghost" onclick="clearAllData()" style="font-size:11px;padding:5px 10px">🗑 Limpar todos os dados</button></div>
     </div>
     <div class="cfg-sec">
@@ -565,6 +565,18 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
           <div class="score-big" id="simSn" style="font-size:58px;color:var(--teal)">—</div>
           <div class="score-lbl">SIMULADO</div>
           <div class="score-grade" id="simSg" style="font-size:11px">—</div>
+        </div>
+      </div>
+      <!-- Lucro Líquido card -->
+      <div id="simLucroCard" style="display:none;margin-top:12px;width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;align-items:center;justify-content:space-between;gap:12px">
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;font-weight:700;color:var(--mut);margin-bottom:2px">💰 LUCRO LÍQUIDO</div>
+          <div id="simLucroVal" style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--teal)">—</div>
+        </div>
+        <div style="text-align:right">
+          <div id="simLucroPct" style="font-size:13px;font-weight:700;color:var(--mut)">—</div>
+          <div style="font-size:9px;color:var(--mut);margin-top:2px">DA META</div>
+          <div id="simLucroGoal" style="font-size:9px;color:var(--mut);margin-top:1px"></div>
         </div>
       </div>
     </div>
@@ -857,7 +869,7 @@ function calcScore(mk){
   IND.forEach(ind=>{
     const e=d[ind.id];if(!e||e.value===''||e.value==null)return;
     const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};
-    const goal=S.benchMode==='ai'&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
+    const goal=(cfg.benchMode==='ai'||S.benchMode==='ai')&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
     const val=parseFloat(e.value),conf=e.confidence||'high';
     const hb=cfg.hb!=null?cfg.hb:ind.hb;
     let p=hb?(goal===0?100:Math.min((val/goal)*100,150)):(goal===0?100:Math.min((goal/Math.max(val,.001))*100,150));
@@ -1327,6 +1339,7 @@ function rPills(){
   function onSelChange(){
     var mk=selAno.value+'-'+selMes.value;
     S.sel=mk;
+    _dashView='real'; // reset view on month change
     if(!S.months.includes(mk)){S.months.push(mk);S.months.sort();}
     sv();rDash();
   }
@@ -1334,20 +1347,49 @@ function rPills(){
   selAno.addEventListener('change',onSelChange);
 
   // Status badge for current month
-  var statusBadge=document.createElement('span');
-  statusBadge.id='dashMonthBadge';
-  function updateBadge(mk){
+  // View toggle buttons
+  var viewWrap=document.createElement('div');
+  viewWrap.style.cssText='display:flex;gap:4px;align-items:center';
+  viewWrap.id='dashViewBtns';
+
+  function buildViewBtns(mk){
+    viewWrap.innerHTML='';
     const hasDados=S.data[mk]&&Object.keys(S.data[mk]).length>0;
     const hasFcast=S.forecast&&S.forecast[mk]&&Object.keys(S.forecast[mk]).length>0;
-    if(hasDados){statusBadge.style.cssText='font-size:11px;font-weight:700;color:var(--green);background:rgba(0,232,155,.1);padding:3px 10px;border-radius:20px';statusBadge.textContent='✓ Fechado';}
-    else if(hasFcast){statusBadge.style.cssText='font-size:11px;font-weight:700;color:#a855f7;background:rgba(168,85,247,.1);padding:3px 10px;border-radius:20px';statusBadge.textContent='~ Forecast';}
-    else{statusBadge.style.cssText='font-size:11px;color:var(--mut);background:rgba(255,255,255,.05);padding:3px 10px;border-radius:20px';statusBadge.textContent='Sem dados';}
+    if(!hasDados&&!hasFcast){
+      const empty=document.createElement('span');
+      empty.style.cssText='font-size:11px;color:var(--mut);background:rgba(255,255,255,.05);padding:3px 10px;border-radius:20px';
+      empty.textContent='Sem dados';viewWrap.appendChild(empty);return;
+    }
+    // Ensure _dashView is valid for this month
+    if(_dashView==='forecast'&&!hasFcast)_dashView='real';
+    if(_dashView==='real'&&!hasDados&&hasFcast)_dashView='forecast';
+    if(hasDados){
+      const btn=document.createElement('button');
+      btn.id='dashBtnReal';
+      btn.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all .15s';
+      function styleReal(active){btn.style.background=active?'rgba(0,232,155,.15)':'rgba(255,255,255,.04)';btn.style.color=active?'var(--green)':'var(--mut)';btn.style.borderColor=active?'rgba(0,232,155,.4)':'rgba(255,255,255,.1)';}
+      styleReal(_dashView==='real');
+      btn.textContent='✓ Fechado';
+      btn.onclick=function(){_dashView='real';styleReal(true);if(hasFcast){var fb=document.getElementById('dashBtnFcast');if(fb){fb.style.background='rgba(255,255,255,.04)';fb.style.color='var(--mut)';fb.style.borderColor='rgba(255,255,255,.1)';}}rDash();};
+      viewWrap.appendChild(btn);
+    }
+    if(hasFcast){
+      const btn=document.createElement('button');
+      btn.id='dashBtnFcast';
+      btn.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;cursor:pointer;border:1px solid;transition:all .15s';
+      function styleFcast(active){btn.style.background=active?'rgba(168,85,247,.15)':'rgba(255,255,255,.04)';btn.style.color=active?'#c084fc':'var(--mut)';btn.style.borderColor=active?'rgba(168,85,247,.4)':'rgba(255,255,255,.1)';}
+      styleFcast(_dashView==='forecast');
+      btn.textContent='🔮 Previsão';
+      btn.onclick=function(){_dashView='forecast';styleFcast(true);var rb=document.getElementById('dashBtnReal');if(rb){rb.style.background='rgba(255,255,255,.04)';rb.style.color='var(--mut)';rb.style.borderColor='rgba(255,255,255,.1)';}rDash();};
+      viewWrap.appendChild(btn);
+    }
   }
-  if(S.sel)updateBadge(S.sel);
+  if(S.sel)buildViewBtns(S.sel);
 
   wrap.appendChild(selMes);
   wrap.appendChild(selAno);
-  wrap.appendChild(statusBadge);
+  wrap.appendChild(viewWrap);
   c.appendChild(wrap);
 }
 function removePeriod(mk,e){
@@ -1409,38 +1451,37 @@ function rDash(){
     ll.style.color=col;
     ll.textContent=lbl;
   })();
-  window._lastDets=res?res.details:null;
-  sizeWheel();
-  // Check for forecast-only month
+  // ── Resolve which view to show: 'real' or 'forecast' ──────────────
   const hasFcast=S.sel&&S.forecast&&S.forecast[S.sel]&&Object.keys(S.forecast[S.sel]).length>0;
-  if(!res){
+  const hasReal=!!res;
+  // If no real data and has forecast, auto-show forecast
+  if(!hasReal&&hasFcast)_dashView='forecast';
+  if(!hasReal&&!hasFcast)_dashView='real';
+
+  // ── Build forecast score/dets if needed ─────────────────────────
+  let fcDets=null,fcScore=null,fcG=null;
+  if(hasFcast){
+    const fcRaw={...(S.raw&&S.raw[S.sel]||{}),...S.forecast[S.sel]};
+    const fcKpis=calcKPIs(fcRaw);
+    const tw=IND.reduce((s,i)=>s+(S.cfg[i.id]?.weight||1),0);
+    fcDets=IND.map(ind=>{
+      const v=fcKpis[ind.id];const goal=getGoal(ind.id,S.sel);const hb=S.cfg[ind.id]?.hb??ind.hb;
+      let pct=0;if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
+      return{ind,val:v,pct,adjPct:pct,conf:'medium',goal};
+    });
+    const ws=fcDets.reduce((s,d)=>s+d.pct*(S.cfg[d.ind.id]?.weight||1),0);
+    fcScore=tw>0?Math.round(ws/tw):0;fcG=grade(fcScore);
+  }
+
+  // ── Decide active dets for wheel ────────────────────────────────
+  const activeDets=_dashView==='forecast'&&fcDets?fcDets:(res?res.details:null);
+  window._lastDets=activeDets;
+  sizeWheel();
+
+  // ── No data at all ──────────────────────────────────────────────
+  if(!hasReal&&!hasFcast){
     document.getElementById('sn').textContent='—';
     const sg=document.getElementById('sg');
-    if(hasFcast){
-      // Show forecast score
-      const fcRaw={...(S.raw&&S.raw[S.sel]||{}),...S.forecast[S.sel]};
-      const fcKpis=calcKPIs(fcRaw);
-      const fcDets=IND.map(ind=>{const v=fcKpis[ind.id];const goal=getGoal(ind.id,S.sel);const hb=S.cfg[ind.id]?.hb??ind.hb;
-        let pct=0;if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
-        return{ind,val:v,pct,goal,conf:'medium'};});
-      const tw=IND.reduce((s,i)=>s+(S.cfg[i.id]?.weight||1),0);
-      const ws=fcDets.reduce((s,d)=>s+d.pct*(S.cfg[d.ind.id]?.weight||1),0);
-      const fcScore=tw>0?Math.round(ws/tw):0;const fcG=grade(fcScore);
-      window._lastDets=fcDets;
-      sizeWheel();
-      document.getElementById('sn').textContent='~'+fcScore;
-      document.getElementById('sn').style.color='#8b9cf4';
-      sg.textContent='🔮 Forecast';sg.style.cssText='color:#8b9cf4;background:rgba(139,156,244,.12);border:1px solid rgba(139,156,244,.3)';
-      document.getElementById('rScore').textContent='~'+fcScore;document.getElementById('rScore').style.color='#8b9cf4';
-      document.getElementById('rScoreBar').style.cssText='width:'+fcScore+'%;background:#8b9cf4';
-      document.getElementById('rConf').textContent='Forecast';document.getElementById('rConf').style.color='#8b9cf4';
-      document.getElementById('rConfBar').style.cssText='width:70%;background:#8b9cf4';
-      document.getElementById('rConfChips').innerHTML='<span style="font-size:11px;color:#8b9cf4">🔮 Dados de previsão</span>';
-      document.getElementById('rConfWarn').textContent='Sem fechamento — exibindo projeção';
-      rIndListFcast(fcDets);
-      document.getElementById('diagC').innerHTML='<div style="padding:8px 0;font-size:12px;color:#a855f7">🔮 Dados de forecast. Lance o fechamento para gerar diagnóstico.</div>';
-      return;
-    }
     sg.textContent='Sem dados';sg.style.cssText='color:var(--mut)';
     ['rScore','rConf'].forEach(id=>document.getElementById(id).textContent='—');
     ['rScoreBar','rConfBar'].forEach(id=>document.getElementById(id).style.width='0%');
@@ -1449,9 +1490,45 @@ function rDash(){
     document.getElementById('diagC').innerHTML='<div class="empty"><div class="eico">🤖</div><p>Gerado ao salvar os dados</p></div>';
     return;
   }
+
+  // ── FORECAST view ───────────────────────────────────────────────
+  if(_dashView==='forecast'&&fcDets){
+    document.getElementById('sn').textContent='~'+fcScore;
+    document.getElementById('sn').style.color='#8b9cf4';
+    const sg=document.getElementById('sg');
+    // If also has real, show comparison
+    if(hasReal){
+      const diff=fcScore-res.score;
+      sg.textContent='🔮 Prev '+fcScore+(diff>=0?' ▲ +':' ▼ ')+diff+' vs real';
+    } else {
+      sg.textContent='🔮 Previsão';
+    }
+    sg.style.cssText='color:#8b9cf4;background:rgba(139,156,244,.12);border:1px solid rgba(139,156,244,.3)';
+    document.getElementById('rScore').textContent='~'+fcScore;document.getElementById('rScore').style.color='#8b9cf4';
+    document.getElementById('rScoreBar').style.cssText='width:'+fcScore+'%;background:#8b9cf4';
+    document.getElementById('rConf').textContent='Previsão';document.getElementById('rConf').style.color='#8b9cf4';
+    document.getElementById('rConfBar').style.cssText='width:70%;background:#8b9cf4';
+    document.getElementById('rConfChips').innerHTML='<span style="font-size:11px;color:#8b9cf4">🔮 Dados de previsão — score e KPIs projetados</span>';
+    document.getElementById('rConfWarn').textContent=hasReal?'':'Sem fechamento — exibindo projeção';
+    rIndListFcast(fcDets);
+    // No API call for forecast — show static message
+    document.getElementById('diagC').innerHTML='<div style="padding:12px 0;font-size:12px;color:#8b9cf4;line-height:1.6">🔮 <strong>Visão de previsão.</strong><br>O diagnóstico é gerado apenas com dados de fechamento.</div>';
+    return;
+  }
+
+  // ── REAL (fechamento) view ──────────────────────────────────────
   const g=grade(res.score);
   document.getElementById('sn').textContent=res.score;
-  const sg=document.getElementById('sg');sg.textContent=g.l;sg.style.cssText=`color:${g.c};background:${g.c}20;border:1px solid ${g.c}50`;
+  document.getElementById('sn').style.color=g.c;
+  const sg=document.getElementById('sg');
+  // Badge: show forecast comparison if available
+  if(fcScore!==null){
+    const diff=res.score-fcScore;
+    sg.textContent=g.l+' · prev '+fcScore+(diff>=0?' ▲ +':' ▼ ')+diff;
+  } else {
+    sg.textContent=g.l;
+  }
+  sg.style.cssText=`color:${g.c};background:${g.c}20;border:1px solid ${g.c}50`;
   document.getElementById('rScore').textContent=res.score;document.getElementById('rScore').style.color=g.c;
   document.getElementById('rScoreBar').style.cssText=`width:${res.score}%;background:${g.c}`;
   const cf=calcConf(res.details);
@@ -1460,19 +1537,51 @@ function rDash(){
     document.getElementById('rConfBar').style.cssText=`width:${cf.p}%;background:${cc}`;
     document.getElementById('rConfChips').innerHTML=`<span class="cc" style="color:var(--green);border-color:rgba(0,232,155,.3);background:rgba(0,232,155,.08)">✅${cf.hi}</span><span class="cc" style="color:var(--amber);border-color:rgba(244,165,34,.3);background:rgba(244,165,34,.08)">⚠${cf.md}</span><span class="cc" style="color:var(--red);border-color:rgba(255,61,90,.3);background:rgba(255,61,90,.08)">❌${cf.lo}</span>`;
     const low=res.details.filter(d=>d.conf!=='high');
-    document.getElementById('rConfWarn').textContent=low.length?`⚠️ Verifique: ${low.map(d=>d.ind.short).join(', ')}`:'';
-  }
-  rIndList(res.details);rDiag(res);
+    document.getElementById('rConfWarn').textContent=low.length?`⚠️ Verifique: ${low.map(d=>d.ind.short).join(', ')}`:'';}
+  rIndList(res.details);
+  rDiag(res); // API call only here — fechamento only
 }
 function rIndList(dets){
   const el=document.getElementById('indList');el.innerHTML='';
+  // Build forecast KPI map if available
+  const fcRaw=S.sel&&S.forecast&&S.forecast[S.sel]?S.forecast[S.sel]:null;
+  const fcKpis=fcRaw?calcKPIs(fcRaw):null;
   [...dets].sort((a,b)=>a.pct-b.pct).forEach(d=>{
     const{ind,pct}=d,col=GC[ind.group],ac=pct<60?'r':d.conf!=='high'?'a':'h';
+    // Forecast bar
+    let fcPct=null,fcDelta=null;
+    if(fcKpis){
+      const fv=fcKpis[ind.id];
+      if(fv!==null&&fv!==undefined){
+        const hb=S.cfg[ind.id]?.hb??ind.hb;
+        let fp=hb?(d.goal===0?100:Math.min((fv/d.goal)*100,150)):(d.goal===0?100:Math.min((d.goal/Math.max(fv,.001))*100,150));
+        fp=Math.max(0,Math.min(100,fp));
+        fcPct=fp;
+        fcDelta=Math.round(pct-fp); // realizado − forecast (positivo = superou previsão)
+      }
+    }
     const row=document.createElement('div');row.className='ir';row.onclick=()=>openKpi(ind.id);
+    const deltaCol=fcDelta===null?'':(fcDelta>=0?'var(--green)':'var(--red)');
+    const deltaStr=fcDelta===null?'':(fcDelta>=0?'+':'')+fcDelta+'%';
+    const _cfg=S.cfg[ind.id]||{};
+    const _isAI=S.benchMode==='ai'&&_cfg.benchGoal!=null;
+    const benchPill=_isAI?'<span title="Meta baseada em benchmark de mercado (IA)" style="font-size:8px;background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🏦 mercado</span>':'<span title="Meta manual configurada" style="font-size:8px;background:rgba(255,255,255,.06);color:var(--mut);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🎯 manual</span>';
     row.innerHTML=`<div class="ii" style="background:${col}22;color:${col}">${ind.icon}</div>
-      <div><div class="inm">${ind.name}</div><div class="ing">${GN[ind.group]}</div></div>
-      <div><div class="ibg"><div class="iff" style="width:${pct}%;background:${col}"></div></div></div>
-      <div class="ip" style="color:${pct>=80?col:pct>=60?'var(--amber)':'var(--red)'}">${Math.round(pct)}%</div>
+      <div><div class="inm">${ind.name}${benchPill}</div><div class="ing">${GN[ind.group]}</div></div>
+      <div class="ir-bars">
+        <div class="ir-bar-row">
+          <span class="ir-bar-lbl">META</span>
+          <div class="ibg"><div class="iff" style="width:${pct}%;background:${col}"></div></div>
+        </div>
+        ${fcPct!==null?`<div class="ir-bar-row">
+          <span class="ir-bar-lbl">PREV</span>
+          <div class="ibg"><div class="iff-fc" style="width:${fcPct}%"></div></div>
+        </div>`:''}
+      </div>
+      <div>
+        <div class="ip" style="color:${pct>=80?col:pct>=60?'var(--amber)':'var(--red)'}">${Math.round(pct)}%</div>
+        ${fcDelta!==null?`<div class="ir-fc-delta" style="color:${deltaCol}">${deltaStr}</div>`:''}
+      </div>
       <div class="ad ${ac}"></div>`;
     el.appendChild(row);
   });
@@ -1512,7 +1621,9 @@ function openKpi(id){
         <div style="font-size:9px;color:var(--mut)">ATUAL</div></div>
       <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center">
         <div style="font-family:'JetBrains Mono',monospace;font-size:14px">${fmtV(det.goal,ind.unit)}</div>
-        <div style="font-size:9px;color:var(--mut)">META</div></div>
+        <div style="font-size:9px;color:var(--mut)">META</div>
+        <div style="font-size:8px;margin-top:4px;padding:2px 6px;border-radius:8px;display:inline-block;${S.benchMode==='ai'&&(S.cfg[ind.id]||{}).benchGoal!=null?'background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3)':'background:rgba(255,255,255,.05);color:var(--mut);border:1px solid rgba(255,255,255,.1)'}">${S.benchMode==='ai'&&(S.cfg[ind.id]||{}).benchGoal!=null?'🏦 mercado':'🎯 manual'}</div>
+      </div>
     </div>`:''}`;}
 function closeKpi(){document.getElementById('kpiModal').classList.remove('open');}
 
@@ -1613,6 +1724,9 @@ function _renderDiag(el,txt,res,worst,best,mesLabel){
 
 let _chatCtx=null,_chatHist=[];
 function openChat(){
+  if(_dashView==='forecast'){
+    toast('💬 Chat disponível apenas com dados de fechamento');return;
+  }
   const popup=document.getElementById('chatPopup');
   popup.style.display='flex';
   const out=document.getElementById('chatOut');
@@ -1626,6 +1740,7 @@ function openChat(){
 }
 function closeChat(){document.getElementById('chatPopup').style.display='none';}
 async function sendChat(){
+  if(_dashView==='forecast')return; // no API on forecast view
   const inp=document.getElementById('chatInp');
   const msg=inp.value.trim();if(!msg)return;
   inp.value='';
@@ -1681,6 +1796,7 @@ function chatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat
 // INPUT PAGE
 // ═══════════════════════════════════════════
 let _inputMode='real';
+let _dashView='real'; // 'real' ou 'forecast'
 function setInputMode(mode,btn){
   _inputMode=mode;
   document.querySelectorAll('#modeReal,#modeFcast').forEach(function(b){b.classList.remove('active');});
@@ -1861,14 +1977,9 @@ function onFcastChange(mk){
     if(el&&el.value!=='')simR[fld.id]=parseFloat(el.value);
     else if(fc[fld.id]!=null)simR[fld.id]=fc[fld.id];
   });
+  // calcKPIs retorna mapa simples {id: valor} — passar direto para rKpiLive
   const kpis=calcKPIs(simR);
-  rKpiLive(IND.map(function(ind){
-    const v=kpis[ind.id];const goal=getGoal(ind.id,mk);
-    const hb=S.cfg[ind.id]?S.cfg[ind.id].hb:ind.hb;
-    let pct=0;
-    if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
-    return{ind,value:v,pct,adjPct:pct,conf:'high',weighted:pct*((S.cfg[ind.id]?S.cfg[ind.id].weight:null)||1)};
-  }),mk);
+  rKpiLive(kpis,mk);
 }
 
 function showAssert(mk){
@@ -1925,8 +2036,7 @@ function saveForecast(){
 function rConfig(){
   document.getElementById('cfgCo').value=S.company;
   document.getElementById('cfgSec').value=S.sector||'';
-  document.getElementById('bai').classList.toggle('active',S.benchMode==='ai');
-  document.getElementById('bman').classList.toggle('active',S.benchMode==='manual');
+
   const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Bloqueado':'🔓 Editar';btn.className='lock-btn'+(S.locked?' locked':'');
   document.getElementById('cfgSaveBtn').style.display=S.locked?'none':'inline-block';
   const rmBtn=document.getElementById('rmLogoBtn');
@@ -1979,13 +2089,18 @@ function fillAllMonths(){
 function rCfgKpiTable(){
   const t=document.getElementById('cfgGrid');t.innerHTML='';
   const dis=S.locked?'disabled':'';
-  let html=`<thead><tr><th>KPI</th><th>Grupo</th><th>Peso</th><th>Benchmark Manual</th><th>Direção</th></tr></thead><tbody>`;
+  let html=`<thead><tr><th>KPI</th><th>Grupo</th><th>Peso</th><th>Meta</th><th>Fonte</th><th>Direção</th></tr></thead><tbody>`;
   IND.forEach(ind=>{
-    const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};const col=GC[ind.group];
-    html+=`<tr><td style="font-size:12px">${ind.icon} ${ind.name}</td>
+    const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb,benchMode:'manual'};const col=GC[ind.group];
+    const isAI=cfg.benchMode==='ai'&&cfg.benchGoal!=null;
+    html+=`<tr id="cfgrow_${ind.id}"><td style="font-size:12px">${ind.icon} ${ind.name}</td>
       <td style="font-size:11px;color:${col}">${GN[ind.group].split(' ')[0]}</td>
       <td><input type="number" min="0" max="5" step=".5" class="gi2" id="cw_${ind.id}" value="${cfg.weight}" ${dis}></td>
-      <td><input type="number" step="any" class="gi2" id="cb_${ind.id}" value="${cfg.benchGoal||''}" placeholder="Auto" ${dis}></td>
+      <td><input type="number" step="any" class="gi2" id="cb_${ind.id}" value="${cfg.benchGoal||''}" placeholder="${isAI?'(IA)':'meta'}" style="${isAI?'color:#c084fc;':''}opacity:${isAI?'.6':'1'}" ${isAI?'disabled':dis}></td>
+      <td><div class="dir-sel" id="bm_${ind.id}">
+        <button class="dir-btn ${!isAI?'active':''}" onclick="setKpiBM('${ind.id}','manual')" ${dis}>🎯 Manual</button>
+        <button class="dir-btn ${isAI?'active':''}" style="${isAI?'color:#c084fc':''};" onclick="setKpiBM('${ind.id}','ai')" ${dis}>🏦 Mercado</button>
+      </div></td>
       <td><div class="dir-sel" id="hb_${ind.id}">
         <button class="dir-btn ${cfg.hb?'active':''}" onclick="setHb('${ind.id}',true)" ${dis}>↑ Maior</button>
         <button class="dir-btn ${!cfg.hb?'active':''}" onclick="setHb('${ind.id}',false)" ${dis}>↓ Menor</button>
@@ -1995,7 +2110,38 @@ function rCfgKpiTable(){
 }
 function setHb(id,val){if(S.locked)return;S.cfg[id].hb=val;
   const w=document.getElementById('hb_'+id);if(w)w.querySelectorAll('.dir-btn').forEach((b,i)=>b.classList.toggle('active',i===0?val:!val));}
-function setBM(mode,btn){if(S.locked)return;S.benchMode=mode;document.querySelectorAll('.bb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function setKpiBM(id,mode){
+  if(S.locked)return;
+  if(!S.cfg[id])S.cfg[id]={weight:1,hb:IND.find(i=>i.id===id)?.hb??true};
+  S.cfg[id].benchMode=mode;
+  const w=document.getElementById('bm_'+id);
+  if(w){w.querySelectorAll('.dir-btn').forEach((b,i)=>{b.classList.toggle('active',i===(mode==='manual'?0:1));b.style.color=i===1&&mode==='ai'?'#c084fc':'';});}
+  const inp=document.getElementById('cb_'+id);
+  if(mode==='ai'){
+    // Fetch bench for this single KPI
+    if(!S.sector){toast('⚠️ Configure o setor primeiro');S.cfg[id].benchMode='manual';rCfgKpiTable();return;}
+    const ind=IND.find(i=>i.id===id);
+    if(inp){inp.disabled=true;inp.placeholder='buscando...';inp.style.color='#c084fc';}
+    const prompt='Setor "'+S.sector+'". Responda SOMENTE com um número (sem texto, sem JSON, sem unidade): qual o valor de referência de mercado para o KPI "'+ind.name+'" ('+ind.formula+') neste setor? Use a mesma unidade do KPI ('+ind.unit+').';
+    fetch('/api/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
+    .then(r=>r.json()).then(data=>{
+      if(data.error)throw new Error(data.error);
+      const num=parseFloat((data.text||'').replace(/[^0-9.,\-]/g,'').replace(',','.'));
+      if(isNaN(num))throw new Error('Valor inválido');
+      S.cfg[id].benchGoal=num;sv();
+      if(inp){inp.value=num;inp.disabled=true;inp.placeholder='(IA)';inp.style.color='#c084fc';inp.style.opacity='.6';}
+      toast('✓ Benchmark de mercado: '+num+' '+ind.unit);
+    }).catch(e=>{
+      toast('⚠️ Erro ao buscar benchmark: '+e.message);
+      S.cfg[id].benchMode='manual';rCfgKpiTable();
+    });
+  } else {
+    // Manual: re-enable input, clear AI value
+    S.cfg[id].benchGoal=null;
+    if(inp){inp.disabled=false;inp.value='';inp.placeholder='meta';inp.style.color='';inp.style.opacity='1';}
+  }
+}
+function setBM(mode,btn){if(S.locked)return;S.benchMode=mode;} // legacy global fallback
 function toggleLock(){S.locked=!S.locked;sv();
   const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Bloqueado':'🔓 Editar';btn.className='lock-btn'+(S.locked?' locked':'');
   rGoalsTable();rCfgKpiTable();}
@@ -2091,6 +2237,7 @@ function initSim(){
     });
   });
   simCalc();
+  // ensure lucro card hidden until simCalc decides
 }
 function simFldUpd(fid,val){
   const num=val===''?undefined:parseFloat(val);
@@ -2118,6 +2265,23 @@ function simCalc(){
       document.getElementById('simScoreBase').textContent=score;
       document.getElementById('simDelta').textContent='';
       const gl=document.getElementById('simGradeL');gl.textContent=g.l;gl.style.color=g.c;gl.style.borderColor=g.c+'44';gl.style.background=g.c+'12';
+      // Lucro líquido no branch sem alterações
+      (function(){
+        const card=document.getElementById('simLucroCard');if(!card)return;
+        const ind=IND.find(i=>i.id==='lucroliq');if(!ind)return;
+        const _mk=window._simMk||S.sel;
+        const ll=(_mk&&S.data&&S.data[_mk]&&S.data[_mk].lucroliq)?S.data[_mk].lucroliq.value:null;
+        const goal=_mk?getGoal('lucroliq',_mk):ind.goalDef;
+        if(ll===null||ll===undefined){card.style.display='none';return;}
+        card.style.display='flex';
+        const valEl=document.getElementById('simLucroVal');
+        const pctEl=document.getElementById('simLucroPct');
+        const goalEl=document.getElementById('simLucroGoal');
+        valEl.textContent=ll.toFixed(1)+'%';
+        if(goal){const pct=Math.max(0,Math.min(150,(ll/goal)*100));const col=pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)';
+          valEl.style.color=col;pctEl.textContent=Math.round(pct)+'% da meta';pctEl.style.color=col;goalEl.textContent='meta: '+goal+'%';
+        } else {valEl.style.color='var(--teal)';pctEl.textContent='';goalEl.textContent='';}
+      })();
       sizeSimWheel();return;
     }
   }
@@ -2136,7 +2300,7 @@ function simCalc(){
     }
     if(v===null||v===undefined)return;
     const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};
-    const goal=S.benchMode==='ai'&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
+    const goal=(cfg.benchMode==='ai'||S.benchMode==='ai')&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
     if(!goal)return;
     const hb=cfg.hb!=null?cfg.hb:ind.hb;
     // Arredonda igual ao S.data para manter consistência
@@ -2157,6 +2321,31 @@ function simCalc(){
   document.getElementById('simDelta').textContent=(diff>=0?'▲ +':'▼ ')+diff;document.getElementById('simDelta').style.color=dc;
   const gl=document.getElementById('simGradeL');gl.textContent=g.l;gl.style.color=g.c;gl.style.borderColor=g.c+'44';gl.style.background=g.c+'12';
   sizeSimWheel();
+  // ── Lucro Líquido card ──────────────────────────────────────────
+  (function(){
+    const card=document.getElementById('simLucroCard');if(!card)return;
+    const ind=IND.find(i=>i.id==='lucroliq');if(!ind)return;
+    const ll=calcKPIs(_simRaw).lucroliq;
+    const mk=window._simMk||S.sel;
+    const goal=mk?getGoal('lucroliq',mk):ind.goalDef;
+    if(ll===null||ll===undefined){card.style.display='none';return;}
+    card.style.display='flex';
+    const valEl=document.getElementById('simLucroVal');
+    const pctEl=document.getElementById('simLucroPct');
+    const goalEl=document.getElementById('simLucroGoal');
+    valEl.textContent=ll.toFixed(1)+'%';
+    if(goal){
+      const pct=Math.max(0,Math.min(150,(ll/goal)*100));
+      const col=pct>=80?'var(--green)':pct>=60?'var(--amber)':'var(--red)';
+      valEl.style.color=col;
+      pctEl.textContent=Math.round(pct)+'% da meta';
+      pctEl.style.color=col;
+      goalEl.textContent='meta: '+goal+'%';
+    } else {
+      valEl.style.color='var(--teal)';
+      pctEl.textContent='';goalEl.textContent='';
+    }
+  })();
 }
 function simReset(){_simRaw={..._simBase};initSim();}
 
@@ -2449,15 +2638,17 @@ function buildSlide1(res){
     const col=d.pct<50?'#ef4444':d.pct<75?'#f59e0b':'#10b981';
     const cls=d.pct<50?'kred':d.pct<75?'kamber':'kok';
     // forecast delta
-    let fDelta='';
+    let fDelta='',fcValStr='',fcPctVal=null;
     if(fcastKpis){
       const fv=fcastKpis[d.ind.id];
-      if(fv!==null){
+      if(fv!==null&&fv!==undefined){
         const goal=getGoal(d.ind.id,S.sel);const hb=S.cfg[d.ind.id]?.hb??d.ind.hb;
         let fp=0;if(goal){fp=hb?Math.min((fv/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(fv,.001))*100,150));fp=Math.max(0,Math.min(100,fp));}
-        const diff=Math.round(fp-d.pct);
+        fcPctVal=Math.round(fp);
+        const diff=Math.round(d.pct-fp); // realizado − previsto
         const dc=diff>=0?'#059669':'#dc2626';
-        fDelta=`<div style="font-size:11px;color:${dc};font-weight:600;margin-top:3px">${diff>=0?'▲':' ▼'} ${diff>=0?'+':''}${diff} prev.</div>`;
+        fcValStr=fmtV(fv,d.ind.unit);
+        fDelta=`<div style="font-size:10px;color:${dc};font-weight:700;margin-top:2px">${diff>=0?'▲ +':'▼ '}${diff}% vs prev</div>`;
       }
     }
     const sa=saved_f[i]||{};
@@ -2473,11 +2664,12 @@ function buildSlide1(res){
         <div class="kcard-icon">${d.ind.icon}</div>
         <div class="kcard-info">
           <div class="kcard-name">${d.ind.name}</div>
-          <div class="kcard-sub">${fmtV(d.val,d.ind.unit)} &nbsp;·&nbsp; meta ${fmtV(d.goal,d.ind.unit)}</div>
+          <div class="kcard-sub">${fmtV(d.val,d.ind.unit)} <span style="color:#94a3b8">/meta</span> ${fmtV(d.goal,d.ind.unit)}${fcValStr?` <span style="color:rgba(139,156,244,.8)">/prev</span> <span style="color:rgba(139,156,244,.9)">${fcValStr}</span>`:''}</div>
           <div class="kcard-bar"><div class="kcard-bar-fill" style="width:${d.pct}%;background:${col}"></div></div>
         </div>
         <div class="kcard-right">
           <div class="kcard-pct" style="color:${col}">${Math.round(d.pct)}%</div>
+          ${fcPctVal!==null?`<div style="font-size:10px;color:rgba(139,156,244,.8);font-weight:600">${fcPctVal}% prev</div>`:''}
           ${fDelta}
         </div>
       </div>${actRow}
