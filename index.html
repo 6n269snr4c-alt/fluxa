@@ -2178,121 +2178,6 @@ function buildSlide1(res){
 
   </div>`;
 }
-function buildSlide2(res){
-  const[y,mo]=S.sel.split('-');
-  const mesLabel=MES[parseInt(mo)-1]+' '+y;
-  const fc=S.forecast&&S.forecast[S.sel];
-  const real=S.raw&&S.raw[S.sel];
-  const moN=parseInt(mo),yrN=parseInt(y);
-  const nextMk=moN===12?(yrN+1)+'-01':yrN+'-'+String(moN+1).padStart(2,'0');
-  const[nY,nMo]=nextMk.split('-');
-  const nextLabel=MES[parseInt(nMo)-1]+' '+nY;
-  const nextFc=S.forecast&&S.forecast[nextMk];
-
-  // ── Próximo mês score ────────────────────────────────────────────
-  let nextScore=null,ng=null,ndiff=null;
-  if(nextFc){
-    const simR=Object.assign({},real||{},nextFc);
-    const simKpis=calcKPIs(simR);
-    const nextDets=IND.map(function(ind){
-      const v=simKpis[ind.id];
-      const goal=getGoal(ind.id,nextMk);
-      const hb=S.cfg[ind.id]?S.cfg[ind.id].hb:ind.hb;
-      let pct=0;
-      if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
-      return{ind,val:v,pct,goal,weighted:pct*((S.cfg[ind.id]?S.cfg[ind.id].weight:null)||1)};
-    });
-    const tw=IND.reduce(function(s,i){return s+((S.cfg[i.id]?S.cfg[i.id].weight:null)||1);},0);
-    const ws=nextDets.reduce(function(s,d){return s+d.weighted;},0);
-    nextScore=tw>0?Math.round(ws/tw):0;
-    ng=grade(nextScore);
-    ndiff=nextScore-res.score;
-  }
-
-  // ── LEFT: Forecast vs Realizado ──────────────────────────────────
-  var fcastHTML='';
-  if(fc&&real){
-    var rows='';
-    FCAST_FIELDS.forEach(function(fld){
-      const fv=fc[fld.id],rv=real[fld.id];
-      const hasF=fv!=null,hasR=rv!=null;
-      var acc='—',ac='#94a3b8';
-      if(hasF&&hasR&&rv!==0){const a=Math.max(0,100-Math.abs(fv-rv)/Math.abs(rv)*100);acc=a.toFixed(0)+'%';ac=a>=90?'#059669':a>=70?'#d97706':'#dc2626';}
-      const fd=FCAST_FIELDS.find(function(f){return f.id===fld.id;})||FIELDS.find(function(f){return f.id===fld.id;});
-      rows+='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9">'+
-        '<div style="font-size:13px;color:#334155;font-weight:500">'+(fd?fd.label:fld.id)+'</div>'+
-        '<div style="font-size:13px;color:#6366f1;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasF?fv.toLocaleString('pt-BR'):'—')+'</div>'+
-        '<div style="font-size:13px;color:#0f766e;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasR?rv.toLocaleString('pt-BR'):'—')+'</div>'+
-        '<div style="font-size:12px;font-weight:700;text-align:right;color:'+ac+'">'+acc+'</div>'+
-        '</div>';
-    });
-    fcastHTML='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;padding:0 0 8px;border-bottom:2px solid #e2e8f0;margin-bottom:4px">'+
-      '<div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px">CAMPO</div>'+
-      '<div style="font-size:10px;color:#6366f1;font-weight:700;text-align:right;letter-spacing:1px">PREVISTO</div>'+
-      '<div style="font-size:10px;color:#0f766e;font-weight:700;text-align:right;letter-spacing:1px">REALIZADO</div>'+
-      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-align:right;letter-spacing:1px">ACUR.</div>'+
-      '</div>'+rows;
-  } else if(fc&&!real){
-    fcastHTML='<div style="padding:20px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
-      '<div style="font-size:28px;margin-bottom:8px">📊</div>'+
-      '<div style="font-size:13px;color:#64748b;font-weight:600">Previsão lançada para '+mesLabel+'</div>'+
-      '<div style="font-size:11px;color:#94a3b8;margin-top:4px">Lance o fechamento real para ver a comparação</div></div>';
-  } else {
-    fcastHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
-      '<div style="font-size:32px;margin-bottom:10px">🔮</div>'+
-      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem forecast para '+mesLabel+'</div>'+
-      '<div style="font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:14px">Lance uma previsão na aba <strong>Lançamento → Previsão</strong> para ver a comparação forecast vs realizado aqui.</div>'+
-      '<div style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:8px 14px;border-radius:8px;display:inline-block">Isso permite medir a acuracidade das previsões mês a mês</div></div>';
-  }
-
-  // ── RIGHT: Próximo mês ───────────────────────────────────────────
-  var rightHTML='';
-  if(nextFc&&nextScore!==null){
-    var cards='';
-    var sorted=[...IND].sort(function(a,b){
-      const pa=nextFc[a.id]!=null?50:0;
-      const pb=nextFc[b.id]!=null?50:0;
-      return pb-pa;
-    });
-    sorted.slice(0,6).forEach(function(ind){
-      const fv=nextFc[ind.id];
-      const goal=getGoal(ind.id,nextMk);
-      cards+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0">'+
-        '<span style="font-size:12px;color:#334155;font-weight:500">'+ind.icon+' '+ind.name+'</span>'+
-        '<span style="font-size:13px;font-weight:700;color:#0f766e;font-family:JetBrains Mono,monospace">'+(fv!=null?fv.toLocaleString('pt-BR'):'—')+'</span>'+
-        '</div>';
-    });
-    rightHTML='<div style="background:#fff;border:2px solid '+(ng?ng.c:'#94a3b8')+';border-radius:12px;padding:16px 20px;margin-bottom:16px">'+
-      '<div style="font-size:10px;letter-spacing:2px;color:#94a3b8;font-weight:700;margin-bottom:4px">SCORE PROJETADO</div>'+
-      '<div style="display:flex;align-items:baseline;gap:10px">'+
-      '<div style="font-family:Bebas Neue,sans-serif;font-size:52px;line-height:1;color:'+(ng?ng.c:'#94a3b8')+'">'+nextScore+'</div>'+
-      '<div><div style="font-size:14px;font-weight:700;color:'+(ng?ng.c:'#94a3b8')+'">'+(ng?ng.l:'')+'</div>'+
-      '<div style="font-size:12px;color:#64748b">'+(ndiff>0?'+':'')+ndiff+' pts vs '+mesLabel+'</div></div></div></div>'+
-      '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:10px">KPIs Previstos</div>'+
-      cards;
-  } else {
-    rightHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
-      '<div style="font-size:32px;margin-bottom:10px">📈</div>'+
-      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem projeção para '+nextLabel+'</div>'+
-      '<div style="font-size:12px;color:#94a3b8;line-height:1.6">Lance uma previsão para o próximo mês em <strong>Lançamento → Previsão</strong> e veja o score projetado aqui.</div></div>';
-  }
-
-  document.getElementById('mslide1').innerHTML=
-    '<div style="position:absolute;inset:0;display:flex;overflow:hidden">'+
-    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#fff;border-right:2px solid #e2e8f0">'+
-    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">'+
-    '<span>🔮 Forecast vs Realizado — '+mesLabel+'</span>'+
-    '<span style="flex:1;height:1px;background:#e2e8f0;display:inline-block"></span></div>'+
-    fcastHTML+
-    '</div>'+
-    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#f0f4f8">'+
-    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">'+
-    '<span>📈 Projeção — '+nextLabel+'</span>'+
-    '<span style="flex:1;height:1px;background:#cbd5e1;display:inline-block"></span></div>'+
-    rightHTML+
-    '</div></div>';
-}
-
 
 function saveMeetActions(){
   if(!S.sel)return;
@@ -2485,99 +2370,99 @@ function buildSlide1(res){
 }
 function buildSlide2(res){
   const[y,mo]=S.sel.split('-');
-  const fc=S.forecast&&S.forecast[S.sel],real=S.raw&&S.raw[S.sel];
-  let fcastHTML='<div style="font-size:13px;color:var(--mut);padding:20px 0">Nenhuma previsão lançada para este mês.</div>';
+  const mesLabel=MES[parseInt(mo)-1]+' '+y;
+  const fc=S.forecast&&S.forecast[S.sel];
+  const real=S.raw&&S.raw[S.sel];
+  const moN=parseInt(mo),yrN=parseInt(y);
+  const nextMk=moN===12?(yrN+1)+'-01':yrN+'-'+String(moN+1).padStart(2,'0');
+  const[nY,nMo]=nextMk.split('-');
+  const nextLabel=MES[parseInt(nMo)-1]+' '+nY;
+  const nextFc=S.forecast&&S.forecast[nextMk];
+
+  let nextScore=null,ng=null,ndiff=null;
+  if(nextFc){
+    const simR=Object.assign({},real||{},nextFc);
+    const simKpis=calcKPIs(simR);
+    const nextDets=IND.map(function(ind){
+      const v=simKpis[ind.id];
+      const goal=getGoal(ind.id,nextMk);
+      const hb=S.cfg[ind.id]?S.cfg[ind.id].hb:ind.hb;
+      let pct=0;
+      if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
+      return{ind,val:v,pct,goal,weighted:pct*((S.cfg[ind.id]?S.cfg[ind.id].weight:null)||1)};
+    });
+    const tw=IND.reduce(function(s,i){return s+((S.cfg[i.id]?S.cfg[i.id].weight:null)||1);},0);
+    const ws=nextDets.reduce(function(s,d){return s+d.weighted;},0);
+    nextScore=tw>0?Math.round(ws/tw):0;
+    ng=grade(nextScore);
+    ndiff=nextScore-res.score;
+  }
+
+  var fcastHTML='';
   if(fc&&real){
-    fcastHTML=FCAST_FIELDS.map(fld=>{
+    var rows='';
+    FCAST_FIELDS.forEach(function(fld){
       const fv=fc[fld.id],rv=real[fld.id];
       const hasF=fv!=null,hasR=rv!=null;
-      let accH='';
-      if(hasF&&hasR&&rv!==0){const acc=Math.max(0,100-Math.abs(fv-rv)/Math.abs(rv)*100);const ac=acc>=90?'var(--green)':acc>=70?'var(--amber)':'var(--red)';accH=`<span class="m-fa" style="color:${ac}">${acc.toFixed(0)}%</span>`;}
-      const fieldDef=FCAST_FIELDS.find(f=>f.id===fld.id)||FIELDS.find(f=>f.id===fld.id);
-      return`<div class="m-fr"><div class="m-fl">${fieldDef?.label||fld.id}</div><div class="m-fvv">
-        ${hasF?`<span class="m-fp">${fmtV(fv,fld.unit)}</span>`:'<span style="color:#3a5070">—</span>'}
-        ${hasR?`<span class="m-frl">${fmtV(rv,fld.unit)}</span>`:''}
-        ${accH}</div></div>`;
-    }).join('');
-  }
-  // Next month projected score
-  const moN=parseInt(mo),yrN=parseInt(y);
-  const nextMk=moN===12?`${yrN+1}-01`:`${yrN}-${String(moN+1).padStart(2,'0')}`;
-  const nextFc=S.forecast&&S.forecast[nextMk];
-  let nextScore=null,nextDets=null,nextLabel='';
-  if(nextFc){
-    const baseR=(S.raw&&S.raw[S.sel])||{};
-    const simR={...baseR,...nextFc};
-    const simKpis=calcKPIs(simR);
-    const[nY,nMo]=nextMk.split('-');nextLabel=MES[parseInt(nMo)-1]+'/'+nY;
-    nextDets=IND.map(ind=>{const v=simKpis[ind.id];const goal=getGoal(ind.id,nextMk);const hb=S.cfg[ind.id]?.hb??ind.hb;
-      let pct=0;if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}return{ind,val:v,pct,goal,conf:'high'};});
-    const tw=IND.reduce((s,i)=>s+(S.cfg[i.id]?.weight||1),0);
-    const ws=nextDets.reduce((s,d)=>s+d.pct*(S.cfg[d.ind.id]?.weight||1),0);
-    nextScore=tw>0?Math.round(ws/tw):0;
-  }
-  const ng=nextScore!==null?grade(nextScore):null;
-  const ndiff=nextScore!==null?nextScore-res.score:null;
-
-  // KPI table for next month forecast
-  let nextKpiRows='<div style="font-size:13px;color:var(--mut);padding:16px 0">Sem previsão lançada para o próximo mês.</div>';
-  if(nextDets){
-    const saved_fc=(S.meetActions?.[S.sel]?.forecast)||[];
-    const sortedNext=[...nextDets].sort((a,b)=>a.pct-b.pct);
-    nextKpiRows=sortedNext.map((d,i)=>{
-      const col=d.pct<50?'var(--red)':d.pct<75?'var(--amber)':'var(--green)';
-      const cls=d.pct<50?'red':d.pct<75?'amber':'ok';
-      const curDet=res.details.find(x=>x.ind.id===d.ind.id);
-      const curPct=curDet?curDet.pct:null;
-      const diff=curPct!==null?Math.round(d.pct-curPct):null;
-      const diffH=diff!==null?`<span style="font-size:10px;color:${diff>=0?'var(--green)':'var(--red)'};margin-left:3px">${diff>=0?'+':''}${diff}</span>`:'';
-      const sa=saved_fc[i]||{};
-      const showAct=d.pct<80||sa.text||sa.resp;
-      const actRow=showAct?`<div class="m-kr-act">
-          <input class="m-ai-sm act-text" data-type="forecast" data-idx="${i}" data-kpi="${d.ind.id}" placeholder="Ação..." value="${(sa.text||'').replace(/"/g,'&quot;')}">
-          <input class="m-ai-sm act-resp" data-type="forecast" data-idx="${i}" placeholder="Responsável" value="${(sa.resp||'').replace(/"/g,'&quot;')}">
-          <input class="m-ai-sm act-prazo" data-type="forecast" data-idx="${i}" placeholder="Prazo" value="${(sa.prazo||'').replace(/"/g,'&quot;')}">
-          <button class="m-del" onclick="clearKpiAct(this)" title="Limpar">✕</button>
-        </div>`:'';
-      return`<div class="m-kr ${cls}">
-        <div class="m-kr-top">
-          <div class="m-ki">${d.ind.icon}</div>
-          <div><div class="m-kn">${d.ind.short}</div><div style="font-size:10px;color:var(--mut)">${fmtV(d.val,d.ind.unit)}</div><div class="m-kb"><div class="m-kbf" style="width:${d.pct}%;background:${col}"></div></div></div>
-          <div style="text-align:right"><div class="m-kp" style="color:${col};font-size:18px">${Math.round(d.pct)}%</div><div style="font-size:10px;color:var(--mut)">${fmtV(d.goal,d.ind.unit)}</div></div>
-          <div style="text-align:right;line-height:1.4"><span style="font-size:11px;color:${curPct!==null?(curPct>=80?'var(--green)':curPct>=60?'var(--amber)':'var(--red)'):'var(--mut)'}">${curPct!==null?Math.round(curPct)+'%':'—'}</span>${diffH}</div>
-        </div>${actRow}
-      </div>`;
-    }).join('');
+      var acc='—',ac='#94a3b8';
+      if(hasF&&hasR&&rv!==0){const a=Math.max(0,100-Math.abs(fv-rv)/Math.abs(rv)*100);acc=a.toFixed(0)+'%';ac=a>=90?'#059669':a>=70?'#d97706':'#dc2626';}
+      const fd=FCAST_FIELDS.find(function(f){return f.id===fld.id;})||FIELDS.find(function(f){return f.id===fld.id;});
+      rows+='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9">'+
+        '<div style="font-size:13px;color:#334155;font-weight:500">'+(fd?fd.label:fld.id)+'</div>'+
+        '<div style="font-size:13px;color:#6366f1;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasF?fv.toLocaleString('pt-BR'):'—')+'</div>'+
+        '<div style="font-size:13px;color:#0f766e;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasR?rv.toLocaleString('pt-BR'):'—')+'</div>'+
+        '<div style="font-size:12px;font-weight:700;text-align:right;color:'+ac+'">'+acc+'</div>'+
+        '</div>';
+    });
+    fcastHTML='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;padding:0 0 8px;border-bottom:2px solid #e2e8f0;margin-bottom:4px">'+
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px">CAMPO</div>'+
+      '<div style="font-size:10px;color:#6366f1;font-weight:700;text-align:right;letter-spacing:1px">PREVISTO</div>'+
+      '<div style="font-size:10px;color:#0f766e;font-weight:700;text-align:right;letter-spacing:1px">REALIZADO</div>'+
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-align:right;letter-spacing:1px">ACUR.</div>'+
+      '</div>'+rows;
+  } else {
+    fcastHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
+      '<div style="font-size:32px;margin-bottom:10px">🔮</div>'+
+      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem forecast para '+mesLabel+'</div>'+
+      '<div style="font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:14px">Lance uma previsão em <strong>Lançamento → Previsão</strong> para comparar com o realizado.</div></div>';
   }
 
-  const s=document.getElementById('mslide1');
-  s.innerHTML=`<div class="ms2">
-    <div>
-      <div class="m-fc">
-        <div class="m-fe">🔮 Forecast vs Realizado — ${MES[parseInt(mo)-1]}/${y}</div>
-        ${fcastHTML}
-      </div>
-    </div>
-    <div>
-      ${nextScore!==null?`<div class="m-fc" style="margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">
-          <div>
-            <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#4a6080;margin-bottom:3px">Projeção ${nextLabel}</div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:.9;color:${ng.c}">${nextScore}</div>
-            <div style="font-size:13px;font-weight:700;padding:3px 14px;border-radius:12px;display:inline-block;margin-top:6px;color:${ng.c};background:${ng.c}20">${ng.l}</div>
-          </div>
-          <div style="font-size:22px;font-weight:700;color:${ndiff>=0?'var(--green)':'var(--red)'}">${ndiff>=0?'▲ +':'▼ '}${ndiff} pts</div>
-        </div>
-        <div class="m-kh"><div class="m-khl"></div><div class="m-khl">KPI</div><div class="m-khl" style="text-align:right">Proj.</div><div class="m-khl" style="text-align:right">vs Mar</div></div>
-        ${nextKpiRows}
-      </div>`:'<div class="m-fc"><div class="m-fe">Projeção Próximo Mês</div><div style="font-size:13px;color:var(--mut)">Sem previsão lançada. Use a aba Lançamento → Previsão.</div></div>'}
-    </div>
-  </div>`;
+  var rightHTML='';
+  if(nextFc&&nextScore!==null){
+    var cards='';
+    IND.slice(0,6).forEach(function(ind){
+      const fv=nextFc[ind.id];
+      cards+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0">'+
+        '<span style="font-size:12px;color:#334155;font-weight:500">'+ind.icon+' '+ind.name+'</span>'+
+        '<span style="font-size:13px;font-weight:700;color:#0f766e;font-family:JetBrains Mono,monospace">'+(fv!=null?fv.toLocaleString('pt-BR'):'—')+'</span></div>';
+    });
+    rightHTML='<div style="background:#fff;border:2px solid '+(ng?ng.c:'#94a3b8')+';border-radius:12px;padding:16px 20px;margin-bottom:16px">'+
+      '<div style="font-size:10px;letter-spacing:2px;color:#94a3b8;font-weight:700;margin-bottom:4px">SCORE PROJETADO</div>'+
+      '<div style="display:flex;align-items:baseline;gap:10px">'+
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:52px;line-height:1;color:'+(ng?ng.c:'#94a3b8')+'">'+nextScore+'</div>'+
+      '<div><div style="font-size:14px;font-weight:700;color:'+(ng?ng.c:'#94a3b8')+'">'+(ng?ng.l:'')+'</div>'+
+      '<div style="font-size:12px;color:#64748b">'+(ndiff>0?'+':'')+ndiff+' pts vs '+mesLabel+'</div></div></div></div>'+
+      '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:10px">KPIs Previstos</div>'+cards;
+  } else {
+    rightHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
+      '<div style="font-size:32px;margin-bottom:10px">📈</div>'+
+      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem projeção para '+nextLabel+'</div>'+
+      '<div style="font-size:12px;color:#94a3b8;line-height:1.6">Lance uma previsão para o próximo mês em <strong>Lançamento → Previsão</strong>.</div></div>';
+  }
+
+  document.getElementById('mslide1').innerHTML=
+    '<div style="position:absolute;inset:0;display:flex;overflow:hidden">'+
+    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#fff;border-right:2px solid #e2e8f0">'+
+    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px">'+
+    '🔮 Forecast vs Realizado — '+mesLabel+'</div>'+
+    fcastHTML+'</div>'+
+    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#f0f4f8">'+
+    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px">'+
+    '📈 Projeção — '+nextLabel+'</div>'+
+    rightHTML+'</div></div>';
 }
 
-// ═══════════════════════════════════════════
-// PDF EXPORT
-// ═══════════════════════════════════════════
+
 function exportMeetingPDF(){
   saveMeetActions();
   const res=S.sel?calcScore(S.sel):null;if(!res){toast('⚠️ Sem dados para exportar');return;}
