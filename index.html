@@ -1908,8 +1908,10 @@ function saveData(){
   setTimeout(()=>go('dashboard',document.querySelector('[data-page=dashboard]')),900);
 }
 function saveForecast(){
-  const mk=document.getElementById('inpMSel').value;
+  const _sm=document.getElementById('inpSelMes'),_sa=document.getElementById('inpSelAno');
+  const mk=_sm&&_sa?_sa.value+'-'+_sm.value:S.sel;
   if(!mk){toast('⚠️ Selecione um período');return;}
+  S.sel=mk;if(!S.months.includes(mk)){S.months.push(mk);S.months.sort();}
   if(!S.forecast)S.forecast={};
   const fc={};
   FIELDS.forEach(function(fld){
