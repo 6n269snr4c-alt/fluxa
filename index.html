@@ -1313,13 +1313,7 @@ function rPills(){
     selAno.value=curY;
   }
 
-  function onSelChange(){
-    var mk=selAno.value+'-'+selMes.value;
-    S.sel=mk;
-    if(!S.months.includes(mk))S.months.push(mk);
-    S.months.sort();
-    sv();rDash();
-  }
+  
   selMes.addEventListener('change',onSelChange);
   selAno.addEventListener('change',onSelChange);
 
@@ -2473,7 +2467,6 @@ function buildSlide1(res){
   }).join('');
 
 
-
   document.getElementById('mslide0').innerHTML=`
   <div style="position:absolute;inset:0;display:grid;grid-template-columns:260px 1fr;overflow:hidden">
     <!-- COL A: Score -->
@@ -2504,7 +2497,6 @@ function buildSlide1(res){
         <button class="m-add-row" onclick="addAdicRow()">+ Adicionar Ação</button>
       </div>
     </div>
-
 
   </div>`;
   // Populate actAdicBody safely via JS
@@ -2758,6 +2750,11 @@ document.addEventListener('DOMContentLoaded',()=>{
   auth.onAuthStateChanged(async(user)=>{
     if(user){
       await loadUserData(user.uid);
+      // Ensure S.sel points to a month with data, or most recent known
+      var _km=getKnownMonths();
+      if(!S.sel||!_km.includes(S.sel)){
+        S.sel=_km.length?_km[_km.length-1]:null;
+      }
       const emailEl=document.getElementById('userEmail');
       if(emailEl)emailEl.textContent=user.email;
       document.getElementById('appShell').style.display='block';
