@@ -955,7 +955,8 @@ function rActions(){
   filtered.forEach(function(a){
     var sc=statusCfg[a.status]||statusCfg.open;
     var tr=document.createElement('tr');
-    var _prazoOverdue=a.prazo&&a.status==='open'&&new Date(a.prazo+'T00:00:00')<(function(){var d=new Date();d.setHours(0,0,0,0);return d;})();
+    var _isIso=/^\d{4}-\d{2}-\d{2}$/.test(a.prazo||'');
+    var _prazoOverdue=_isIso&&a.status==='open'&&new Date(a.prazo+'T00:00:00')<(function(){var d=new Date();d.setHours(0,0,0,0);return d;})();
     tr.className='act-row'+(_prazoOverdue?' act-row-overdue':'');
 
     // Mês
@@ -983,14 +984,18 @@ function rActions(){
     if(a.prazo){
       var prazoDate=new Date(a.prazo+'T00:00:00');
       var today=new Date();today.setHours(0,0,0,0);
-      var isOverdue=a.status==='open'&&prazoDate<today;
+      var isOverdue=a.status==='open'&&/^\d{4}-\d{2}-\d{2}$/.test(a.prazo)&&prazoDate<today;
       var prazoSpan=document.createElement('span');
       prazoSpan.style.cssText=isOverdue
         ?'color:#ef4444;font-weight:700;font-size:12px'
         :'color:var(--mut);font-size:12px';
-      // Format as dd/mm/yyyy
-      var parts=a.prazo.split('-');
-      prazoSpan.textContent=parts[2]+'/'+parts[1]+'/'+parts[0];
+      // Format as dd/mm/yyyy — suporta YYYY-MM-DD e texto livre legado
+      if(/^\d{4}-\d{2}-\d{2}$/.test(a.prazo)){
+        var parts=a.prazo.split('-');
+        prazoSpan.textContent=parts[2]+'/'+parts[1]+'/'+parts[0];
+      } else {
+        prazoSpan.textContent=a.prazo; // formato legado: exibe como veio
+      }
       tdPrazo.appendChild(prazoSpan);
       if(isOverdue){
         var badge=document.createElement('span');
