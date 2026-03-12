@@ -25,7 +25,7 @@ nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
 .cobadge{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .codot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2.5s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.page{display:none;flex:1;min-height:0;overflow:hidden;flex-direction:column}.page.active{display:flex}
+.page{display:none;flex:1;min-height:0;overflow:hidden;flex-direction:column}.page.active{display:flex}.act-row{border-bottom:1px solid rgba(255,255,255,.05);transition:background .15s}.act-row:hover{background:rgba(255,255,255,.03)}
 .scrollpage{display:none;flex:1;min-height:0;overflow-y:auto;flex-direction:column}.scrollpage.active{display:flex}
 .ph{flex-shrink:0;padding:16px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
 .pt{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--teal)}
@@ -392,6 +392,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <button class="tb" data-page="input" onclick="go('input',this)">Lançamento</button>
     <button class="tb" data-page="sim" onclick="go('sim',this)">Simulador</button>
     <button class="tb" data-page="config" onclick="go('config',this)">Configuração</button>
+    <button class="tb" data-page="actions" onclick="go('actions',this)">📋 Planos de Ação</button>
     <button class="tb" data-page="import" onclick="go('import',this)">Importar</button>
     <button class="tb" data-page="meth" onclick="go('meth',this)">Metodologia</button>
   </div>
@@ -601,6 +602,30 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
 <div class="kpi-modal-bg" id="kpiModal">
   <div class="kpi-modal"><div id="kpiModalBody"></div><button class="btn-cancel" style="margin-top:14px;width:100%;text-align:center" onclick="closeKpi()">Fechar</button></div>
 </div>
+<div class="scrollpage" id="page-actions">
+  <div class="ph">
+    <div>
+      <div class="pt">📋 Planos de Ação</div>
+      <div class="ps">Ações geradas no Modo Reunião — acompanhe responsáveis, prazos e status</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="actFilterMes" class="csel" style="font-size:12px" onchange="rActions()">
+        <option value="">Todos os meses</option>
+      </select>
+      <select id="actFilterStatus" class="csel" style="font-size:12px" onchange="rActions()">
+        <option value="">Todos os status</option>
+        <option value="open">Em aberto</option>
+        <option value="done">Concluído</option>
+        <option value="cancelled">Cancelado</option>
+      </select>
+      <div id="actSummary" style="font-size:11px;color:var(--mut)"></div>
+    </div>
+  </div>
+  <div style="padding:0 24px 32px">
+    <div id="actionsTable"></div>
+  </div>
+</div>
+
 <div id="meetingOverlay">
   <div class="mhdr">
     <div class="mhdr-l"><span class="mhdr-title">▶ MODO REUNIÃO</span><span class="mhdr-co" id="meetCoLbl"></span></div>
@@ -748,6 +773,7 @@ let S={
   raw:{},
   forecast:{},
   meetActions:{},
+  actions:[],
   sel:null,
 };
 
@@ -777,6 +803,7 @@ async function loadUserData(uid){
       if(d.raw)S.raw=d.raw;
       if(d.forecast)S.forecast=d.forecast;
       if(d.meetActions)S.meetActions=d.meetActions;
+      if(d.actions)S.actions=d.actions;
       if(d.sel)S.sel=d.sel;
     }
   }catch(e){console.warn('Load error:',e);}
@@ -832,6 +859,163 @@ function calcConf(dets){
 // ═══════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// PLANOS DE AÇÃO
+// ═══════════════════════════════════════════
+function syncActionsFromMeeting(mk){
+  if(!mk||!S.meetActions||!S.meetActions[mk])return;
+  if(!S.actions)S.actions=[];
+  var rows=S.meetActions[mk].fechamento||[];
+  rows.forEach(function(row){
+    if(!row.text||!row.text.trim())return;
+    var[y,mo]=mk.split('-');
+    var mesLabel=MES[parseInt(mo)-1]+'/'+y;
+    // Find existing action for same mk+kpi+text (upsert, no duplicates)
+    var existing=S.actions.find(function(a){return a.mk===mk&&a.kpi===row.kpi&&a.text===row.text;});
+    if(!existing){
+      S.actions.push({
+        id:Date.now()+'-'+Math.random().toString(36).slice(2,7),
+        mk:mk, mes:mesLabel, kpi:row.kpi||'—',
+        text:row.text.trim(), resp:row.resp||'', prazo:row.prazo||'',
+        status:'open', obs:'', criadoEm:new Date().toISOString()
+      });
+    }
+  });
+}
+
+function rActions(){
+  if(!S.actions)S.actions=[];
+  var filterMes=document.getElementById('actFilterMes');
+  var filterStatus=document.getElementById('actFilterStatus');
+  var mesSel=filterMes?filterMes.value:'';
+  var statusSel=filterStatus?filterStatus.value:'';
+
+  // Populate month filter
+  var meses=[...new Set(S.actions.map(function(a){return a.mk;}))].sort().reverse();
+  if(filterMes){
+    var prev=filterMes.value;
+    filterMes.innerHTML='<option value="">Todos os meses</option>';
+    meses.forEach(function(mk){
+      var parts=mk.split('-');
+      var o=document.createElement('option');
+      o.value=mk;o.textContent=MES[parseInt(parts[1])-1]+'/'+parts[0];
+      if(mk===prev)o.selected=true;
+      filterMes.appendChild(o);
+    });
+  }
+
+  var filtered=S.actions.filter(function(a){
+    if(mesSel&&a.mk!==mesSel)return false;
+    if(statusSel&&a.status!==statusSel)return false;
+    return true;
+  }).sort(function(a,b){return b.criadoEm.localeCompare(a.criadoEm);});
+
+  var open=S.actions.filter(function(a){return a.status==='open';}).length;
+  var sumEl=document.getElementById('actSummary');
+  if(sumEl)sumEl.textContent=open+' em aberto · '+S.actions.length+' total';
+
+  var tbl=document.getElementById('actionsTable');
+  if(!tbl)return;
+  tbl.innerHTML='';
+
+  if(!filtered.length){
+    var empty=document.createElement('div');
+    empty.style.cssText='text-align:center;padding:60px 20px;color:var(--mut)';
+    empty.innerHTML='<div style="font-size:40px;margin-bottom:12px">📋</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:8px">Nenhuma ação encontrada</div>'
+      +'<div style="font-size:12px">As ações são geradas no <strong>Modo Reunião</strong>. Abra uma reunião, preencha os planos de ação e eles aparecerão aqui.</div>';
+    tbl.appendChild(empty);
+    return;
+  }
+
+  var statusCfg={
+    open:{label:'Em aberto',color:'#f59e0b',bg:'rgba(245,158,11,.12)'},
+    done:{label:'Concluído',color:'#10b981',bg:'rgba(16,185,129,.12)'},
+    cancelled:{label:'Cancelado',color:'#6b7280',bg:'rgba(107,114,128,.12)'}
+  };
+
+  var wrap=document.createElement('div');wrap.style.overflowX='auto';
+  var table=document.createElement('table');
+  table.style.cssText='width:100%;border-collapse:collapse;font-size:13px';
+
+  // Header
+  var thead=document.createElement('thead');
+  var hrow=document.createElement('tr');
+  hrow.style.borderBottom='2px solid rgba(255,255,255,.08)';
+  ['MÊS','KPI','AÇÃO','RESPONSÁVEL','PRAZO','STATUS','OBSERVAÇÃO'].forEach(function(col){
+    var th=document.createElement('th');
+    th.style.cssText='text-align:left;padding:10px 12px;font-size:10px;letter-spacing:1px;color:var(--mut);font-weight:700;white-space:nowrap';
+    th.textContent=col;hrow.appendChild(th);
+  });
+  thead.appendChild(hrow);table.appendChild(thead);
+
+  // Body
+  var tbody=document.createElement('tbody');
+  filtered.forEach(function(a){
+    var sc=statusCfg[a.status]||statusCfg.open;
+    var tr=document.createElement('tr');tr.className='act-row';
+
+    // Mês
+    var tdMes=document.createElement('td');
+    tdMes.style.cssText='padding:12px;white-space:nowrap;color:var(--mut);font-size:12px';
+    tdMes.textContent=a.mes;tr.appendChild(tdMes);
+
+    // KPI
+    var tdKpi=document.createElement('td');tdKpi.style.padding='12px';
+    var kpiSpan=document.createElement('span');
+    kpiSpan.style.cssText='font-size:11px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.1);padding:2px 8px;border-radius:20px';
+    kpiSpan.textContent=a.kpi||'—';tdKpi.appendChild(kpiSpan);tr.appendChild(tdKpi);
+
+    // Ação
+    var tdAct=document.createElement('td');
+    tdAct.style.cssText='padding:12px;color:var(--text);font-weight:500;max-width:260px';
+    tdAct.textContent=a.text;tr.appendChild(tdAct);
+
+    // Responsável
+    var tdResp=document.createElement('td');tdResp.style.cssText='padding:12px;color:var(--mut)';
+    tdResp.textContent=a.resp||'—';tr.appendChild(tdResp);
+
+    // Prazo
+    var tdPrazo=document.createElement('td');tdPrazo.style.cssText='padding:12px;color:var(--mut);white-space:nowrap';
+    tdPrazo.textContent=a.prazo||'—';tr.appendChild(tdPrazo);
+
+    // Status select
+    var tdSt=document.createElement('td');tdSt.style.padding='12px';
+    var sel=document.createElement('select');
+    sel.style.cssText='background:'+sc.bg+';color:'+sc.color+';border:1px solid '+sc.color+'40;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;outline:none';
+    [['open','Em aberto'],['done','Concluído'],['cancelled','Cancelado']].forEach(function(opt){
+      var o=document.createElement('option');o.value=opt[0];o.textContent=opt[1];
+      if(a.status===opt[0])o.selected=true;
+      sel.appendChild(o);
+    });
+    (function(aid){sel.addEventListener('change',function(){updateActionStatus(aid,this.value);});})(a.id);
+    tdSt.appendChild(sel);tr.appendChild(tdSt);
+
+    // Observação
+    var tdObs=document.createElement('td');tdObs.style.cssText='padding:12px;min-width:180px';
+    var obsInp=document.createElement('input');
+    obsInp.type='text';obsInp.value=a.obs||'';obsInp.placeholder='Adicionar observação...';
+    obsInp.style.cssText='background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);color:var(--text);font-size:12px;width:100%;outline:none;padding:2px 0;font-family:Outfit,sans-serif';
+    (function(aid){obsInp.addEventListener('change',function(){updateActionObs(aid,this.value);});})(a.id);
+    tdObs.appendChild(obsInp);tr.appendChild(tdObs);
+
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+  tbl.appendChild(wrap);
+}
+
+function updateActionStatus(id,status){
+  var a=S.actions.find(function(x){return x.id===id;});
+  if(a){a.status=status;sv();rActions();}
+}
+
+function updateActionObs(id,obs){
+  var a=S.actions.find(function(x){return x.id===id;});
+  if(a){a.obs=obs;sv();}
+}
+
 function go(name,btn){
   document.querySelectorAll('.page,.scrollpage').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tb').forEach(b=>b.classList.remove('active'));
@@ -842,6 +1026,7 @@ function go(name,btn){
   if(name==='config')rConfig();
   if(name==='sim')initSim();
   if(name==='import')rImportPage();
+  if(name==='actions')rActions();
   if(name==='meth')rMeth();
 }
 
@@ -1185,6 +1370,9 @@ async function rDiag(res){
     if(!txt)throw new Error('Resposta vazia');
     _renderDiag(el,txt,res,worst,best,MES[parseInt(mo)-1]+'/'+y);
     _chatCtx=res;
+    var _oa=(S.actions||[]).filter(function(a){return a.status==='open';}).length;
+    var _aw=document.getElementById('actWidget'),_awc=document.getElementById('actWidgetCount');
+    if(_aw&&_awc){_aw.style.display=_oa>0?'flex':'none';_awc.textContent=_oa+(_oa===1?' ação':' ações')+' em aberto';}
   }).catch(function(e){
     el.innerHTML='<div class="diag-box"><p style="color:var(--amber)">Erro ao gerar diagnóstico: '+(e.message||'verifique a API key')+'</p>'
       +(worst[0]?'<div class="dact">⚠️ Foco: '+worst[0].ind.name+' em '+Math.round(worst[0].adjPct)+'% da meta</div>':'')+'</div>';
@@ -1920,6 +2108,7 @@ function saveMeetActions(){
     fcTexts.forEach((el,i)=>{fcArr.push({text:el.value?.trim()||'',resp:fcResps[i]?.value?.trim()||'',prazo:fcPrazos[i]?.value?.trim()||'',kpi:el.dataset.kpi||''});});
     S.meetActions[S.sel].forecast=fcArr;
   }
+  syncActionsFromMeeting(S.sel);
   sv();
 }
 function clearKpiAct(btn){
