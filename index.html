@@ -952,7 +952,7 @@ function rActions(){
   var thead=document.createElement('thead');
   var hrow=document.createElement('tr');
   hrow.style.borderBottom='2px solid rgba(255,255,255,.08)';
-  ['MÊS','KPI','AÇÃO','RESPONSÁVEL','PRAZO','STATUS','OBSERVAÇÃO'].forEach(function(col){
+  ['MÊS','KPI','AÇÃO','RESPONSÁVEL','PRAZO','STATUS','OBSERVAÇÃO',''].forEach(function(col){
     var th=document.createElement('th');
     th.style.cssText='text-align:left;padding:10px 12px;font-size:10px;letter-spacing:1px;color:var(--mut);font-weight:700;white-space:nowrap';
     th.textContent=col;hrow.appendChild(th);
@@ -1032,6 +1032,17 @@ function rActions(){
     (function(aid){obsInp.addEventListener('change',function(){updateActionObs(aid,this.value);});})(a.id);
     tdObs.appendChild(obsInp);tr.appendChild(tdObs);
 
+    // Excluir
+    var tdDel=document.createElement('td');tdDel.style.padding='8px 12px';
+    var delBtn=document.createElement('button');
+    delBtn.title='Excluir ação';
+    delBtn.textContent='🗑';
+    delBtn.style.cssText='background:none;border:none;cursor:pointer;font-size:14px;opacity:.4;transition:opacity .15s;padding:4px';
+    delBtn.onmouseover=function(){this.style.opacity='1';};
+    delBtn.onmouseout=function(){this.style.opacity='.4';};
+    (function(aid){delBtn.addEventListener('click',function(){deleteAction(aid);});})(a.id);
+    tdDel.appendChild(delBtn);tr.appendChild(tdDel);
+
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
@@ -1039,6 +1050,11 @@ function rActions(){
   tbl.appendChild(wrap);
 }
 
+function deleteAction(id){
+  if(!confirm('Excluir este plano de ação?'))return;
+  S.actions=(S.actions||[]).filter(function(a){return a.id!==id;});
+  sv();rActions();
+}
 function updateActionStatus(id,status){
   var a=S.actions.find(function(x){return x.id===id;});
   if(a){a.status=status;sv();rActions();}
