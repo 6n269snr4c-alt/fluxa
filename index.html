@@ -1270,7 +1270,9 @@ function getKnownMonths(){
   if(S.data)Object.keys(S.data).forEach(function(m){if(S.data[m]&&Object.keys(S.data[m]).length)keys.add(m);});
   if(S.raw)Object.keys(S.raw).forEach(function(m){if(S.raw[m]&&Object.keys(S.raw[m]).length)keys.add(m);});
   if(S.forecast)Object.keys(S.forecast).forEach(function(m){if(S.forecast[m]&&Object.keys(S.forecast[m]).length)keys.add(m);});
-  return Array.from(keys).sort();
+  var result=Array.from(keys).sort();
+  console.log('[getKnownMonths] result=',result);
+  return result;
 }
 function rPills(){
   const c=document.getElementById('mpills');c.innerHTML='';
@@ -1380,7 +1382,10 @@ function rDash(){
   const ss=document.getElementById('scoreSector');if(ss)ss.textContent=S.sector||'';
   const nl=document.getElementById('navLogo');if(S.logo){nl.src=S.logo;nl.style.display='block';}else nl.style.display='none';
   rPills();rTrend();
+  // DEBUG — remover após diagnóstico
+  console.log('[rDash] S.sel=',S.sel,'data keys=',Object.keys(S.data||{}),'raw keys=',Object.keys(S.raw||{}),'months=',S.months);
   const res=S.sel?calcScore(S.sel):null;
+  console.log('[rDash] calcScore result=',res?res.score:'null');
   // Lucro Líquido card
   (function(){
     var lc=document.getElementById('lucroCard');
