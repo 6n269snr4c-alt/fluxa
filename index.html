@@ -1190,6 +1190,48 @@ async function rDiag(res){
       +(worst[0]?'<div class="dact">⚠️ Foco: '+worst[0].ind.name+' em '+Math.round(worst[0].adjPct)+'% da meta</div>':'')+'</div>';
   });
 }
+function _renderDiag(el,txt,res,worst,best,mesLabel){
+  // Strip markdown residue
+  txt=txt.replace(/#+\s*/g,'').replace(/\*\*/g,'').replace(/\*/g,'').trim();
+  // Detect sections
+  var situacao='',alertas=[],acoes=[];
+  var lines=txt.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+  var mode='sit';
+  lines.forEach(function(line){
+    var lu=line.toUpperCase();
+    if(lu.startsWith('SITUACAO')||lu.startsWith('SITUAÇÃO')){mode='sit';var rest=line.replace(/^[^:]+:/,'').trim();if(rest)situacao=rest;return;}
+    if(lu.startsWith('ALERTAS')||lu.startsWith('ALERTA')){mode='alert';return;}
+    if(lu.startsWith('ACOES')||lu.startsWith('AÇÕES')||lu.startsWith('ACAO')){mode='act';return;}
+    if(mode==='sit'&&!situacao)situacao=line;
+    else if(mode==='alert'&&(line.startsWith('•')||line.startsWith('-')))alertas.push(line.replace(/^[•\-]\s*/,''));
+    else if(mode==='act'&&/^[123][\.\)]/.test(line))acoes.push(line.replace(/^[123][\.\)]\s*/,''));
+  });
+  // Fallback: show raw if structure not detected
+  if(!situacao&&!alertas.length&&!acoes.length){
+    el.innerHTML='<div class="diag-box"><p>'+txt+'</p></div>';return;
+  }
+  var g=grade(res.score);
+  var html='<div class="diag-box">';
+  html+='<div class="diag-score-badge" style="border-color:'+(g?g.c:'#94a3b8')+';color:'+(g?g.c:'#94a3b8')+'">'
+    +mesLabel+' &nbsp;·&nbsp; <span style="font-family:Bebas Neue,sans-serif;font-size:18px">'+res.score+'</span>/100 '+(g?g.l:'')+'</div>';
+  if(situacao)html+='<div class="diag-narrative">'+situacao+'</div>';
+  if(alertas.length){
+    html+='<div class="diag-section-title">⚠️ Alertas</div>';
+    alertas.forEach(function(a){html+='<div class="dalert">• '+a+'</div>';});
+  }
+  if(acoes.length){
+    html+='<div class="diag-section-title">🎯 Ações</div>';
+    acoes.forEach(function(a,i){html+='<div class="dact">'+(i+1)+'. '+a+'</div>';});
+  }
+  html+='</div>';
+  // KPI chips
+  html+='<div class="dchips">';
+  worst.slice(0,2).forEach(function(d){html+='<span class="dchip dcr">↓'+d.ind.short+'</span>';});
+  best.slice(-1).forEach(function(d){html+='<span class="dchip dcg">✓'+d.ind.short+'</span>';});
+  html+='</div>';
+  el.innerHTML=html;
+}
+
 let _chatCtx=null,_chatHist=[];
 function openChat(){
   const popup=document.getElementById('chatPopup');
