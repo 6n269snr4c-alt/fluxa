@@ -2183,136 +2183,116 @@ function buildSlide2(res){
   const mesLabel=MES[parseInt(mo)-1]+' '+y;
   const fc=S.forecast&&S.forecast[S.sel];
   const real=S.raw&&S.raw[S.sel];
-
   const moN=parseInt(mo),yrN=parseInt(y);
-  const nextMk=moN===12?`${yrN+1}-01`:`${yrN}-${String(moN+1).padStart(2,'0')}`;
+  const nextMk=moN===12?(yrN+1)+'-01':yrN+'-'+String(moN+1).padStart(2,'0');
   const[nY,nMo]=nextMk.split('-');
   const nextLabel=MES[parseInt(nMo)-1]+' '+nY;
   const nextFc=S.forecast&&S.forecast[nextMk];
 
-  // Compute next month
-  let nextScore=null,nextDets=null,ng=null,ndiff=null;
+  // ── Próximo mês score ────────────────────────────────────────────
+  let nextScore=null,ng=null,ndiff=null;
   if(nextFc){
-    const simR={...(real||{}),...nextFc};
+    const simR=Object.assign({},real||{},nextFc);
     const simKpis=calcKPIs(simR);
-    nextDets=IND.map(ind=>{
+    const nextDets=IND.map(function(ind){
       const v=simKpis[ind.id];
       const goal=getGoal(ind.id,nextMk);
-      const hb=S.cfg[ind.id]?.hb??ind.hb;
+      const hb=S.cfg[ind.id]?S.cfg[ind.id].hb:ind.hb;
       let pct=0;
       if(v!==null&&goal){pct=hb?Math.min((v/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(v,.001))*100,150));pct=Math.max(0,Math.min(100,pct));}
-      return{ind,val:v,pct,goal};
+      return{ind,val:v,pct,goal,weighted:pct*((S.cfg[ind.id]?S.cfg[ind.id].weight:null)||1)};
     });
-    const tw=IND.reduce((s,i)=>s+(S.cfg[i.id]?.weight||1),0);
-    const ws=nextDets.reduce((s,d)=>s+d.pct*(S.cfg[d.ind.id]?.weight||1),0);
+    const tw=IND.reduce(function(s,i){return s+((S.cfg[i.id]?S.cfg[i.id].weight:null)||1);},0);
+    const ws=nextDets.reduce(function(s,d){return s+d.weighted;},0);
     nextScore=tw>0?Math.round(ws/tw):0;
     ng=grade(nextScore);
     ndiff=nextScore-res.score;
   }
 
-  // LEFT: Forecast vs Realizado
-  let fcastHTML='';
+  // ── LEFT: Forecast vs Realizado ──────────────────────────────────
+  var fcastHTML='';
   if(fc&&real){
-    const rows=FCAST_FIELDS.map(fld=>{
+    var rows='';
+    FCAST_FIELDS.forEach(function(fld){
       const fv=fc[fld.id],rv=real[fld.id];
       const hasF=fv!=null,hasR=rv!=null;
-      let acc='—',ac='#94a3b8';
+      var acc='—',ac='#94a3b8';
       if(hasF&&hasR&&rv!==0){const a=Math.max(0,100-Math.abs(fv-rv)/Math.abs(rv)*100);acc=a.toFixed(0)+'%';ac=a>=90?'#059669':a>=70?'#d97706':'#dc2626';}
-      const fd=FCAST_FIELDS.find(f=>f.id===fld.id)||FIELDS.find(f=>f.id===fld.id);
-      return`
-        <div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9">
-          <div style="font-size:13px;color:#334155;font-weight:500">${fd?.label||fld.id}</div>
-          <div style="font-size:13px;color:#6366f1;font-weight:700;text-align:right;font-family:monospace">${hasF?fmtV(fv,fld.unit):'—'}</div>
-          <div style="font-size:13px;color:#0369a1;font-weight:600;text-align:right;font-family:monospace">${hasR?fmtV(rv,fld.unit):'—'}</div>
-          <div style="font-size:17px;color:${ac};font-weight:700;text-align:right">${acc}</div>
-        </div>`;
-    }).join('');
-    fcastHTML=`
-      <div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;padding-bottom:8px;border-bottom:2px solid #e2e8f0;margin-bottom:2px">
-        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;font-weight:700">Campo</div>
-        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#6366f1;text-align:right;font-weight:700">Previsto</div>
-        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#0369a1;text-align:right;font-weight:700">Realizado</div>
-        <div style="font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#94a3b8;text-align:right;font-weight:700">Assert.</div>
-      </div>${rows}`;
+      const fd=FCAST_FIELDS.find(function(f){return f.id===fld.id;})||FIELDS.find(function(f){return f.id===fld.id;});
+      rows+='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #f1f5f9">'+
+        '<div style="font-size:13px;color:#334155;font-weight:500">'+(fd?fd.label:fld.id)+'</div>'+
+        '<div style="font-size:13px;color:#6366f1;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasF?fv.toLocaleString('pt-BR'):'—')+'</div>'+
+        '<div style="font-size:13px;color:#0f766e;font-weight:700;text-align:right;font-family:JetBrains Mono,monospace">'+(hasR?rv.toLocaleString('pt-BR'):'—')+'</div>'+
+        '<div style="font-size:12px;font-weight:700;text-align:right;color:'+ac+'">'+acc+'</div>'+
+        '</div>';
+    });
+    fcastHTML='<div style="display:grid;grid-template-columns:1fr 88px 88px 50px;gap:8px;padding:0 0 8px;border-bottom:2px solid #e2e8f0;margin-bottom:4px">'+
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px">CAMPO</div>'+
+      '<div style="font-size:10px;color:#6366f1;font-weight:700;text-align:right;letter-spacing:1px">PREVISTO</div>'+
+      '<div style="font-size:10px;color:#0f766e;font-weight:700;text-align:right;letter-spacing:1px">REALIZADO</div>'+
+      '<div style="font-size:10px;color:#94a3b8;font-weight:700;text-align:right;letter-spacing:1px">ACUR.</div>'+
+      '</div>'+rows;
+  } else if(fc&&!real){
+    fcastHTML='<div style="padding:20px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
+      '<div style="font-size:28px;margin-bottom:8px">📊</div>'+
+      '<div style="font-size:13px;color:#64748b;font-weight:600">Previsão lançada para '+mesLabel+'</div>'+
+      '<div style="font-size:11px;color:#94a3b8;margin-top:4px">Lance o fechamento real para ver a comparação</div></div>';
   } else {
-    fcastHTML=`<p style="color:#94a3b8;font-size:13px;padding:20px 0;text-align:center">Nenhuma previsão lançada para ${mesLabel}.</p>`;
+    fcastHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
+      '<div style="font-size:32px;margin-bottom:10px">🔮</div>'+
+      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem forecast para '+mesLabel+'</div>'+
+      '<div style="font-size:12px;color:#94a3b8;line-height:1.6;margin-bottom:14px">Lance uma previsão na aba <strong>Lançamento → Previsão</strong> para ver a comparação forecast vs realizado aqui.</div>'+
+      '<div style="font-size:11px;background:#e0f2fe;color:#0369a1;padding:8px 14px;border-radius:8px;display:inline-block">Isso permite medir a acuracidade das previsões mês a mês</div></div>';
   }
 
-  // RIGHT: Projeção próximo mês
-  const saved_fc=(S.meetActions?.[S.sel]?.forecast)||[];
-  let rightHTML='';
-  if(nextDets){
-    const ngc=ng.c.replace('var(--green)','#059669').replace('var(--teal)','#0284c7').replace('var(--amber)','#d97706').replace('var(--red)','#dc2626');
-    const dc=ndiff>=0?'#059669':'#dc2626';
-    const cards=[...nextDets].sort((a,b)=>a.pct-b.pct).map((d,i)=>{
-      const col=d.pct<50?'#ef4444':d.pct<75?'#f59e0b':'#10b981';
-      const borderCol=d.pct<50?'#ef4444':d.pct<75?'#f59e0b':'#10b981';
-      const bgCol=d.pct<50?'#fff5f5':d.pct<75?'#fffbf0':'#f0fdf8';
-      const curDet=res.details.find(x=>x.ind.id===d.ind.id);
-      const diff=curDet?Math.round(d.pct-curDet.pct):null;
-      const diffH=diff!==null?`<div style="font-size:11px;font-weight:600;color:${diff>=0?'#059669':'#dc2626'};margin-top:3px">${diff>=0?'▲ +':'▼ '}${diff} vs ${mesLabel}</div>`:'';
-      const sa=saved_fc[i]||{};
-      const showAct=d.pct<80||sa.text||sa.resp;
-      const actRow=showAct?`
-        <div style="display:grid;grid-template-columns:1fr 120px 90px 26px;gap:5px;padding:8px 14px 10px;border-top:1px solid #e2e8f0;background:#f8fafc">
-          <input class="kact-inp act-text" data-type="forecast" data-idx="${i}" data-kpi="${d.ind.id}" placeholder="Ação..." value="${(sa.text||'').replace(/"/g,'&quot;')}">
-          <input class="kact-inp act-resp" data-type="forecast" data-idx="${i}" placeholder="Responsável" value="${(sa.resp||'').replace(/"/g,'&quot;')}">
-          <input class="kact-inp act-prazo" data-type="forecast" data-idx="${i}" placeholder="Prazo" value="${(sa.prazo||'').replace(/"/g,'&quot;')}">
-          <button class="kcard-del" onclick="clearKpiAct(this)" title="Limpar">✕</button>
-        </div>`:'';
-      return`
-        <div style="background:${bgCol};border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.06);border-left:5px solid ${borderCol};margin-bottom:8px">
-          <div style="display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:12px 14px">
-            <div style="font-size:24px;text-align:center">${d.ind.icon}</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#1e293b">${d.ind.name}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px">${fmtV(d.val,d.ind.unit)} · meta ${fmtV(d.goal,d.ind.unit)}</div>
-              <div style="height:3px;background:#e2e8f0;border-radius:2px;margin-top:5px;overflow:hidden">
-                <div style="width:${d.pct}%;height:100%;background:${col};border-radius:2px"></div>
-              </div>
-            </div>
-            <div style="text-align:right;min-width:66px">
-              <div style="font-family:'Bebas Neue',sans-serif;font-size:34px;line-height:1;color:${col}">${Math.round(d.pct)}%</div>
-              ${diffH}
-            </div>
-          </div>${actRow}
-        </div>`;
-    }).join('');
-    rightHTML=`
-      <div style="display:flex;align-items:center;gap:18px;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:16px 20px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.05)">
-        <div>
-          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:4px">Score Projetado</div>
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:80px;line-height:.85;color:${ngc}">${nextScore}</div>
-        </div>
-        <div>
-          <div style="font-size:14px;font-weight:700;color:${ngc};padding:5px 16px;background:${ngc}18;border-radius:10px;border:1px solid ${ngc}44;display:inline-block;margin-bottom:10px">${ng.l}</div><br>
-          <div style="font-size:15px;font-weight:700;color:${dc}">${ndiff>=0?'▲ +':'▼ '}${ndiff} pts vs ${mesLabel}</div>
-        </div>
-      </div>
-      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:10px">KPIs — Pior para melhor</div>
-      ${cards}`;
+  // ── RIGHT: Próximo mês ───────────────────────────────────────────
+  var rightHTML='';
+  if(nextFc&&nextScore!==null){
+    var cards='';
+    var sorted=[...IND].sort(function(a,b){
+      const pa=nextFc[a.id]!=null?50:0;
+      const pb=nextFc[b.id]!=null?50:0;
+      return pb-pa;
+    });
+    sorted.slice(0,6).forEach(function(ind){
+      const fv=nextFc[ind.id];
+      const goal=getGoal(ind.id,nextMk);
+      cards+='<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0">'+
+        '<span style="font-size:12px;color:#334155;font-weight:500">'+ind.icon+' '+ind.name+'</span>'+
+        '<span style="font-size:13px;font-weight:700;color:#0f766e;font-family:JetBrains Mono,monospace">'+(fv!=null?fv.toLocaleString('pt-BR'):'—')+'</span>'+
+        '</div>';
+    });
+    rightHTML='<div style="background:#fff;border:2px solid '+(ng?ng.c:'#94a3b8')+';border-radius:12px;padding:16px 20px;margin-bottom:16px">'+
+      '<div style="font-size:10px;letter-spacing:2px;color:#94a3b8;font-weight:700;margin-bottom:4px">SCORE PROJETADO</div>'+
+      '<div style="display:flex;align-items:baseline;gap:10px">'+
+      '<div style="font-family:Bebas Neue,sans-serif;font-size:52px;line-height:1;color:'+(ng?ng.c:'#94a3b8')+'">'+nextScore+'</div>'+
+      '<div><div style="font-size:14px;font-weight:700;color:'+(ng?ng.c:'#94a3b8')+'">'+(ng?ng.l:'')+'</div>'+
+      '<div style="font-size:12px;color:#64748b">'+(ndiff>0?'+':'')+ndiff+' pts vs '+mesLabel+'</div></div></div></div>'+
+      '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:10px">KPIs Previstos</div>'+
+      cards;
   } else {
-    rightHTML=`<p style="color:#94a3b8;font-size:13px;padding:20px 0;text-align:center">Sem previsão lançada para ${nextLabel}.<br><span style="font-size:11px">Use Lançamento → Previsão para adicionar.</span></p>`;
+    rightHTML='<div style="padding:24px;background:#f8fafc;border-radius:10px;border:1px dashed #e2e8f0;text-align:center">'+
+      '<div style="font-size:32px;margin-bottom:10px">📈</div>'+
+      '<div style="font-size:14px;color:#475569;font-weight:700;margin-bottom:6px">Sem projeção para '+nextLabel+'</div>'+
+      '<div style="font-size:12px;color:#94a3b8;line-height:1.6">Lance uma previsão para o próximo mês em <strong>Lançamento → Previsão</strong> e veja o score projetado aqui.</div></div>';
   }
 
-  document.getElementById('mslide1').innerHTML=`
-    <div style="position:absolute;inset:0;display:flex;overflow:hidden">
-      <div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#fff;border-right:2px solid #e2e8f0">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">
-          🔮 Forecast vs Realizado — ${mesLabel}
-          <span style="flex:1;height:1px;background:#e2e8f0;display:inline-block"></span>
-        </div>
-        ${fcastHTML}
-      </div>
-      <div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#f0f4f8">
-        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px">
-          📈 Projeção — ${nextLabel}
-          <span style="flex:1;height:1px;background:#cbd5e1;display:inline-block"></span>
-        </div>
-        ${rightHTML}
-      </div>
-    </div>`;
+  document.getElementById('mslide1').innerHTML=
+    '<div style="position:absolute;inset:0;display:flex;overflow:hidden">'+
+    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#fff;border-right:2px solid #e2e8f0">'+
+    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">'+
+    '<span>🔮 Forecast vs Realizado — '+mesLabel+'</span>'+
+    '<span style="flex:1;height:1px;background:#e2e8f0;display:inline-block"></span></div>'+
+    fcastHTML+
+    '</div>'+
+    '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#f0f4f8">'+
+    '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">'+
+    '<span>📈 Projeção — '+nextLabel+'</span>'+
+    '<span style="flex:1;height:1px;background:#cbd5e1;display:inline-block"></span></div>'+
+    rightHTML+
+    '</div></div>';
 }
+
 
 function saveMeetActions(){
   if(!S.sel)return;
