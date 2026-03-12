@@ -1161,23 +1161,34 @@ function closeKpi(){document.getElementById('kpiModal').classList.remove('open')
 async function rDiag(res){
   const el=document.getElementById('diagC');
   el.innerHTML='<div class="dload"><div class="spin"></div><span>Analisando...</span></div>';
-  const sorted=[...res.details].sort((a,b)=>a.adjPct-b.adjPct);
-  const worst=sorted.slice(0,3),best=sorted.slice(-2),lc=res.details.filter(d=>d.conf!=='high');
-  const cf=calcConf(res.details);const[y,mo]=S.sel.split('-');
-  const prompt=`CFO experiente. Diagnóstico executivo ${MES[parseInt(mo)-1]}/${y}. Máximo 100 palavras. Direto.
-Empresa: ${S.company}${S.sector?' · '+S.sector:''} | Saúde: ${res.score}% | Conf: ${cf?cf.p+'%':'N/A'}
-Críticos: ${worst.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
-Destaques: ${best.map(d=>d.ind.name+' '+Math.round(d.pct)+'%').join(', ')}
-Formato: diagnóstico (2 frases), 1. ação, 2. ação`;
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,messages:[{role:"user",content:prompt}]})});
-    const data=await r.json();const txt=(data.content||[]).map(c=>c.text||'').join('').trim();
-    if(!txt)throw new Error();
-    const lines=txt.split('\n').filter(l=>l.trim());const diag=lines[0]||'';
-    const acts=lines.filter(l=>/^[12][\.\)]\s/.test(l.trim())).slice(0,2);
-    el.innerHTML=`<div class="diag-box"><p>${diag}</p>${acts.map(a=>`<div class="dact">${a}</div>`).join('')}</div><div class="dchips">${worst.slice(0,2).map(d=>`<span class="dchip dcr">↓${d.ind.short}</span>`).join('')}${best.slice(-1).map(d=>`<span class="dchip dcg">✓${d.ind.short}</span>`).join('')}</div>`;
+  const sorted=[...res.details].sort(function(a,b){return a.adjPct-b.adjPct;});
+  const worst=sorted.slice(0,3),best=sorted.slice(-2);
+  const cf=calcConf(res.details);
+  const[y,mo]=S.sel.split('-');
+  const kpiAll=res.details.map(function(d){return d.ind.name+': '+Math.round(d.adjPct)+'% da meta';}).join(' | ');
+  const scoreLabel=res.score>=90?'SAUDÁVEL':res.score>=70?'ATENÇÃO':res.score>=50?'CRÍTICO':'GRAVE';
+  const prompt='Você é um CFO experiente analisando '+S.company+(S.sector?' ('+S.sector+')':'')+'. '
+    +'Mês: '+MES[parseInt(mo)-1]+'/'+y+'. Score: '+res.score+'% ('+scoreLabel+'). '
+    +'KPIs: '+kpiAll+'. '
+    +'Críticos: '+worst.map(function(d){return d.ind.name+' '+Math.round(d.adjPct)+'%';}).join(', ')+'. '
+    +'Destaques: '+best.map(function(d){return d.ind.name+' '+Math.round(d.adjPct)+'%';}).join(', ')+'. '
+    +'Confiança dos dados: '+(cf?cf.p+'%':'N/A')+'. '
+    +'Escreva um diagnóstico executivo OBJETIVO em até 200 palavras. '
+    +'Sem markdown. Formato: SITUACAO: [frase]. ALERTAS: • item1 • item2. ACOES: 1. acao 2. acao 3. acao';
+  fetch('/api/diagnose',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prompt:prompt})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(data.error)throw new Error(data.error);
+    const txt=data.text||'';
+    if(!txt)throw new Error('Resposta vazia');
+    _renderDiag(el,txt,res,worst,best,MES[parseInt(mo)-1]+'/'+y);
     _chatCtx=res;
-  }catch(e){el.innerHTML=`<div class="diag-box"><p style="color:var(--amber)">Configure a API key para diagnósticos com IA.</p>${worst[0]?`<div class="dact">⚠️ Foco: ${worst[0].ind.name} em ${Math.round(worst[0].pct)}% da meta</div>`:''}</div>`;}
+  }).catch(function(e){
+    el.innerHTML='<div class="diag-box"><p style="color:var(--amber)">Erro ao gerar diagnóstico: '+(e.message||'verifique a API key')+'</p>'
+      +(worst[0]?'<div class="dact">⚠️ Foco: '+worst[0].ind.name+' em '+Math.round(worst[0].adjPct)+'% da meta</div>':'')+'</div>';
+  });
 }
 let _chatCtx=null,_chatHist=[];
 function openChat(){
@@ -1194,19 +1205,54 @@ function openChat(){
 }
 function closeChat(){document.getElementById('chatPopup').style.display='none';}
 async function sendChat(){
-  const inp=document.getElementById('chatInp');const msg=inp.value.trim();if(!msg)return;
-  inp.value='';_chatHist.push({role:'user',content:msg});
+  const inp=document.getElementById('chatInp');
+  const msg=inp.value.trim();if(!msg)return;
+  inp.value='';
+  const out=document.getElementById('chatOut');
+  // User message
+  const userDiv=document.createElement('div');
+  userDiv.style.cssText='font-size:12px;color:#eef4ff;background:rgba(0,232,155,.07);border-left:2px solid var(--teal);padding:8px 10px;border-radius:0 8px 8px 0;line-height:1.6';
+  userDiv.textContent=msg;
+  out.appendChild(userDiv);
+  _chatHist.push({role:'user',content:msg});
+  // Loading
+  const loadDiv=document.createElement('div');
+  loadDiv.style.cssText='font-size:11px;color:#7a9cc4;font-style:italic;padding:4px 0';
+  loadDiv.textContent='Analisando...';
+  out.appendChild(loadDiv);
+  out.scrollTop=out.scrollHeight;
+  // Build system prompt with full KPI context
   const[y,mo]=(S.sel||'-').split('-');
-  const sys=`Consultor de gestão de ${S.company}. Saúde: ${_chatCtx?.score||'?'}%. Mês: ${MES[parseInt(mo)-1]||''}/${y}. Máximo 70 palavras.`;
-  const el=document.getElementById('chatOut');
-  el.innerHTML+='<div style="color:var(--teal);font-size:10px;margin-top:4px">→ '+msg+'</div>';
-  try{
-    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,system:sys,messages:_chatHist})});
-    const data=await r.json();const reply=(data.content||[]).map(c=>c.text||'').join('').trim();
+  const ctx=_chatCtx;
+  const kpiCtx=ctx?ctx.details.map(function(d){
+    return d.ind.name+': '+Math.round(d.adjPct)+'% da meta'+(d.value!=null?' (valor: '+d.value.toLocaleString('pt-BR')+')':'');
+  }).join(', '):'sem dados';
+  const sys='Você é o analista financeiro de '+S.company+(S.sector?' ('+S.sector+')':'')+'. '
+    +'Mês de referência: '+MES[parseInt(mo)-1||0]+'/'+y+'. '
+    +'Score de saúde: '+(ctx?ctx.score+'%':'desconhecido')+'. '
+    +'KPIs: '+kpiCtx+'. '
+    +'Responda de forma direta e prática em até 150 palavras. Sem markdown.';
+  fetch('/api/diagnose',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({prompt:msg,system:sys,history:_chatHist.slice(0,-1)})
+  }).then(function(r){return r.json();}).then(function(data){
+    out.removeChild(loadDiv);
+    if(data.error)throw new Error(data.error);
+    const reply=data.text||'';
     _chatHist.push({role:'assistant',content:reply});
-    el.innerHTML+='<div style="font-size:10px;color:#9ab8d8;margin-top:3px;line-height:1.5">'+reply+'</div>';
-    el.scrollTop=el.scrollHeight;
-  }catch(e){el.innerHTML+='<div style="font-size:10px;color:var(--red)">Erro na API</div>';}
+    const replyDiv=document.createElement('div');
+    replyDiv.style.cssText='font-size:12px;color:#c8dff5;background:rgba(255,255,255,.04);padding:8px 10px;border-radius:8px;line-height:1.6';
+    replyDiv.textContent=reply;
+    out.appendChild(replyDiv);
+    out.scrollTop=out.scrollHeight;
+  }).catch(function(e){
+    out.removeChild(loadDiv);
+    const errDiv=document.createElement('div');
+    errDiv.style.cssText='font-size:11px;color:var(--red)';
+    errDiv.textContent='Erro: '+(e.message||'tente novamente');
+    out.appendChild(errDiv);
+  });
 }
 function chatKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
 
@@ -1540,11 +1586,17 @@ function saveConfig(){
   if(S.benchMode==='ai'&&S.sector)fetchBench();
   sv();document.getElementById('coName').textContent=S.company;toast('✓ Configurações salvas!');
 }
-async function fetchBench(){
-  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:300,messages:[{role:"user",content:`Setor "${S.sector}". JSON só: {"receita":100000,"cac":10,"churn":3,"margem":40,"ebitda":15,"despop":30,"caixa":10000,"ciclo":0,"runway":6,"reccolab":10000,"estoque":45,"turnover":2}`}]})});
-    const data=await r.json();const txt=(data.content||[]).map(c=>c.text||'').join('').replace(/```json|```/g,'').trim();
-    const bench=JSON.parse(txt);IND.forEach(ind=>{if(bench[ind.id]!=null)S.cfg[ind.id].benchGoal=bench[ind.id];});sv();toast('✓ Benchmarks carregados!');
-  }catch(e){}
+function fetchBench(){
+  const prompt='Setor "'+S.sector+'". JSON só: {"receita":100000,"cac":10,"churn":3,"margem":40,"ebitda":15,"despop":30,"caixa":10000,"ciclo":0,"runway":6,"reccolab":10000,"estoque":45,"turnover":2}';
+  fetch('/api/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:prompt})})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    if(data.error)throw new Error(data.error);
+    const txt=(data.text||'').replace(/```json|```/g,'').trim();
+    const bench=JSON.parse(txt);
+    IND.forEach(function(ind){if(bench[ind.id]!=null)S.cfg[ind.id].benchGoal=bench[ind.id];});
+    sv();toast('✓ Benchmarks carregados!');
+  }).catch(function(e){console.warn('fetchBench:',e);});
 }
 function clearAllData(){if(!confirm('Limpar todos os dados?'))return;S.months=[];S.data={};S.raw={};S.forecast={};S.meetActions={};S.sel=null;sv();toast('✓ Dados limpos');rDash();}
 function handleLogo(input){
