@@ -404,9 +404,11 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <div class="dash-left">
       <div class="dash-top">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 4px">
-          <div class="dash-title">DIAGNÓSTICO ESTRATÉGICO</div>
-                    <button id="kpiToggleBtn" title="Ocultar lista KPIs" onclick="toggleKpiList()" style="background:none;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:var(--mut);font-size:10px;padding:2px 8px;cursor:pointer;transition:all .2s">⇔</button>
-<div style="display:flex;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="dash-title">DIAGNÓSTICO ESTRATÉGICO</div>
+            <button id="kpiToggleBtn" title="Expandir roda / ocultar lista de KPIs" onclick="toggleKpiList()" style="background:none;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:var(--mut);font-size:10px;padding:2px 8px;cursor:pointer;transition:all .2s">Expandir roda</button>
+          </div>
+          <div style="display:flex;gap:5px">
             <button class="adm" style="border-color:rgba(168,85,247,.4);color:#a855f7" onclick="go('sim',document.querySelector('[data-page=sim]'))">🔮 Simular</button>
             <button class="adm" style="border-color:rgba(0,240,200,.4);color:var(--teal);font-weight:700" onclick="openMeeting()">▶ Reunião</button>
           </div>
@@ -1189,7 +1191,7 @@ function toggleKpiList(){
   if(!layout)return;
   var hidden=layout.classList.toggle('kpi-hidden');
   var btn=document.getElementById('kpiToggleBtn');
-  if(btn)btn.style.color=hidden?'var(--teal)':'var(--mut)';
+  if(btn){btn.textContent=hidden?'Recolher roda':'Expandir roda';btn.style.color=hidden?'var(--teal)':'var(--mut)';}
   setTimeout(sizeWheel,60);
 }
 function sizeWheel(){
@@ -1314,6 +1316,12 @@ function rPills(){
   }
 
   
+  function onSelChange(){
+    var mk=selAno.value+'-'+selMes.value;
+    S.sel=mk;
+    if(!S.months.includes(mk)){S.months.push(mk);S.months.sort();}
+    sv();rDash();
+  }
   selMes.addEventListener('change',onSelChange);
   selAno.addEventListener('change',onSelChange);
 
