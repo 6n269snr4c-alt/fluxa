@@ -43,9 +43,9 @@ nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
 .btn-cancel{background:none;border:1px solid var(--bdr);color:var(--mut);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif}
 .btn-ok{background:var(--teal);color:#07101c;font-weight:700;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif}
 /* DASHBOARD */
-.dash-layout{display:grid;grid-template-columns:minmax(360px,45%) minmax(260px,35%) minmax(200px,20%);flex:1;min-height:0;overflow:hidden}
+.dash-layout{display:grid;grid-template-columns:minmax(360px,45%) minmax(260px,35%) minmax(200px,20%);flex:1;min-height:0;overflow:hidden}.dash-layout.kpi-hidden{grid-template-columns:minmax(0,68%) 0px minmax(200px,32%)}.dash-layout.kpi-hidden .dash-right{overflow:hidden;opacity:0;pointer-events:none;min-width:0}
 .dash-left{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;padding:12px 16px}
-.dash-right{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--bdr)}
+.dash-right{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--bdr);transition:opacity .25s}
 .dash-top{flex-shrink:0;gap:6px;margin-bottom:8px}
 .dash-title{font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:3px;color:var(--mut)}
 .mpills{display:flex;gap:4px;flex-wrap:wrap}
@@ -405,7 +405,8 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
       <div class="dash-top">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:0 0 4px">
           <div class="dash-title">DIAGNÓSTICO ESTRATÉGICO</div>
-          <div style="display:flex;gap:5px">
+                    <button id="kpiToggleBtn" title="Ocultar lista KPIs" onclick="toggleKpiList()" style="background:none;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:var(--mut);font-size:10px;padding:2px 8px;cursor:pointer;transition:all .2s">⇔</button>
+<div style="display:flex;gap:5px">
             <button class="adm" style="border-color:rgba(168,85,247,.4);color:#a855f7" onclick="go('sim',document.querySelector('[data-page=sim]'))">🔮 Simular</button>
             <button class="adm" style="border-color:rgba(0,240,200,.4);color:var(--teal);font-weight:700" onclick="openMeeting()">▶ Reunião</button>
           </div>
@@ -1114,12 +1115,14 @@ function rWheel(dets,sz,svgId){
   if(!sz)sz=parseFloat(svg.getAttribute('width')||360);
   svg.innerHTML='';
   // rI=22% do sz → círculo central amplo para score sem sobrepor fatias
-  const cx=sz/2,cy=sz/2,rO=sz*.40,rI=sz*.22,gap=.04,n=IND.length,sa=(Math.PI*2)/n;
+  const cx=sz/2,cy=sz/2,rO=sz*.40,rI=sz*.22,gap=.04;
   const rGrpIn=rO+5,rGrpOut=rO+sz*.062;
   // GROUP ARC RINGS
   ['tracao','rentab','caixa','operac'].forEach(g=>{
-    const inds=IND.filter(i=>i.group===g),fi=IND.indexOf(inds[0]),li=IND.indexOf(inds[inds.length-1]);
-    const a1=-Math.PI/2+fi*sa+gap*1.8,a2=-Math.PI/2+(li+1)*sa-gap*1.8;
+    const inds=_wheelInds.filter(i=>i.group===g),fi=_wheelInds.indexOf(inds[0]),li=_wheelInds.indexOf(inds[inds.length-1]);
+    if(fi<0)return;
+    const _sa=sa_w;
+    const a1=-Math.PI/2+fi*_sa+gap*1.8,a2=-Math.PI/2+(li+1)*_sa-gap*1.8;
     arcPath(svg,cx,cy,rGrpIn,rGrpOut,a1,a2,GC[g],false,false,.85);
     const ma=(a1+a2)/2,mr=(rGrpIn+rGrpOut)/2;
     const gx=cx+mr*Math.cos(ma),gy=cy+mr*Math.sin(ma);
@@ -1132,8 +1135,11 @@ function rWheel(dets,sz,svgId){
     gt.setAttribute('transform',`rotate(${rd>90&&rd<270?ad+180:ad},${gx},${gy})`);
     gt.textContent=GN[g].split(' ')[0];svg.appendChild(gt);
   });
-  // KPI SLICES
-  IND.forEach((ind,i)=>{
+  // KPI SLICES — lucroliq fica fora da roda
+  const _wheelInds=IND.filter(i=>i.id!=='lucroliq');
+  const n_w=_wheelInds.length,sa_w=(Math.PI*2)/n_w;
+  _wheelInds.forEach((ind,i)=>{
+    const sa=sa_w; // local alias
     const a1=-Math.PI/2+i*sa+gap/2,a2=a1+sa-gap,col=GC[ind.group];
     arcPath(svg,cx,cy,rI,rO,a1,a2,'rgba(255,255,255,.04)',false,false,1);
     let pct=0,conf='high';
@@ -1161,9 +1167,30 @@ function rWheel(dets,sz,svgId){
       pc.setAttribute('font-family','JetBrains Mono,monospace');pc.setAttribute('font-weight','700');
       pc.textContent=Math.round(pct)+'%';svg.appendChild(pc);
     }
+    // Click overlay
+    const sa_loc=sa_w;
+    const hitA1=-Math.PI/2+i*sa_loc+gap/2,hitA2=hitA1+sa_loc-gap;
+    const hit=ns('path');
+    const hx1=cx+(rI)*Math.cos(hitA1),hy1=cy+(rI)*Math.sin(hitA1);
+    const hx2=cx+(rO+sz*.062)*Math.cos(hitA1),hy2=cy+(rO+sz*.062)*Math.sin(hitA1);
+    const hx3=cx+(rO+sz*.062)*Math.cos(hitA2),hy3=cy+(rO+sz*.062)*Math.sin(hitA2);
+    const hx4=cx+(rI)*Math.cos(hitA2),hy4=cy+(rI)*Math.sin(hitA2);
+    hit.setAttribute('d',`M${hx1},${hy1} L${hx2},${hy2} A${rO+sz*.062},${rO+sz*.062} 0 0,1 ${hx3},${hy3} L${hx4},${hy4} A${rI},${rI} 0 0,0 ${hx1},${hy1} Z`);
+    hit.setAttribute('fill','transparent');
+    hit.style.cursor='pointer';
+    (function(id){hit.addEventListener('click',function(){openKpi(id);});})(ind.id);
+    svg.appendChild(hit);
   });
   const dc=ns('circle');dc.setAttribute('cx',cx);dc.setAttribute('cy',cy);dc.setAttribute('r',rI-2);
   dc.setAttribute('fill','none');dc.setAttribute('stroke','rgba(255,255,255,.07)');dc.setAttribute('stroke-width','1');svg.appendChild(dc);
+}
+function toggleKpiList(){
+  var layout=document.querySelector('.dash-layout');
+  if(!layout)return;
+  var hidden=layout.classList.toggle('kpi-hidden');
+  var btn=document.getElementById('kpiToggleBtn');
+  if(btn)btn.style.color=hidden?'var(--teal)':'var(--mut)';
+  setTimeout(sizeWheel,60);
 }
 function sizeWheel(){
   const col=document.getElementById('wheelCol');if(!col)return;
