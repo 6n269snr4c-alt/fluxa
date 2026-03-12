@@ -631,7 +631,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <div class="mhdr-l"><span class="mhdr-title">▶ MODO REUNIÃO</span><span class="mhdr-co" id="meetCoLbl"></span></div>
     <div class="mhdr-r">
       <div class="mdots"><div class="mdot on" onclick="meetGo(0)" title="Slide 1"></div><div class="mdot" onclick="meetGo(1)" title="Slide 2"></div></div>
-      <button class="pdf-btn" onclick="exportMeetingPDF()">📄 Exportar Ata PDF</button>
+      <button id="meetSaveBtn" onclick="saveMeetAndToast()" style="background:#10b981;border:none;color:#fff;padding:7px 18px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:Outfit,sans-serif;transition:all .2s;box-shadow:0 2px 8px rgba(16,185,129,.3)" onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">💾 Salvar</button> <button class="pdf-btn" onclick="exportMeetingPDF()">📄 Exportar Ata PDF</button>
       <button class="mclose" onclick="closeMeeting()">✕ ESC</button>
     </div>
   </div>
@@ -866,7 +866,7 @@ function calcConf(dets){
 function syncActionsFromMeeting(mk){
   if(!mk||!S.meetActions||!S.meetActions[mk])return;
   if(!S.actions)S.actions=[];
-  var rows=S.meetActions[mk].fechamento||[];
+  var rows=(S.meetActions[mk].fechamento||[]).concat(S.meetActions[mk].adicionais||[]);
   rows.forEach(function(row){
     if(!row.text||!row.text.trim())return;
     var[y,mo]=mk.split('-');
@@ -2132,10 +2132,25 @@ function meetGo(pg){
   document.getElementById('mPageLbl').textContent=_meetPg===0?'Slide 1 de 2 — Fechamento':'Slide 2 de 2 — Forecast & Próximo Mês';
 }
 
+function saveMeetAndToast(){
+  saveMeetActions();
+  const btn=document.getElementById('meetSaveBtn');
+  if(btn){btn.textContent='✓ Salvo!';btn.style.background='#059669';
+    setTimeout(()=>{btn.textContent='💾 Salvar';btn.style.background='#10b981';},1800);}
+  toast('✓ Planos de ação salvos!');
+}
 function saveMeetActions(){
   if(!S.sel)return;
   if(!S.meetActions)S.meetActions={};
-  if(!S.meetActions[S.sel])S.meetActions[S.sel]={fechamento:[],forecast:[]};
+  if(!S.meetActions[S.sel])S.meetActions[S.sel]={fechamento:[],forecast:[],adicionais:[]};
+  // Ações adicionais (slide 1 bottom table)
+  const _adic=[];document.querySelectorAll('#actAdicBody tr').forEach(function(tr){
+    const t=tr.querySelector('.act-text')?.value?.trim()||'';
+    const r=tr.querySelector('.act-resp')?.value?.trim()||'';
+    const p=tr.querySelector('.act-prazo')?.value?.trim()||'';
+    if(t||r||p)_adic.push({text:t,resp:r,prazo:p,kpi:'Adicional'});
+  });
+  S.meetActions[S.sel].adicionais=_adic;
   // Save inline KPI actions (slide 1)
   const kpiActTexts=document.querySelectorAll('.kcard-act .act-text:not([data-type]),.m-kr-act .act-text:not([data-type])');
   const kpiActResps=document.querySelectorAll('.kcard-act .act-resp:not([data-type]),.m-kr-act .act-resp:not([data-type])');
@@ -2175,11 +2190,51 @@ function actTableHTML(mk,type){
   html+=`</tbody></table><button class="m-add-row" onclick="addActRow('${type}')">+ Adicionar Ação</button>`;
   return html;
 }
+function addAdicRow(){
+  const tbody=document.getElementById('actAdicBody');if(!tbody)return;
+  const tr=document.createElement('tr');
+  const mk=(inp,cls,ph)=>{const i=document.createElement('input');i.type='text';i.className='m-ai '+cls;i.placeholder=ph;return i;};
+  const td1=document.createElement('td');td1.appendChild(mk('act-text','Descreva a ação...'));
+  const td2=document.createElement('td');td2.appendChild(mk('act-resp','Responsável'));
+  const td3=document.createElement('td');const pi=mk('act-prazo','dd/mm/aaaa');maskPrazo(pi);td3.appendChild(pi);
+  const td4=document.createElement('td');const btn=document.createElement('button');btn.className='m-del';btn.textContent='✕';btn.onclick=function(){this.closest('tr').remove();};td4.appendChild(btn);
+  tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);tr.appendChild(td4);
+  tbody.appendChild(tr);
+}
+function maskPrazo(inp){
+  inp.addEventListener('input',function(e){
+    // Remove tudo que não for dígito
+    var v=this.value.replace(/\D/g,'');
+    // Limita a 8 dígitos (ddmmaaaa)
+    if(v.length>8)v=v.slice(0,8);
+    // Formata dd/mm/aaaa progressivamente
+    if(v.length>4) v=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+    else if(v.length>2) v=v.slice(0,2)+'/'+v.slice(2);
+    this.value=v;
+  });
+  inp.addEventListener('blur',function(){
+    // Valida ao sair do campo
+    var v=this.value.trim();
+    if(!v)return;
+    var ok=/^(\d{2})\/(\d{2})\/(\d{4})$/.test(v);
+    if(!ok){
+      this.style.borderColor='#ef4444';
+      this.title='Formato inválido. Use dd/mm/aaaa';
+    } else {
+      this.style.borderColor='';
+      this.title='';
+    }
+  });
+  inp.addEventListener('focus',function(){
+    this.style.borderColor='';
+  });
+}
 function addActRow(type){
   const tbody=document.getElementById('actBody_'+type);if(!tbody)return;
   const tr=document.createElement('tr');tr.className='act-row';tr.setAttribute('data-type',type);
   tr.innerHTML=`<td><input class="m-ai act-text" placeholder="Descreva a ação..."></td><td><input class="m-ai act-resp" placeholder="Nome..."></td><td><input type="text" class="m-ai act-prazo" placeholder="dd/mm/aaaa"></td><td><button class="m-del" onclick="this.closest('tr').remove()">✕</button></td>`;
   tbody.appendChild(tr);
+  const newPrazo=tr.querySelector('.act-prazo');if(newPrazo)maskPrazo(newPrazo);
 }
 
 function buildSlide1(res){
@@ -2298,10 +2353,35 @@ function buildSlide1(res){
     <div class="s1-col-b">
       <div class="s1-col-title" style="color:#64748b">KPIs — Pior para melhor</div>
       <div class="s1-kpi-grid">${kpiCards}</div>
+      <!-- Planos Adicionais -->
+      <div style="margin-top:20px;padding-top:16px;border-top:2px dashed #e2e8f0">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#94a3b8;font-weight:700;margin-bottom:10px">📌 Planos de Ação Adicionais</div>
+        <table class="m-act-tbl"><thead><tr><th style="width:42%">Ação</th><th style="width:25%">Responsável</th><th style="width:20%">Prazo</th><th></th></tr></thead>
+        <tbody id="actAdicBody"></tbody>
+        </table>
+        <button class="m-add-row" onclick="addAdicRow()">+ Adicionar Ação</button>
+      </div>
     </div>
 
 
   </div>`;
+  // Populate actAdicBody safely via JS
+  (function(){
+    var tbody=document.getElementById('actAdicBody');if(!tbody)return;
+    var sa=(S.meetActions&&S.meetActions[S.sel]&&S.meetActions[S.sel].adicionais)||[];
+    var rows=sa.length?sa:[{text:'',resp:'',prazo:''}];
+    rows.forEach(function(a){
+      var tr=document.createElement('tr');
+      function mkInp(cls,ph,val){var i=document.createElement('input');i.type='text';i.className='m-ai '+cls;i.placeholder=ph;i.value=val||'';return i;}
+      var td1=document.createElement('td');td1.appendChild(mkInp('act-text','Descreva a ação...',a.text));
+      var td2=document.createElement('td');td2.appendChild(mkInp('act-resp','Responsável',a.resp));
+      var td3=document.createElement('td');var pi=mkInp('act-prazo','dd/mm/aaaa',a.prazo);maskPrazo(pi);td3.appendChild(pi);
+      var td4=document.createElement('td');var btn=document.createElement('button');btn.className='m-del';btn.textContent='✕';btn.onclick=function(){this.closest('tr').remove();};td4.appendChild(btn);
+      tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);tr.appendChild(td4);
+      tbody.appendChild(tr);
+    });
+  })();
+  document.querySelectorAll('#mslide0 .act-prazo').forEach(maskPrazo);
 }
 function buildSlide2(res){
   const[y,mo]=S.sel.split('-');
@@ -2382,6 +2462,7 @@ function buildSlide2(res){
     '<div style="flex:1;padding:28px 28px 80px;overflow-y:auto;background:#f0f4f8">'+
     '<div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#64748b;font-weight:700;margin-bottom:16px">📈 Projeção — '+nextLabel+'</div>'+
     rightHTML+'</div></div>';
+  document.querySelectorAll('#mslide1 .act-prazo').forEach(maskPrazo);
 }
 
 function exportMeetingPDF(){
