@@ -43,7 +43,7 @@ nav{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
 .btn-cancel{background:none;border:1px solid var(--bdr);color:var(--mut);padding:8px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif}
 .btn-ok{background:var(--teal);color:#07101c;font-weight:700;padding:8px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-family:'Outfit',sans-serif}
 /* DASHBOARD */
-.dash-layout{display:grid;grid-template-columns:minmax(360px,45%) minmax(260px,35%) minmax(200px,20%);flex:1;min-height:0;overflow:hidden}.dash-layout.kpi-hidden{grid-template-columns:minmax(0,68%) 0px minmax(200px,32%)}.dash-layout.kpi-hidden .dash-right{overflow:hidden;opacity:0;pointer-events:none;min-width:0}
+.dash-layout{display:grid;grid-template-columns:minmax(360px,45%) minmax(260px,35%) minmax(200px,20%);flex:1;min-height:0;overflow:hidden;transition:grid-template-columns .3s ease}.dash-layout.kpi-hidden{grid-template-columns:minmax(0,68%) 0px minmax(200px,32%)}.dash-layout.kpi-hidden .dash-right{overflow:hidden;opacity:0;pointer-events:none;min-width:0}
 .dash-left{border-right:1px solid var(--bdr);display:flex;flex-direction:column;overflow:hidden;padding:12px 16px}
 .dash-right{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--bdr);transition:opacity .25s}
 .dash-top{flex-shrink:0;gap:6px;margin-bottom:8px}
@@ -1119,6 +1119,9 @@ function rWheel(dets,sz,svgId){
   // rI=22% do sz → círculo central amplo para score sem sobrepor fatias
   const cx=sz/2,cy=sz/2,rO=sz*.40,rI=sz*.22,gap=.04;
   const rGrpIn=rO+5,rGrpOut=rO+sz*.062;
+  // KPI list — lucroliq fica fora da roda
+  const _wheelInds=IND.filter(i=>i.id!=='lucroliq');
+  const n_w=_wheelInds.length,sa_w=(Math.PI*2)/n_w;
   // GROUP ARC RINGS
   ['tracao','rentab','caixa','operac'].forEach(g=>{
     const inds=_wheelInds.filter(i=>i.group===g),fi=_wheelInds.indexOf(inds[0]),li=_wheelInds.indexOf(inds[inds.length-1]);
@@ -1137,9 +1140,7 @@ function rWheel(dets,sz,svgId){
     gt.setAttribute('transform',`rotate(${rd>90&&rd<270?ad+180:ad},${gx},${gy})`);
     gt.textContent=GN[g].split(' ')[0];svg.appendChild(gt);
   });
-  // KPI SLICES — lucroliq fica fora da roda
-  const _wheelInds=IND.filter(i=>i.id!=='lucroliq');
-  const n_w=_wheelInds.length,sa_w=(Math.PI*2)/n_w;
+  // KPI SLICES
   _wheelInds.forEach((ind,i)=>{
     const sa=sa_w; // local alias
     const a1=-Math.PI/2+i*sa+gap/2,a2=a1+sa-gap,col=GC[ind.group];
@@ -1192,7 +1193,14 @@ function toggleKpiList(){
   var hidden=layout.classList.toggle('kpi-hidden');
   var btn=document.getElementById('kpiToggleBtn');
   if(btn){btn.textContent=hidden?'Recolher roda':'Expandir roda';btn.style.color=hidden?'var(--teal)':'var(--mut)';}
-  setTimeout(sizeWheel,60);
+  // Aguarda o browser recalcular o layout antes de medir wheelCol
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      sizeWheel();
+      setTimeout(sizeWheel,200);
+      setTimeout(sizeWheel,350);
+    });
+  });
 }
 function sizeWheel(){
   const col=document.getElementById('wheelCol');if(!col)return;
@@ -1270,9 +1278,7 @@ function getKnownMonths(){
   if(S.data)Object.keys(S.data).forEach(function(m){if(S.data[m]&&Object.keys(S.data[m]).length)keys.add(m);});
   if(S.raw)Object.keys(S.raw).forEach(function(m){if(S.raw[m]&&Object.keys(S.raw[m]).length)keys.add(m);});
   if(S.forecast)Object.keys(S.forecast).forEach(function(m){if(S.forecast[m]&&Object.keys(S.forecast[m]).length)keys.add(m);});
-  var result=Array.from(keys).sort();
-  console.log('[getKnownMonths] result=',result);
-  return result;
+  return Array.from(keys).sort();
 }
 function rPills(){
   const c=document.getElementById('mpills');c.innerHTML='';
@@ -1382,10 +1388,7 @@ function rDash(){
   const ss=document.getElementById('scoreSector');if(ss)ss.textContent=S.sector||'';
   const nl=document.getElementById('navLogo');if(S.logo){nl.src=S.logo;nl.style.display='block';}else nl.style.display='none';
   rPills();rTrend();
-  // DEBUG — remover após diagnóstico
-  console.log('[rDash] S.sel=',S.sel,'data keys=',Object.keys(S.data||{}),'raw keys=',Object.keys(S.raw||{}),'months=',S.months);
   const res=S.sel?calcScore(S.sel):null;
-  console.log('[rDash] calcScore result=',res?res.score:'null');
   // Lucro Líquido card
   (function(){
     var lc=document.getElementById('lucroCard');
