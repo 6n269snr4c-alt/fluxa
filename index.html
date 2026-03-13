@@ -871,7 +871,7 @@ function calcScore(mk){
   IND.forEach(ind=>{
     const e=d[ind.id];if(!e||e.value===''||e.value==null)return;
     const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};
-    const goal=(cfg.benchMode==='ai'||S.benchMode==='ai')&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
+    const goal=_BENCHABLE.has(ind.id)&&cfg.benchMode==='ai'&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
     const val=parseFloat(e.value),conf=e.confidence||'high';
     const hb=cfg.hb!=null?cfg.hb:ind.hb;
     let p=hb?(goal===0?100:Math.min((val/goal)*100,150)):(goal===0?100:Math.min((goal/Math.max(val,.001))*100,150));
@@ -2176,7 +2176,6 @@ function saveConfig(){
     if(we)S.cfg[ind.id].weight=parseFloat(we.value)||1;
     if(be)S.cfg[ind.id].benchGoal=be.value?parseFloat(be.value):null;
   });
-  if(S.benchMode==='ai'&&S.sector)fetchBench();
   sv();document.getElementById('coName').textContent=S.company;toast('✓ Configurações salvas!');
 }
 function fetchBench(){
@@ -2364,7 +2363,7 @@ function simCalc(){
     }
     if(v===null||v===undefined)return;
     const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};
-    const goal=(cfg.benchMode==='ai'||S.benchMode==='ai')&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
+    const goal=_BENCHABLE.has(ind.id)&&cfg.benchMode==='ai'&&cfg.benchGoal?cfg.benchGoal:getGoal(ind.id,mk);
     if(!goal)return;
     const hb=cfg.hb!=null?cfg.hb:ind.hb;
     // Arredonda igual ao S.data para manter consistência
@@ -3057,6 +3056,12 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(user){
       await loadUserData(user.uid);
       // Ensure S.sel points to a month with data, or most recent known
+      // Clean up benchGoal from non-benchable KPIs
+      IND.forEach(function(ind){
+        if(!_BENCHABLE.has(ind.id)&&S.cfg[ind.id]&&S.cfg[ind.id].benchGoal!=null){
+          S.cfg[ind.id].benchGoal=null;S.cfg[ind.id].benchMode='manual';
+        }
+      });
       var _km=getKnownMonths();
       if(!S.sel||!_km.includes(S.sel)){
         S.sel=_km.length?_km[_km.length-1]:null;
