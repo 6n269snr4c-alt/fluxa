@@ -865,8 +865,8 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <div class="inp-topbar">
       <span style="font-size:13px;font-weight:700">Lançamento Mensal</span>
       <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
-        <select id="inpSelMes" class="csel" style="font-size:12px;padding:5px 10px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();})()"></select>
-        <select id="inpSelAno" class="csel" style="font-size:12px;padding:5px 10px;width:80px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();})()"></select>
+        <select id="inpSelMes" class="csel" style="font-size:12px;padding:5px 10px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();_buildInpDelBtns(mk);})()"></select>
+        <select id="inpSelAno" class="csel" style="font-size:12px;padding:5px 10px;width:80px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();_buildInpDelBtns(mk);})()"></select>
         <button class="mode-btn active" id="modeReal" onclick="setInputMode('real',this)">✅ Fechamento</button>
         <button class="mode-btn" id="modeFcast" onclick="setInputMode('forecast',this)">🔮 Previsão</button>
         <span id="modeHint" style="font-size:11px;padding:3px 10px;border-radius:20px"></span>
@@ -880,6 +880,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <div class="inp-save-bar">
       <button class="bs" id="inpSaveBtn" onclick="saveData()">SALVAR &amp; GERAR DIAGNÓSTICO</button>
       <button class="bs ghost" onclick="go('dashboard',document.querySelector('[data-page=dashboard]'))">← Dashboard</button>
+      <div id="inpDelBtns" style="display:flex;gap:6px;margin-left:auto"></div>
     </div>
   </div>
 </div>
@@ -2667,6 +2668,7 @@ function saveData(){
   S.sel=mk;
   if(S.diagCache)delete S.diagCache[mk]; // invalida cache do diagnóstico
   sv();toast(`✓ ${filled} KPIs salvos!`);
+  _buildInpDelBtns(mk);
   setTimeout(()=>go('dashboard',document.querySelector('[data-page=dashboard]')),900);
 }
 function saveForecast(){
@@ -2681,7 +2683,7 @@ function saveForecast(){
     if(el&&el.value!=='')fc[fld.id]=parseFloat(el.value);
   });
   if(!Object.keys(fc).length){toast('⚠️ Preencha pelo menos um campo');return;}
-  S.forecast[mk]=fc;sv();toast('✓ Previsão salva!');showAssert(mk);
+  S.forecast[mk]=fc;sv();toast('✓ Previsão salva!');showAssert(mk);_buildInpDelBtns(mk);
 }
 
 function rConfig(){
