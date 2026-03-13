@@ -612,6 +612,98 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
 .m-del{background:none;border:none;color:rgba(255,255,255,.2);font-size:11px;cursor:pointer;padding:2px 4px}
 .m-del:hover{color:#ef4444}
 
+/* ── SLIDE 3: PLANOS DE AÇÃO ── */
+.s3-wrap{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.s3-header{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 28px 12px;border-bottom:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.02);
+}
+.s3-header-left{display:flex;flex-direction:column;gap:3px}
+.s3-tag{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--teal);font-weight:700}
+.s3-company{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:#e8f0ff;line-height:1.1}
+.s3-period{font-size:11px;color:rgba(255,255,255,.35);font-weight:500;letter-spacing:1px}
+.s3-header-right{display:flex;align-items:center;gap:20px}
+.s3-body{
+  flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;min-height:0;overflow:hidden;
+  gap:0;
+}
+.s3-col{
+  padding:14px 18px 72px;display:flex;flex-direction:column;gap:10px;
+  border-right:1px solid rgba(255,255,255,.06);overflow:hidden;
+}
+.s3-col:last-child{border-right:none}
+.s3-col-title{
+  font-size:9px;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);font-weight:700;flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+  padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.06);
+}
+.s3-col-title span{font-size:14px}
+.s3-empty{
+  font-size:11px;color:rgba(255,255,255,.25);line-height:1.7;
+  background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);
+  border-radius:10px;padding:16px;text-align:center;
+}
+/* Logo no modo capa — destaque */
+.s0-logo-wrap{
+  width:80px;height:80px;border-radius:16px;overflow:hidden;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.s0-logo-wrap img{width:100%;height:100%;object-fit:contain;padding:8px;box-sizing:border-box}
+.s0-logo-initials{
+  font-family:'Bebas Neue',sans-serif;font-size:32px;
+  color:rgba(255,255,255,.3);letter-spacing:2px;
+}
+
+
+
+/* ── DELETE CONFIRM DIALOG ── */
+.del-dialog{
+  position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.del-dialog.open{opacity:1;pointer-events:all}
+.del-dialog-box{
+  background:#0c1628;border:1px solid rgba(255,80,80,.25);
+  border-radius:16px;padding:24px 28px;max-width:360px;width:90%;
+  box-shadow:0 20px 60px rgba(0,0,0,.6);
+  transform:scale(.95);transition:transform .2s;
+}
+.del-dialog.open .del-dialog-box{transform:scale(1)}
+.del-dialog-icon{font-size:28px;margin-bottom:10px}
+.del-dialog-title{font-size:15px;font-weight:700;color:#e8f0ff;margin-bottom:6px}
+.del-dialog-msg{font-size:12px;color:#7a9cc4;line-height:1.7;margin-bottom:18px}
+.del-dialog-btns{display:flex;gap:8px;justify-content:flex-end}
+.del-dialog-cancel{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;color:#7a9cc4;font-size:12px;font-weight:600;
+  padding:7px 18px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;
+}
+.del-dialog-cancel:hover{border-color:rgba(255,255,255,.25);color:#e8f0ff}
+.del-dialog-confirm{
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.35);
+  border-radius:8px;color:#f87171;font-size:12px;font-weight:700;
+  padding:7px 18px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;
+}
+.del-dialog-confirm:hover{background:rgba(239,68,68,.2);border-color:#f87171}
+
+/* Delete options pill (month selector area) */
+.del-opts{
+  display:flex;gap:4px;align-items:center;flex-shrink:0;
+}
+.del-opt-btn{
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+  border-radius:20px;color:#f87171;font-size:10px;font-weight:700;
+  padding:3px 10px;cursor:pointer;font-family:'Outfit',sans-serif;
+  transition:all .2s;display:flex;align-items:center;gap:4px;
+}
+.del-opt-btn:hover{background:rgba(239,68,68,.18);border-color:#f87171}
+.del-opt-btn.del-all{
+  background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3);
+}
 
 #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(60px);background:#0d1e32;border:1px solid var(--teal);color:var(--teal);padding:9px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;transition:transform .3s;white-space:nowrap}
 #toast.show{transform:translateX(-50%) translateY(0)}
@@ -805,12 +897,37 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
       <div class="cfg-row"><label>Nome da Empresa</label><input class="cfg-inp" id="cfgCo"></div>
       <div class="cfg-row"><label>Setor</label><input class="cfg-inp" id="cfgSec" placeholder="Ex: Varejo, SaaS, Serviços..."></div>
       <div class="cfg-row"><label>Logo</label>
-        <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <div class="logo-area-cfg" id="logoArea" onclick="document.getElementById('logoFile').click()">
             <div id="logoPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--mut);font-size:10px;pointer-events:none"><span style="font-size:20px">🖼</span><span>Adicionar</span></div>
           </div>
           <input type="file" id="logoFile" accept="image/*" style="display:none" onchange="handleLogo(this)">
-          <button id="rmLogoBtn" class="bs ghost" style="display:none;font-size:11px;padding:5px 10px" onclick="removeLogo()">✕ Remover</button>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button id="rmLogoBtn" class="bs ghost" style="display:none;font-size:11px;padding:5px 10px" onclick="removeLogo()">✕ Remover</button>
+            <div style="background:rgba(0,240,200,.06);border:1px solid rgba(0,240,200,.15);border-radius:10px;padding:10px 14px;max-width:260px">
+              <div style="font-size:10px;font-weight:700;color:var(--teal);letter-spacing:1px;margin-bottom:8px">📐 TAMANHO IDEAL DA LOGO</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:60px;height:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:4px;flex-shrink:0"></div>
+                  <div>
+                    <div style="font-size:10px;font-weight:700;color:#c8dff5">Menu lateral</div>
+                    <div style="font-size:9px;color:var(--mut)">120 × 44 px · proporção 3:1</div>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div style="width:60px;height:60px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:8px;flex-shrink:0"></div>
+                  <div>
+                    <div style="font-size:10px;font-weight:700;color:#c8dff5">Capa da Reunião</div>
+                    <div style="font-size:9px;color:var(--mut)">300 × 300 px · quadrado</div>
+                  </div>
+                </div>
+                <div style="margin-top:2px;padding-top:6px;border-top:1px solid rgba(255,255,255,.07);font-size:9px;color:var(--mut);line-height:1.6">
+                  ✅ PNG com fundo transparente<br>
+                  ✅ Versão escura ou clara (fundo dark)
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -964,6 +1081,17 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
   </div>
 </div>
 <div id="toast"></div>
+<div class="del-dialog" id="delDialog">
+  <div class="del-dialog-box">
+    <div class="del-dialog-icon" id="delDialogIcon">🗑️</div>
+    <div class="del-dialog-title" id="delDialogTitle">Confirmar exclusão</div>
+    <div class="del-dialog-msg" id="delDialogMsg">Tem certeza? Esta ação não pode ser desfeita.</div>
+    <div class="del-dialog-btns">
+      <button class="del-dialog-cancel" onclick="closeDelDialog()">Cancelar</button>
+      <button class="del-dialog-confirm" id="delDialogConfirm">Excluir</button>
+    </div>
+  </div>
+</div>
 </div>
 <script>
 
@@ -1699,16 +1827,64 @@ function rPills(){
   wrap.appendChild(viewWrap);
   c.appendChild(wrap);
 }
-function removePeriod(mk,e){
-  if(e)e.stopPropagation();
-  const[y,mo]=mk.split('-');
-  if(!confirm(`⚠️ Excluir ${MES[parseInt(mo)-1]}/${y}?\n\nIsso vai apagar permanentemente todos os dados deste mês. Esta ação não pode ser desfeita.`))return;
-  S.months=S.months.filter(m=>m!==mk);
-  delete S.data[mk];delete S.raw[mk];delete S.forecast[mk];
+// ── Delete dialog ──────────────────────────────────────────────────
+function showDelDialog(title,msg,onConfirm){
+  document.getElementById('delDialogTitle').textContent=title.replace(/^[^\s]+ /,'');
+  document.getElementById('delDialogIcon').textContent=title.split(' ')[0];
+  document.getElementById('delDialogMsg').innerHTML=msg;
+  var btn=document.getElementById('delDialogConfirm');
+  btn.onclick=function(){closeDelDialog();onConfirm();};
+  document.getElementById('delDialog').classList.add('open');
+}
+function closeDelDialog(){
+  document.getElementById('delDialog').classList.remove('open');
+}
+// Close on backdrop click
+document.addEventListener('click',function(e){
+  if(e.target.id==='delDialog')closeDelDialog();
+});
+
+// ── Delete actions ──────────────────────────────────────────────────
+function deleteFechamento(mk){
+  delete S.data[mk];delete S.raw[mk];
+  if(S.diagCache)delete S.diagCache[mk];
+  if(_bulletsCache)delete _bulletsCache[mk.split('|')[0]];
+  // Clear bullets cache entries for this mk
+  Object.keys(_bulletsCache).forEach(function(k){if(k.indexOf(mk+'|')===0)delete _bulletsCache[k];});
+  sv();
+  toast('✓ Fechamento de '+_mkLabel(mk)+' removido');
+  rDash();rPills();
+}
+function deleteForecast(mk){
+  if(S.forecast)delete S.forecast[mk];
+  sv();
+  toast('✓ Previsão de '+_mkLabel(mk)+' removida');
+  rDash();rPills();
+}
+function deletePeriod(mk){
+  S.months=(S.months||[]).filter(function(m){return m!==mk;});
+  if(S.data)delete S.data[mk];
+  if(S.raw)delete S.raw[mk];
+  if(S.forecast)delete S.forecast[mk];
   if(S.meetActions)delete S.meetActions[mk];
   if(S.diagCache)delete S.diagCache[mk];
+  Object.keys(_bulletsCache).forEach(function(k){if(k.indexOf(mk)===0)delete _bulletsCache[k];});
   if(S.sel===mk){var km=getKnownMonths();S.sel=km.length?km[km.length-1]:null;}
-  sv();rDash();
+  sv();
+  toast('✓ Período '+_mkLabel(mk)+' removido');
+  rDash();rPills();
+}
+function _mkLabel(mk){
+  var p=mk.split('-');return MES[parseInt(p[1])-1]+'/'+p[0];
+}
+// Legacy alias
+function removePeriod(mk,e){
+  if(e)e.stopPropagation();
+  var pm=mk.split('-');
+  showDelDialog('⚠️ Excluir mês completo',
+    'Excluir <b>todos os dados</b> de <b>'+MES[parseInt(pm[1])-1]+'/'+pm[0]+'</b> permanentemente?',
+    function(){deletePeriod(mk);}
+  );
 }
 function openMod(){
   const s=document.getElementById('addAno');s.innerHTML='';
@@ -2289,6 +2465,30 @@ function rInput(){
 
   _autoDetectMode(selAno.value+'-'+selMes.value);
   rInputFields();
+  _buildInpDelBtns(selAno.value+'-'+selMes.value);
+}
+function _buildInpDelBtns(mk){
+  var wrap=document.getElementById('inpDelBtns');if(!wrap)return;
+  wrap.innerHTML='';
+  var hasFech=S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
+  var hasFcast=S.forecast&&S.forecast[mk]&&Object.keys(S.forecast[mk]).length>0;
+  if(!hasFech&&!hasFcast)return;
+  var pm=mk.split('-');var lbl=MES[parseInt(pm[1])-1]+'/'+pm[0];
+  if(hasFech){
+    var b=document.createElement('button');b.className='del-opt-btn';b.innerHTML='✕ Excluir fechamento';
+    b.onclick=function(){showDelDialog('🗑️ Excluir Fechamento','Excluir os dados de <b>fechamento</b> de <b>'+lbl+'</b>?<br><br>A previsão será mantida.',function(){deleteFechamento(mk);_buildInpDelBtns(mk);});};
+    wrap.appendChild(b);
+  }
+  if(hasFcast){
+    var b2=document.createElement('button');b2.className='del-opt-btn';b2.innerHTML='✕ Excluir previsão';
+    b2.onclick=function(){showDelDialog('🔮 Excluir Previsão','Excluir os dados de <b>previsão</b> de <b>'+lbl+'</b>?<br><br>O fechamento será mantido.',function(){deleteForecast(mk);_buildInpDelBtns(mk);});};
+    wrap.appendChild(b2);
+  }
+  if(hasFech&&hasFcast){
+    var b3=document.createElement('button');b3.className='del-opt-btn del-all';b3.innerHTML='✕ Excluir mês inteiro';
+    b3.onclick=function(){showDelDialog('⚠️ Excluir mês completo','Excluir <b>todos os dados</b> de <b>'+lbl+'</b> permanentemente?',function(){deletePeriod(mk);go('dashboard',document.querySelector('[data-page=dashboard]'));});};
+    wrap.appendChild(b3);
+  }
 }
 function _autoDetectMode(mk){
   if(!mk)return;
@@ -3012,6 +3212,7 @@ function openMeeting(){
     function(){return buildSlide0(res);},  // capa
     function(){return buildSlide1(res);},  // KPIs
     function(){return buildSlide2(res);},  // forecast
+    function(){return buildSlide3(res);},  // planos de ação
   ];
   // Render dots
   const dots=document.getElementById('meetDots');
@@ -3053,11 +3254,12 @@ function meetGo(pg){
     if(typeof content==='string'){slideEl.innerHTML=content;}
     else if(content instanceof HTMLElement){slideEl.appendChild(content);}
     container.appendChild(slideEl);
-    // Trigger action inputs init for slide 1
+    // Trigger action inputs init per slide
     if(_meetPg===1)setTimeout(function(){initSlide1Actions(slideEl);},50);
     if(_meetPg===2)setTimeout(function(){
-      document.querySelectorAll('#mslide2 .act-prazo').forEach(maskPrazo);
+      slideEl.querySelectorAll('.act-prazo').forEach(maskPrazo);
     },50);
+    if(_meetPg===3)setTimeout(function(){initSlide3Actions(slideEl);},50);
   }
   // Update dots
   document.querySelectorAll('.mdot').forEach(function(d,i){d.classList.toggle('on',i===_meetPg);});
@@ -3196,10 +3398,18 @@ function buildSlide0(res){
       deltaH='<div style="font-size:13px;font-weight:600;color:'+dc+';margin-top:8px">'+(d>0?'▲ +':'▼ ')+d+' pts vs '+MES[parseInt(pm[1])-1]+'/'+pm[0]+'</div>';
     }
   }
+  var logoH='';
+  if(S.logo){
+    logoH='<div class="s0-logo-wrap"><img src="'+S.logo+'" alt="logo"></div>';
+  } else {
+    var initials=(S.company||'E').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+    logoH='<div class="s0-logo-wrap"><span class="s0-logo-initials">'+initials+'</span></div>';
+  }
   return '<div class="s0-wrap">'
     +'<div class="s0-bg"></div>'
     +'<div class="s0-content">'
     +'<div class="s0-tag">FECHAMENTO MENSAL</div>'
+    +logoH
     +'<div class="s0-company">'+(S.company||'EMPRESA')+'</div>'
     +(S.sector?'<div class="s0-period" style="letter-spacing:3px;font-size:13px">'+S.sector.toUpperCase()+'</div>':'')
     +'<div class="s0-score-wrap" style="border-color:'+col+'22">'
@@ -3208,10 +3418,11 @@ function buildSlide0(res){
     +'<div class="s0-score-lbl">SCORE DE SAÚDE</div>'
     +'<div class="s0-score-grade" style="color:'+col+';background:'+col+'15;border:1px solid '+col+'35">'+g.l+'</div>'
     +deltaH
-    +(S.sector?'<div class="s0-score-sector">'+period+'</div>':'<div class="s0-score-sector">'+period+'</div>')
+    +'<div class="s0-score-sector">'+period+'</div>'
     +'</div></div>'
     +'</div></div>';
 }
+
 
 // ── SLIDE 1: KPIs ────────────────────────────────────────────────────
 function buildSlide1(res){
@@ -3314,13 +3525,7 @@ function buildSlide1(res){
     +'</div>'
     +'<div class="s1-groups">'+grpBars+'</div>'
     +assertH
-    +'<!-- Ações adicionais -->'
-    +'<div style="flex-shrink:0">'
-    +'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);font-weight:700;margin-bottom:6px">📌 Ações Adicionais</div>'
-    +'<table class="m-act-tbl"><thead><tr><th>Ação</th><th>Resp.</th><th>Prazo</th><th></th></tr></thead>'
-    +'<tbody id="actAdicBody"></tbody></table>'
-    +'<button class="m-add-row" onclick="addAdicRow()">+ Adicionar</button>'
-    +'</div>'
+    
     +'</div>'
     // Col B
     +'<div class="s1-col-b">'
@@ -3459,6 +3664,106 @@ function buildSlide2(res){
     +'</div>'
     +'</div>'
     +'</div>';
+}
+
+
+// ── SLIDE 3: PLANOS DE AÇÃO ──────────────────────────────────────────
+function buildSlide3(res){
+  var parts=S.sel.split('-');var y=parts[0];var mo=parts[1];
+  var mesLabel=MES[parseInt(mo)-1]+' '+y;
+  var moN=parseInt(mo),yrN=parseInt(y);
+  var nextMk=moN===12?(yrN+1)+'-01':yrN+'-'+String(moN+1).padStart(2,'0');
+  var nm=nextMk.split('-');
+  var nextLabel=MES[parseInt(nm[1])-1]+'/'+nm[0];
+
+  // Saved actions from previous save
+  var saved=(S.meetActions&&S.meetActions[S.sel])||{};
+  var fech_acts=saved.fechamento||[];
+  var adic_acts=saved.adicionais||[];
+  var fc_acts=saved.forecast||[];
+
+  // Build KPI actions table (from current fechamento)
+  var kpiRows='';
+  var kpiActsDefined=fech_acts.filter(function(a){return a.text||a.resp||a.prazo;});
+  if(kpiActsDefined.length){
+    kpiActsDefined.forEach(function(a,i){
+      var kpiLabel=a.kpi?'<span style="font-size:9px;background:rgba(0,240,200,.1);border:1px solid rgba(0,240,200,.2);border-radius:4px;padding:1px 6px;color:var(--teal)">'+a.kpi+'</span>':'';
+      kpiRows+='<tr><td>'+kpiLabel+' '+(a.text||'—')+'</td>'
+        +'<td style="white-space:nowrap">'+(a.resp||'—')+'</td>'
+        +'<td style="white-space:nowrap;font-family:JetBrains Mono,monospace">'+(a.prazo||'—')+'</td>'
+        +'<td><input class="kact-inp act-text" data-type="fech" placeholder="Editar..." value="'+(a.text||'').replace(/"/g,'&quot;')+'" style="min-width:120px">'
+        +'</td></tr>';
+    });
+  }
+
+  // Ações adicionais table
+  var adicDfl=adic_acts.length?adic_acts:[{text:'',resp:'',prazo:''}];
+  var adicRows=adicDfl.map(function(a){
+    return '<tr data-type="adic">'
+      +'<td><input class="m-ai act-text" data-type="adic" placeholder="Descreva a ação..." value="'+(a.text||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><input class="m-ai act-resp" data-type="adic" placeholder="Responsável" value="'+(a.resp||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><input class="m-ai act-prazo" data-type="adic" placeholder="dd/mm/aaaa" value="'+(a.prazo||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><button class="m-del" onclick="this.closest(&quot;tr&quot;).remove()">✕</button></td>'
+      +'</tr>';
+  }).join('');
+
+  // Próximo mês actions
+  var fcDfl=fc_acts.length?fc_acts:[{text:'',resp:'',prazo:''}];
+  var fcRows=fcDfl.map(function(a){
+    return '<tr data-type="forecast">'
+      +'<td><input class="m-ai act-text" data-type="forecast" placeholder="Meta ou ação para o mês..." value="'+(a.text||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><input class="m-ai act-resp" data-type="forecast" placeholder="Responsável" value="'+(a.resp||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><input class="m-ai act-prazo" data-type="forecast" placeholder="dd/mm/aaaa" value="'+(a.prazo||'').replace(/"/g,'&quot;')+'"></td>'
+      +'<td><button class="m-del" onclick="this.closest(&quot;tr&quot;).remove()">✕</button></td>'
+      +'</tr>';
+  }).join('');
+
+  return '<div class="s3-wrap">'
+    // Header row
+    +'<div class="s3-header">'
+    +'<div class="s3-header-left">'
+    +'<div class="s3-tag">📋 PLANOS DE AÇÃO</div>'
+    +'<div class="s3-company">'+(S.company||'Empresa')+'</div>'
+    +'<div class="s3-period">'+mesLabel+'</div>'
+    +'</div>'
+    +'<div class="s3-header-right">'
+    +'<div style="text-align:center">'
+    +'<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px">Score Atual</div>'
+    +'<div style="font-family:Bebas Neue,sans-serif;font-size:48px;line-height:1;color:'+grade(res.score).c+'">'+res.score+'</div>'
+    +'<div style="font-size:11px;font-weight:700;color:'+grade(res.score).c+'">'+grade(res.score).l+'</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    // Three columns
+    +'<div class="s3-body">'
+    // Col 1: KPI actions (from slide 1)
+    +'<div class="s3-col">'
+    +'<div class="s3-col-title"><span>⚡</span> Ações por KPI — '+mesLabel+'</div>'
+    +(kpiActsDefined.length
+      ? '<table class="m-act-tbl"><thead><tr><th>KPI / Ação</th><th>Resp.</th><th>Prazo</th><th>Edit.</th></tr></thead><tbody>'+kpiRows+'</tbody></table>'
+      : '<div class="s3-empty">Nenhuma ação definida nos KPIs.<br>Volte ao slide de KPIs e adicione ações nos cards com baixa performance.</div>'
+    )
+    +'</div>'
+    // Col 2: Ações adicionais
+    +'<div class="s3-col">'
+    +'<div class="s3-col-title"><span>📌</span> Ações Adicionais</div>'
+    +'<table class="m-act-tbl"><thead><tr><th>Ação</th><th>Resp.</th><th>Prazo</th><th></th></tr></thead>'
+    +'<tbody id="actAdicBody">'+adicRows+'</tbody></table>'
+    +'<button class="m-add-row" onclick="addAdicRow()">+ Adicionar</button>'
+    +'</div>'
+    // Col 3: Próximo mês
+    +'<div class="s3-col">'
+    +'<div class="s3-col-title"><span>🎯</span> Metas — '+nextLabel+'</div>'
+    +'<table class="m-act-tbl"><thead><tr><th>Meta / Ação</th><th>Resp.</th><th>Prazo</th><th></th></tr></thead>'
+    +'<tbody id="actFcBody">'+fcRows+'</tbody></table>'
+    +'<button class="m-add-row" onclick="addActRow(&quot;forecast&quot;)">+ Adicionar</button>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function initSlide3Actions(slideEl){
+  slideEl.querySelectorAll('.act-prazo').forEach(maskPrazo);
 }
 
 
