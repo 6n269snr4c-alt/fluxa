@@ -890,7 +890,6 @@ input[type=number]::-webkit-inner-spin-button{opacity:.3}
     <div style="display:flex;gap:8px;align-items:center">
       <button class="lock-btn" id="lockBtn" onclick="toggleLock()">🔓 Editar</button>
       <button class="bs" id="cfgSaveBtn" onclick="saveConfig()" style="font-size:12px;padding:7px 16px;font-family:Outfit,sans-serif;letter-spacing:0;font-weight:700">SALVAR</button>
-      <div id="cfgLockHint" style="display:none;align-items:center;gap:6px;font-size:11px;color:var(--amber);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:5px 12px">🔒 Clique em <b>Editar</b> para modificar</div>
     </div>
   </div>
   <div class="cfg-body">
@@ -2682,16 +2681,13 @@ function rConfig(){
   document.getElementById('cfgCo').value=S.company;
   document.getElementById('cfgSec').value=S.sector||'';
 
-  const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Bloqueado':'🔓 Editar';btn.className='lock-btn'+(S.locked?' locked':'');
+  const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Clique para editar':'🔓 Editando';btn.className='lock-btn'+(S.locked?' locked':'');
   document.getElementById('cfgSaveBtn').style.display=S.locked?'none':'inline-block';
   // Disable/enable text inputs based on lock state
   ['cfgCo','cfgSec'].forEach(function(id){
     var el=document.getElementById(id);
     if(el){el.disabled=!!S.locked;el.style.opacity=S.locked?'.45':'1';el.style.cursor=S.locked?'not-allowed':'text';}
   });
-  // Show lock hint if locked
-  var hint=document.getElementById('cfgLockHint');
-  if(hint)hint.style.display=S.locked?'flex':'none';
   const rmBtn=document.getElementById('rmLogoBtn');
   if(S.logo){document.getElementById('logoPlaceholder').style.display='none';
     let img=document.querySelector('#logoArea img');
@@ -2806,9 +2802,20 @@ function setKpiBM(id,mode){
   }
 }
 function setBM(mode,btn){if(S.locked)return;S.benchMode=mode;} // legacy global fallback
-function toggleLock(){S.locked=!S.locked;sv();
-  const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Bloqueado':'🔓 Editar';btn.className='lock-btn'+(S.locked?' locked':'');
-  rGoalsTable();rCfgKpiTable();}
+function toggleLock(){
+  S.locked=!S.locked;sv();
+  const btn=document.getElementById('lockBtn');
+  btn.textContent=S.locked?'🔒 Clique para editar':'🔓 Editando';
+  btn.className='lock-btn'+(S.locked?' locked':'');
+  const saveBtn=document.getElementById('cfgSaveBtn');
+  if(saveBtn)saveBtn.style.display=S.locked?'none':'inline-block';
+  ['cfgCo','cfgSec'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.disabled=!!S.locked;el.style.opacity=S.locked?'.45':'1';el.style.cursor=S.locked?'not-allowed':'text';}
+  });
+  if(!S.locked){var co=document.getElementById('cfgCo');if(co)setTimeout(function(){co.focus();co.select();},50);}
+  rGoalsTable();rCfgKpiTable();
+}
 function saveConfig(){
   if(S.locked){toast('⚠️ Desbloqueie para salvar');return;}
   S.company=document.getElementById('cfgCo').value||'Minha Empresa';
