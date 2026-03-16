@@ -445,6 +445,7 @@ function go(name,btn){
   if(name==='sim')initSim();
   if(name==='import')rImportPage();
   if(name==='actions')rActions();
+  if(name==='lancamentos')rLancamentos();
   if(name==='meth')rMeth();
 }
 
@@ -3072,59 +3073,77 @@ function dreUpdateCat(idx, newCat) {
 }
 
 function dreAggregate() {
-  const a = { f_fat:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  // f_fat  = Receita Bruta
+  // f_ded  = Deduções da Receita (impostos sobre venda, devoluções) → Receita Líquida = f_fat - f_ded
+  // f_cv   = Custo Variável / CMV → calcula Margem de Contribuição
+  // f_dc   = Despesa Comercial
+  // f_df   = Despesas Fixas (pessoal + administrativa + depreciação)
+  // f_depfin = Despesas Financeiras + IR/CSLL
+  // Lucro Líquido = Receita Líquida - f_cv - f_dc - f_df - f_depfin
+  const a = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
   _dreClassified.forEach(l => {
     const v = l.value;
-    if (l.category === 'receita_bruta')          a.f_fat    += v;
-    else if (l.category === 'deducao_receita')   a.f_cv     += v;
-    else if (l.category === 'custo_variavel')    a.f_cv     += v;
-    else if (l.category === 'despesa_comercial') a.f_dc     += v;
-    else if (l.category === 'despesa_pessoal')   a.f_df     += v;
-    else if (l.category === 'despesa_administrativa') a.f_df += v;
-    else if (l.category === 'depreciacao')       a.f_df     += v;
-    else if (l.category === 'despesa_financeira') a.f_depfin += v;
-    else if (l.category === 'imposto_lucro')     a.f_depfin += v;
+    if      (l.category === 'receita_bruta')          a.f_fat    += v;
+    else if (l.category === 'deducao_receita')        a.f_ded    += v;
+    else if (l.category === 'custo_variavel')         a.f_cv     += v;
+    else if (l.category === 'despesa_comercial')      a.f_dc     += v;
+    else if (l.category === 'despesa_pessoal')        a.f_df     += v;
+    else if (l.category === 'despesa_administrativa') a.f_df     += v;
+    else if (l.category === 'depreciacao')            a.f_df     += v;
+    else if (l.category === 'despesa_financeira')     a.f_depfin += v;
+    else if (l.category === 'imposto_lucro')          a.f_depfin += v;
   });
+  // For calcKPIs: f_cv already includes deductions so margin stays correct.
+  // We add deductions to f_cv so the Receita Líquida flows through existing formula.
   return a;
 }
 
 function dreRenderSummary() {
   const a = dreAggregate();
-  const kpis = calcKPIs(a);
+  // Receita Líquida = Bruta - Deduções
+  const recLiq = a.f_fat - a.f_ded;
+  // Lucro Líquido R$ = Rec.Liq - CV - DC - DF - DepFin
+  const lucroR = recLiq - a.f_cv - a.f_dc - a.f_df - a.f_depfin;
+  const lucroP = a.f_fat > 0 ? (lucroR / a.f_fat * 100) : null;
   const fmt = v => 'R$ ' + dreFormatNum(v);
   const items = [
-    { label: '💰 Receita Bruta', field: 'f_fat',    color: '#00e89b' },
-    { label: '📦 Custos Variáveis', field: 'f_cv',  color: '#ef4444' },
-    { label: '📣 Despesa Comercial', field:'f_dc',   color: '#3b82f6' },
-    { label: '📋 Despesas Fixas',  field: 'f_df',   color: '#f59e0b' },
-    { label: '🏦 Desp. Fin. + IR', field: 'f_depfin', color: '#a855f7' },
-  ];
-  const kpiItems = [
-    { label: '📈 Margem de Contribuição', id: 'margem', unit:'%' },
-    { label: '📊 EBITDA',                 id: 'ebitda', unit:'%' },
-    { label: '💰 Lucro Líquido',          id: 'lucroliq', unit:'%' },
+    { label: '💰 Receita Bruta',      val: a.f_fat,    color: '#00e89b' },
+    { label: '➖ Deduções',           val: a.f_ded,    color: '#64748b', hide: !a.f_ded },
+    { label: '📦 Custos Variáveis',   val: a.f_cv,     color: '#ef4444' },
+    { label: '📣 Despesa Comercial',  val: a.f_dc,     color: '#3b82f6', hide: !a.f_dc },
+    { label: '📋 Despesas Fixas',     val: a.f_df,     color: '#f59e0b' },
+    { label: '🏦 Desp. Fin. + IR',    val: a.f_depfin, color: '#a855f7', hide: !a.f_depfin },
   ];
   let html = `<div class="dre-sum-title">Resumo de valores</div>`;
   items.forEach(it => {
-    const v = a[it.field];
-    if (!v) return;
+    if (it.hide || !it.val) return;
     html += `<div class="dre-sum-item">
       <span class="dre-sum-label" style="color:${it.color}">${it.label}</span>
-      <span class="dre-sum-value" style="color:${it.color}">${fmt(v)}</span>
+      <span class="dre-sum-value" style="color:${it.color}">${fmt(it.val)}</span>
     </div>`;
   });
   if (a.f_fat > 0) {
-    html += `<div class="dre-sum-title" style="margin-top:8px">KPIs que serão gerados</div>`;
-    kpiItems.forEach(it => {
-      const v = kpis[it.id];
-      if (v === null || v === undefined) return;
-      const disp = v.toFixed(1) + it.unit;
-      const col = v >= 0 ? 'var(--teal)' : 'var(--red)';
-      html += `<div class="dre-sum-item">
-        <span class="dre-sum-label">${it.label}</span>
-        <span class="dre-sum-value" style="color:${col}">${disp}</span>
+    const lucroCol = lucroR >= 0 ? 'var(--teal)' : 'var(--red)';
+    html += `<div class="dre-sum-title" style="margin-top:8px">Resultado calculado</div>
+    <div class="dre-sum-item" style="border-color:${lucroCol}44">
+      <span class="dre-sum-label">💰 Lucro Líquido R$</span>
+      <span class="dre-sum-value" style="color:${lucroCol}">${fmt(lucroR)}</span>
+    </div>`;
+    if (lucroP !== null) {
+      html += `<div class="dre-sum-item" style="border-color:${lucroCol}44">
+        <span class="dre-sum-label">💰 Lucro Líquido %</span>
+        <span class="dre-sum-value" style="color:${lucroCol}">${lucroP.toFixed(1)}%</span>
       </div>`;
-    });
+    }
+    const kpis = calcKPIs({ f_fat: a.f_fat, f_cv: a.f_cv + a.f_ded, f_df: a.f_df + a.f_dc, f_depfin: a.f_depfin });
+    const margem = kpis.margem;
+    if (margem !== null) {
+      const mc = margem >= 0 ? 'var(--teal)' : 'var(--red)';
+      html += `<div class="dre-sum-item">
+        <span class="dre-sum-label">📈 Margem de Contribuição</span>
+        <span class="dre-sum-value" style="color:${mc}">${margem.toFixed(1)}%</span>
+      </div>`;
+    }
   }
   document.getElementById('dreReviewSummary').innerHTML = html;
 }
@@ -3143,9 +3162,20 @@ function dreConfirm() {
     S.dreMappings[l.name.toLowerCase().trim()] = l.category;
   });
 
-  // Build raw and save
-  const raw = {};
-  Object.entries(agg).forEach(([k, v]) => { if (v > 0) raw[k] = v; });
+  // Save raw DRE lines so they can be reviewed/edited later
+  if (!S.dreLines) S.dreLines = {};
+  S.dreLines[mk] = _dreClassified.map(l => ({ name: l.name, value: l.value, category: l.category }));
+
+  // Build raw for calcKPIs: deductions go into f_cv (reduces margin correctly)
+  const raw = {
+    f_fat:    agg.f_fat    || undefined,
+    f_cv:     (agg.f_cv + agg.f_ded) || undefined,  // CMV + deduções
+    f_dc:     agg.f_dc     || undefined,
+    f_df:     agg.f_df     || undefined,
+    f_depfin: agg.f_depfin || undefined,
+  };
+  Object.keys(raw).forEach(k => { if (!raw[k]) delete raw[k]; });
+
   if (!S.raw) S.raw = {};
   S.raw[mk] = raw;
 
@@ -3153,15 +3183,6 @@ function dreConfirm() {
   const filled = Object.values(kpis).filter(v => v !== null).length;
   if (!S.data) S.data = {};
   if (!S.data[mk]) S.data[mk] = {};
-
-  const KF = {
-    receita:['f_fat'], cac:['f_dc','f_fat'], churn:['f_cancel','f_bcli'],
-    margem:['f_fat','f_cv'], ebitda:['f_fat','f_cv','f_df'],
-    despop:['f_df','f_fat'], caixa:['f_ent','f_said'], ciclo:['f_pmr','f_pmp'],
-    runway:['f_saldo','f_said'], reccolab:['f_fat','f_colab'],
-    estoque:['f_estq','f_cv'], turnover:['f_saiv','f_colab'],
-    lucroliq:['f_fat','f_cv','f_df','f_depfin']
-  };
   IND.forEach(ind => {
     const v = kpis[ind.id];
     if (v !== null) {
@@ -3180,4 +3201,256 @@ function dreConfirm() {
 
 function dreFormatNum(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// ═══════════════════════════════════════════
+// LANÇAMENTOS PAGE
+// ═══════════════════════════════════════════
+let _lancEditMk = null;
+let _lancEditLines = [];
+
+function rLancamentos() {
+  const body = document.getElementById('lancBody');
+  if (!body) return;
+  const months = (S.months || []).slice().sort().reverse();
+  if (!months.length) {
+    body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="eico">🗂️</div><p>Nenhum lançamento ainda.<br>Use Lançamento para importar um DRE.</p></div>';
+    return;
+  }
+  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+  months.forEach(mk => {
+    const parts = mk.split('-');
+    const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
+    const hasLines = S.dreLines && S.dreLines[mk];
+    const raw = S.raw && S.raw[mk];
+    const kpis = raw ? calcKPIs(raw) : {};
+    const score = S.data && S.data[mk] ? calcScore(mk) : null;
+    const g = score ? grade(score.score) : null;
+    const recVal = raw && raw.f_fat ? 'R$ ' + dreFormatNum(raw.f_fat) : '—';
+    const lucroVal = kpis.lucroliq !== null && kpis.lucroliq !== undefined
+      ? kpis.lucroliq.toFixed(1) + '%' : '—';
+    const lucroCol = kpis.lucroliq > 0 ? 'var(--teal)' : kpis.lucroliq < 0 ? 'var(--red)' : 'var(--mut)';
+    const lineCount = hasLines ? S.dreLines[mk].filter(l => l.category !== 'ignorar').length : 0;
+
+    html += `<div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s;cursor:pointer"
+      onmouseover="this.style.borderColor='rgba(0,240,200,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.075)'"
+      onclick="lancOpenModal('${mk}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:#c8dff5">${lbl}</div>
+        ${g ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:${g.c}18;color:${g.c};border:1px solid ${g.c}44">${g.l}</span>` : '<span style="font-size:10px;color:var(--mut)">Sem score</span>'}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
+          <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Receita</div>
+          <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--teal)">${recVal}</div>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
+          <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Lucro Líq.</div>
+          <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${lucroCol}">${lucroVal}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;color:var(--mut)">${hasLines ? lineCount + ' linhas do DRE' : 'Lançamento manual'}</span>
+        <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+function lancOpenModal(mk) {
+  _lancEditMk = mk;
+  const parts = mk.split('-');
+  const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
+  document.getElementById('lancModalTitle').textContent = 'Lançamento — ' + lbl;
+
+  const hasLines = S.dreLines && S.dreLines[mk];
+  document.getElementById('lancModalSub').textContent = hasLines
+    ? 'Importado via DRE · Ajuste as classificações e salve para recalcular os KPIs'
+    : 'Lançamento manual · Valores agregados';
+
+  _lancEditLines = hasLines
+    ? S.dreLines[mk].map(l => ({ ...l }))
+    : [];
+
+  lancRenderModal(mk);
+  document.getElementById('lancModal').classList.add('open');
+}
+
+function lancCloseModal() {
+  document.getElementById('lancModal').classList.remove('open');
+  _lancEditMk = null;
+  _lancEditLines = [];
+}
+
+function lancRenderModal(mk) {
+  const body = document.getElementById('lancModalBody');
+  const raw = (S.raw && S.raw[mk]) || {};
+  const kpis = calcKPIs(raw);
+
+  // Right panel: current KPIs + aggregated values
+  const fmt = v => v ? 'R$ ' + dreFormatNum(v) : '—';
+  const lucroCol = kpis.lucroliq > 0 ? 'var(--teal)' : kpis.lucroliq < 0 ? 'var(--red)' : 'var(--mut)';
+  let rightHtml = `<div style="display:flex;flex-direction:column;gap:8px">
+    <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:4px">Valores Calculados</div>`;
+
+  const summItems = [
+    { label:'💰 Receita Bruta', val: fmt(raw.f_fat), col:'#00e89b' },
+    { label:'📦 Custos Variáveis', val: fmt(raw.f_cv), col:'#ef4444' },
+    { label:'📣 Desp. Comercial', val: fmt(raw.f_dc), col:'#3b82f6' },
+    { label:'📋 Despesas Fixas', val: fmt(raw.f_df), col:'#f59e0b' },
+    { label:'🏦 Desp. Fin. + IR', val: fmt(raw.f_depfin), col:'#a855f7' },
+  ];
+  summItems.forEach(it => {
+    if (it.val === '—') return;
+    rightHtml += `<div class="dre-sum-item">
+      <span class="dre-sum-label" style="color:${it.col}">${it.label}</span>
+      <span class="dre-sum-value" style="color:${it.col};font-size:12px">${it.val}</span>
+    </div>`;
+  });
+
+  const kpiItems = [
+    { label:'📈 Margem Contrib.', val: kpis.margem !== null ? kpis.margem.toFixed(1)+'%' : '—', col: kpis.margem >= 0 ? 'var(--teal)' : 'var(--red)' },
+    { label:'📊 EBITDA', val: kpis.ebitda !== null ? kpis.ebitda.toFixed(1)+'%' : '—', col: kpis.ebitda >= 0 ? 'var(--teal)' : 'var(--red)' },
+    { label:'💰 Lucro Líquido %', val: kpis.lucroliq !== null ? kpis.lucroliq.toFixed(1)+'%' : '—', col: lucroCol },
+  ];
+  rightHtml += `<div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);font-weight:700;margin:8px 0 4px">KPIs Gerados</div>`;
+  kpiItems.forEach(it => {
+    rightHtml += `<div class="dre-sum-item">
+      <span class="dre-sum-label">${it.label}</span>
+      <span class="dre-sum-value" style="color:${it.col};font-size:13px">${it.val}</span>
+    </div>`;
+  });
+  rightHtml += '</div>';
+
+  // Left panel: DRE lines table or message
+  let leftHtml = '';
+  if (_lancEditLines.length) {
+    const opts = DRE_CATS.map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+    leftHtml = `<div style="overflow-y:auto;min-height:0;border-radius:10px;border:1px solid rgba(255,255,255,.06)">
+      <table class="dre-tbl" style="min-width:100%">
+        <thead><tr>
+          <th>Conta do DRE</th>
+          <th style="text-align:right">Valor (R$)</th>
+          <th>Classificação</th>
+        </tr></thead><tbody>`;
+    _lancEditLines.forEach((line, i) => {
+      const cat = DRE_CATS.find(c => c.id === line.category);
+      const col = cat?.color || '#64748b';
+      leftHtml += `<tr class="dre-tbl-row">
+        <td class="dre-td-name" title="${line.name}">${line.name}</td>
+        <td class="dre-td-val">${dreFormatNum(line.value)}</td>
+        <td style="min-width:180px">
+          <select class="dre-cat-sel" data-lanc-idx="${i}"
+            style="border-color:${col}55;color:${col}"
+            onchange="lancUpdateLine(${i},this.value)">
+            ${DRE_CATS.map(c => `<option value="${c.id}"${c.id===line.category?' selected':''}>${c.icon} ${c.label}</option>`).join('')}
+          </select>
+        </td>
+      </tr>`;
+    });
+    leftHtml += '</tbody></table></div>';
+  } else {
+    leftHtml = `<div style="color:var(--mut);font-size:12px;padding:20px;text-align:center;background:rgba(255,255,255,.02);border:1px solid var(--bdr);border-radius:10px">
+      Lançamento manual — linhas do DRE não disponíveis.<br>
+      <span style="font-size:11px;color:rgba(255,255,255,.2)">Para ajustar, importe um novo DRE para este mês.</span>
+    </div>`;
+  }
+
+  body.innerHTML = leftHtml + rightHtml;
+}
+
+function lancUpdateLine(idx, newCat) {
+  _lancEditLines[idx].category = newCat;
+  const sel = document.querySelector(`[data-lanc-idx="${idx}"]`);
+  if (sel) {
+    const col = DRE_CATS.find(c => c.id === newCat)?.color || '#64748b';
+    sel.style.borderColor = col + '55';
+    sel.style.color = col;
+  }
+  // Recalculate and update right panel live
+  const agg = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  _lancEditLines.forEach(l => {
+    const v = l.value;
+    if      (l.category === 'receita_bruta')          agg.f_fat    += v;
+    else if (l.category === 'deducao_receita')        agg.f_ded    += v;
+    else if (l.category === 'custo_variavel')         agg.f_cv     += v;
+    else if (l.category === 'despesa_comercial')      agg.f_dc     += v;
+    else if (l.category === 'despesa_pessoal')        agg.f_df     += v;
+    else if (l.category === 'despesa_administrativa') agg.f_df     += v;
+    else if (l.category === 'depreciacao')            agg.f_df     += v;
+    else if (l.category === 'despesa_financeira')     agg.f_depfin += v;
+    else if (l.category === 'imposto_lucro')          agg.f_depfin += v;
+  });
+  // Store preview in a temp raw
+  const previewRaw = {
+    f_fat: agg.f_fat || undefined,
+    f_cv:  (agg.f_cv + agg.f_ded) || undefined,
+    f_dc:  agg.f_dc || undefined,
+    f_df:  agg.f_df || undefined,
+    f_depfin: agg.f_depfin || undefined,
+  };
+  // Update S.raw temp for lancRenderModal right panel
+  const origRaw = (S.raw && S.raw[_lancEditMk]) || {};
+  if (!S.raw) S.raw = {};
+  S.raw[_lancEditMk] = previewRaw;
+  lancRenderModal(_lancEditMk);
+  S.raw[_lancEditMk] = origRaw; // restore until saved
+}
+
+function lancSaveEdits() {
+  if (!_lancEditMk || !_lancEditLines.length) { lancCloseModal(); return; }
+  const mk = _lancEditMk;
+
+  // Save updated lines
+  if (!S.dreLines) S.dreLines = {};
+  S.dreLines[mk] = _lancEditLines.map(l => ({ ...l }));
+
+  // Update mappings
+  if (!S.dreMappings) S.dreMappings = {};
+  _lancEditLines.filter(l => l.category !== 'ignorar').forEach(l => {
+    S.dreMappings[l.name.toLowerCase().trim()] = l.category;
+  });
+
+  // Recalculate aggregation
+  const agg = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  _lancEditLines.forEach(l => {
+    const v = l.value;
+    if      (l.category === 'receita_bruta')          agg.f_fat    += v;
+    else if (l.category === 'deducao_receita')        agg.f_ded    += v;
+    else if (l.category === 'custo_variavel')         agg.f_cv     += v;
+    else if (l.category === 'despesa_comercial')      agg.f_dc     += v;
+    else if (l.category === 'despesa_pessoal')        agg.f_df     += v;
+    else if (l.category === 'despesa_administrativa') agg.f_df     += v;
+    else if (l.category === 'depreciacao')            agg.f_df     += v;
+    else if (l.category === 'despesa_financeira')     agg.f_depfin += v;
+    else if (l.category === 'imposto_lucro')          agg.f_depfin += v;
+  });
+
+  const raw = {
+    f_fat:    agg.f_fat    || undefined,
+    f_cv:     (agg.f_cv + agg.f_ded) || undefined,
+    f_dc:     agg.f_dc     || undefined,
+    f_df:     agg.f_df     || undefined,
+    f_depfin: agg.f_depfin || undefined,
+  };
+  Object.keys(raw).forEach(k => { if (!raw[k]) delete raw[k]; });
+  if (!S.raw) S.raw = {};
+  S.raw[mk] = raw;
+
+  // Recalculate KPIs
+  const kpis = calcKPIs(raw);
+  if (!S.data) S.data = {};
+  if (!S.data[mk]) S.data[mk] = {};
+  IND.forEach(ind => {
+    const v = kpis[ind.id];
+    if (v !== null) S.data[mk][ind.id] = { value: parseFloat(v.toFixed(4)), confidence: 'high' };
+  });
+  if (S.diagCache) delete S.diagCache[mk];
+
+  sv();
+  toast('✓ Classificações salvas e KPIs recalculados!');
+  lancCloseModal();
+  rLancamentos();
 }
