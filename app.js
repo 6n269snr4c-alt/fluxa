@@ -3491,11 +3491,25 @@ function dreRenderSummary() {
   // a.f_pessoal = Despesas com Pessoal
   // a.f_adm = Despesas Administrativas + Depreciação
   // a.f_depfin = Desp. Financeiras + IR/CSLL
-  const totalDF = a.f_pessoal + a.f_adm;
-  const totalCV = a.f_cmv + a.f_ded;  // CMV + deduções = Custo Variável total
-  // Lucro Líquido R$ = Receita - CV total - Desp.Comercial - Desp.Fixas - Desp.Fin
-  const lucroR = a.f_fat - totalCV - a.f_dc - totalDF - a.f_depfin;
-  const lucroP = a.f_fat > 0 ? (lucroR / a.f_fat * 100) : null;
+  const recLiq = a.f_fat - a.f_ded;
+  const base   = recLiq > 0 ? recLiq : a.f_fat;
+  // Usa calcKPIs para garantir consistência com o resto do produto
+  const raw = {
+    f_fat:     a.f_fat     || undefined,
+    f_cv:      (a.f_cmv + a.f_ded) || undefined,
+    f_dc:      a.f_dc      || undefined,
+    f_df:      (a.f_pessoal + a.f_adm) || undefined,
+    f_depfin:  a.f_depfin  || undefined,
+    f_cmv:     a.f_cmv     || undefined,
+    f_cvc:     a.f_cvc     || undefined,
+    f_ded:     a.f_ded     || undefined,
+    f_pessoal: a.f_pessoal || undefined,
+    f_adm:     a.f_adm     || undefined,
+    f_dep:     a.f_dep     || undefined,
+  };
+  const kpis = calcKPIs(raw);
+  const lucroR = kpis.lucroliq !== null ? kpis.lucroliq / 100 * base : null;
+  const lucroP = kpis.lucroliq;
   const fmt = v => 'R$ ' + dreFormatNum(v);
   const items = [
     { label: '💰 Receita Bruta',           val: a.f_fat,     color: '#00e89b' },
@@ -3516,18 +3530,6 @@ function dreRenderSummary() {
     </div>`;
   });
   if (a.f_fat > 0) {
-    // Calcula KPIs usando campos corretos
-    const raw = {
-      f_fat:     a.f_fat,
-      f_cv:      totalCV,
-      f_dc:      a.f_dc,
-      f_df:      totalDF,
-      f_depfin:  a.f_depfin,
-      f_cmv:     a.f_cmv,
-      f_pessoal: a.f_pessoal,
-      f_adm:     a.f_adm,
-    };
-    const kpis = calcKPIs(raw);
     html += `<div class="dre-sum-title" style="margin-top:8px">Resultado calculado</div>`;
     const lucroCol = lucroR >= 0 ? 'var(--teal)' : 'var(--red)';
     html += `<div class="dre-sum-item" style="border-color:${lucroCol}44;cursor:pointer"
