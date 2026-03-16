@@ -152,6 +152,18 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);back
 .dact{font-size:12px;background:rgba(0,240,200,.07);border-left:2px solid var(--teal);padding:5px 10px;border-radius:0 5px 5px 0;margin-bottom:4px}
 .dchips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
 .dchip{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid}
+.diag-score-badge{font-size:14px;font-weight:700;border:1px solid;border-radius:20px;display:inline-block;padding:4px 14px;margin-bottom:12px;letter-spacing:.5px}
+.diag-narrative{font-size:14px;color:#c8dff5;line-height:1.75;margin-bottom:14px}
+.diag-section-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:rgba(255,255,255,.4);margin:12px 0 6px}
+.dalert{font-size:13px;color:#c8dff5;line-height:1.7;padding:4px 0 4px 8px;border-left:2px solid rgba(244,165,34,.4);margin-bottom:5px}
+/* Larger sizes for meeting/presentation context */
+.meet-diag .diag-score-badge{font-size:16px;padding:5px 18px;margin-bottom:16px}
+.meet-diag .diag-narrative{font-size:16px;line-height:1.8;margin-bottom:18px}
+.meet-diag .diag-section-title{font-size:12px;margin:16px 0 8px}
+.meet-diag .dalert{font-size:15px;line-height:1.75;padding:6px 0 6px 10px;margin-bottom:7px}
+.meet-diag .dact{font-size:15px;padding:8px 14px;margin-bottom:6px}
+.meet-diag .dchips{margin-top:14px}
+.meet-diag .dchip{font-size:12px;padding:3px 10px}
 .dcr{color:var(--red);border-color:rgba(255,61,90,.3);background:rgba(255,61,90,.08)}
 .dcg{color:var(--green);border-color:rgba(0,232,155,.3);background:rgba(0,232,155,.08)}
 .dload{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mut)}

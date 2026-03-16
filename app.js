@@ -519,32 +519,38 @@ function rWheel(dets,sz,svgId){
   });
   // KPI SLICES
   _wheelInds.forEach((ind,i)=>{
-    const sa=sa_w; // local alias
+    const sa=sa_w;
     const a1=-Math.PI/2+i*sa+gap/2,a2=a1+sa-gap,col=GC[ind.group];
     arcPath(svg,cx,cy,rI,rO,a1,a2,'rgba(255,255,255,.04)',false,false,1);
     let pct=0,conf='high';
     if(dets){const det=dets.find(d=>d.ind.id===ind.id);if(det){pct=det.pct;conf=det.conf;}}
     if(pct>0)arcPath(svg,cx,cy,rI,rI+(rO-rI)*(pct/100),a1,a2,col,false,false,1);
-    // place icon + label + pct INSIDE the arc at 70% radius
+    // Label position — inside arc at 60% radius
     const ma=a1+(sa-gap)/2;
-    const mr=rI+(rO-rI)*0.60; // center of arc band
+    const mr=rI+(rO-rI)*0.60;
     const tx=cx+mr*Math.cos(ma),ty=cy+mr*Math.sin(ma);
+    // Determine if arc is filled enough to put dark text on it
+    const onColor=pct>=50; // arc is mostly filled → use dark text on color bg
+    const textCol=onColor?'#07101c':'rgba(210,230,255,.9)';
+    const pctColor=pct>=80?'#07101c':pct>=60?'#f4a522':'#ff5470';
+    const pctOnColor=pct>=80; // white arc → dark text; low pct → colored warning text
     // icon
-    const ico=ns('text');ico.setAttribute('x',tx);ico.setAttribute('y',ty-sz*.026);
+    const ico=ns('text');ico.setAttribute('x',tx);ico.setAttribute('y',ty-sz*.028);
     ico.setAttribute('text-anchor','middle');ico.setAttribute('dominant-baseline','middle');
-    ico.setAttribute('font-size',sz*.033+'');ico.textContent=ind.icon;svg.appendChild(ico);
+    ico.setAttribute('font-size',sz*.038+'');ico.textContent=ind.icon;svg.appendChild(ico);
     // short name
-    const lt=ns('text');lt.setAttribute('x',tx);lt.setAttribute('y',ty+sz*.006);
+    const lt=ns('text');lt.setAttribute('x',tx);lt.setAttribute('y',ty+sz*.008);
     lt.setAttribute('text-anchor','middle');lt.setAttribute('dominant-baseline','middle');
-    lt.setAttribute('font-size',sz*.024+'');lt.setAttribute('fill','rgba(210,230,255,.85)');
-    lt.setAttribute('font-family','Outfit,sans-serif');lt.setAttribute('font-weight','600');
+    lt.setAttribute('font-size',sz*.028+'');lt.setAttribute('fill',textCol);
+    lt.setAttribute('font-family','Outfit,sans-serif');lt.setAttribute('font-weight','700');
     lt.textContent=ind.short;svg.appendChild(lt);
     // pct
     if(pct>0){
-      const pc=ns('text');pc.setAttribute('x',tx);pc.setAttribute('y',ty+sz*.032);
+      const pc=ns('text');pc.setAttribute('x',tx);pc.setAttribute('y',ty+sz*.038);
       pc.setAttribute('text-anchor','middle');pc.setAttribute('dominant-baseline','middle');
-      pc.setAttribute('font-size',sz*.026+'');pc.setAttribute('fill',pct>=80?col:pct>=60?'#f4a522':'#ff3d5a');
-      pc.setAttribute('font-family','JetBrains Mono,monospace');pc.setAttribute('font-weight','700');
+      pc.setAttribute('font-size',sz*.030+'');
+      pc.setAttribute('fill',pct>=80?'#07101c':pct>=60?'#f4a522':'#ff5470');
+      pc.setAttribute('font-family','JetBrains Mono,monospace');pc.setAttribute('font-weight','800');
       pc.textContent=Math.round(pct)+'%';svg.appendChild(pc);
     }
     // Click overlay
@@ -2844,7 +2850,7 @@ function buildSlideDiag(res){
     // Right: diagnosis — full height scroll
     +'<div style="display:flex;flex-direction:column;min-height:0;padding:28px 28px 24px;overflow:hidden">'
     +'<div style="font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;margin-bottom:16px;flex-shrink:0">Diagnóstico Executivo</div>'
-    +'<div style="flex:1;overflow-y:auto;min-height:0">'+diagInner+'</div>'
+    +'<div class="meet-diag" style="flex:1;overflow-y:auto;min-height:0">'+diagInner+'</div>'
     +'</div>'
     +'</div>';
 
