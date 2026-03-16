@@ -3257,6 +3257,8 @@ function dreParseNum(raw) {
   const v = parseFloat(normalized);
   return isNaN(v) ? null : Math.abs(v);
 }
+
+function dreFormatNum(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
