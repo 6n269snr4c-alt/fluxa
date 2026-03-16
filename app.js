@@ -2815,45 +2815,39 @@ function buildSlideDiag(res){
   var g=grade(res.score);var col=g.c;
   var parts=S.sel.split('-');var y=parts[0];var mo=parts[1];
   var period=MES[parseInt(mo)-1]+'/'+y;
-
-  // Build wheel SVG inline
-  var sz=320;
+  var sz=420;
   var wheelId='meetDiagWheel';
-  var wheelHtml='<svg id="'+wheelId+'" width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'"></svg>';
 
-  // Get diagnosis from cache
-  var diagHtml='';
+  // Get diagnosis from cache — strip the outer diag-box wrapper to re-style
+  var diagInner='';
   var cached=S.diagCache&&S.diagCache[S.sel];
   if(cached&&cached.html){
-    // Extract just situacao + alertas from cached HTML (strip action items for brevity)
-    diagHtml=cached.html;
+    diagInner=cached.html;
   } else {
-    diagHtml='<div class="diag-box" style="color:var(--mut);font-size:13px;line-height:1.8">'
-      +'<div style="font-size:11px;letter-spacing:2px;color:var(--mut);margin-bottom:12px">DIAGNÓSTICO</div>'
+    diagInner='<div style="color:var(--mut);font-size:13px;line-height:1.8">'
       +'Abra o Dashboard primeiro para gerar o diagnóstico de IA deste período.'
       +'</div>';
   }
 
-  var html='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;overflow:hidden">'
-    // Left: wheel
-    +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;border-right:1px solid rgba(255,255,255,.07)">'
-    +'<div style="font-size:10px;letter-spacing:4px;color:var(--teal);font-weight:700;text-transform:uppercase">Score de Saúde · '+period+'</div>'
-    +'<div style="position:relative;width:'+sz+'px;height:'+sz+'px">'
-    +wheelHtml
+  var html='<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:0;overflow:hidden">'
+    // Left: wheel — full height, centered
+    +'<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 16px;border-right:1px solid rgba(255,255,255,.07);overflow:hidden">'
+    +'<div style="font-size:9px;letter-spacing:4px;color:var(--teal);font-weight:700;text-transform:uppercase;margin-bottom:4px">Score de Saúde · '+period+'</div>'
+    +'<div style="position:relative;width:'+sz+'px;height:'+sz+'px;flex-shrink:0">'
+    +'<svg id="'+wheelId+'" width="'+sz+'" height="'+sz+'" viewBox="0 0 '+sz+' '+sz+'"></svg>'
     +'<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none">'
-    +'<div style="font-family:\'Bebas Neue\',sans-serif;font-size:72px;line-height:.85;color:'+col+'">'+res.score+'</div>'
-    +'<div style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-top:4px">SCORE</div>'
-    +'<div style="font-size:18px;font-weight:700;color:'+col+';margin-top:4px;background:'+col+'15;border:1px solid '+col+'30;border-radius:8px;padding:2px 12px">'+g.l+'</div>'
+    +'<div style="font-family:\'Bebas Neue\',sans-serif;font-size:86px;line-height:.85;color:'+col+'">'+res.score+'</div>'
+    +'<div style="font-size:10px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-top:6px">SCORE</div>'
+    +'<div style="font-size:20px;font-weight:700;color:'+col+';margin-top:6px;background:'+col+'15;border:1px solid '+col+'30;border-radius:8px;padding:3px 16px">'+g.l+'</div>'
     +'</div></div>'
     +'</div>'
-    // Right: diagnosis
-    +'<div style="overflow-y:auto;padding:32px 28px;display:flex;flex-direction:column;gap:0">'
-    +'<div style="font-size:10px;letter-spacing:4px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;margin-bottom:20px">Diagnóstico Executivo</div>'
-    +diagHtml
+    // Right: diagnosis — full height scroll
+    +'<div style="display:flex;flex-direction:column;min-height:0;padding:28px 28px 24px;overflow:hidden">'
+    +'<div style="font-size:9px;letter-spacing:4px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;margin-bottom:16px;flex-shrink:0">Diagnóstico Executivo</div>'
+    +'<div style="flex:1;overflow-y:auto;min-height:0">'+diagInner+'</div>'
     +'</div>'
     +'</div>';
 
-  // Schedule wheel render after DOM insert
   setTimeout(function(){
     var svg=document.getElementById(wheelId);
     if(svg)rWheel(res.details,sz,wheelId);
@@ -2913,47 +2907,56 @@ function buildSlide1(res){
   var n=sorted.length; // 12 KPIs (lucroliq excluded from wheel but shown here)
   // Always 3 columns, rows = ceil(n/3)
   var cols=3;var rows=Math.ceil(n/cols);
-  var fcastKpis=fc&&real?calcKPIs(Object.assign({},real,fc)):null;
+  // KPI cards — clean, no embedded action inputs
+  var sorted=[].concat(res.details).sort(function(a,b){return a.pct-b.pct;});
   var saved_f=(S.meetActions&&S.meetActions[S.sel]&&S.meetActions[S.sel].fechamento)||[];
 
   var kpiCards=sorted.map(function(d,i){
     var c=d.pct<50?'#ef4444':d.pct<75?'#f59e0b':'#10b981';
-    var cls=d.pct<50?'kred':d.pct<75?'kamber':'kok';
-    var sa=saved_f[i]||{};
-    var showAct=d.pct<80||sa.text||sa.resp;
-    var fcPctStr='';
-    if(fcastKpis){
-      var fv=fcastKpis[d.ind.id];
-      if(fv!=null){
-        var goal=getGoal(d.ind.id,S.sel);var hb=S.cfg[d.ind.id]?S.cfg[d.ind.id].hb:d.ind.hb;
-        var fp=0;if(goal){fp=hb?Math.min((fv/goal)*100,150):(goal===0?100:Math.min((goal/Math.max(fv,.001))*100,150));fp=Math.max(0,Math.min(100,fp));}
-        var diff=Math.round(d.pct-fp);var dc=diff>=0?'var(--green)':'var(--red)';
-        fcPctStr='<div style="font-size:9px;color:'+dc+';">'+(diff>=0?'+':'')+diff+'%</div>';
-      }
-    }
-    var actRow=showAct?'<div class="kcard-act">'
-      +'<input class="kact-inp act-text" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Ação..." value="'+(sa.text||'').replace(/"/g,'&quot;')+'">'
-      +'<input class="kact-inp act-resp" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Resp." value="'+(sa.resp||'').replace(/"/g,'&quot;')+'">'
-      +'<input type="text" class="kact-inp act-prazo" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="dd/mm/aaaa" value="'+(sa.prazo||'').replace(/"/g,'&quot;')+'">'
-      +'<button class="kcard-del" onclick="clearKpiAct(this)">✕</button>'
-      +'</div>':'';
-    return '<div class="kcard '+cls+'">'
-      +'<div class="kcard-main">'
-      +'<div class="kcard-icon">'+d.ind.icon+'</div>'
-      +'<div style="min-width:0">'
-      +'<div class="kcard-name">'+d.ind.short+'</div>'
-      +'<div class="kcard-sub">'+fmtV(d.val,d.ind.unit)+' · meta '+fmtV(d.goal,d.ind.unit)+'</div>'
-      +'<div class="kcard-bar"><div class="kcard-bar-fill" style="width:'+Math.min(100,d.pct)+'%;background:'+c+'"></div></div>'
+    var border=d.pct<80?c+'40':'rgba(255,255,255,.07)';
+    return '<div style="background:rgba(255,255,255,.03);border:1px solid '+border+';border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:7px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'
+      +'<div style="display:flex;align-items:center;gap:7px;min-width:0">'
+      +'<span style="font-size:16px">'+d.ind.icon+'</span>'
+      +'<span style="font-size:12px;font-weight:700;color:#e8f0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+d.ind.short+'</span>'
       +'</div>'
-      +'<div class="kcard-right">'
-      +'<div class="kcard-pct" style="color:'+c+'">'+Math.round(d.pct)+'%</div>'
-      +fcPctStr
+      +'<span style="font-size:18px;font-weight:800;font-family:\'Bebas Neue\',sans-serif;color:'+c+';flex-shrink:0">'+Math.round(d.pct)+'%</span>'
       +'</div>'
-      +'</div>'+actRow+'</div>';
+      +'<div style="height:4px;background:rgba(255,255,255,.08);border-radius:2px">'
+      +'<div style="height:100%;width:'+Math.min(100,d.pct)+'%;background:'+c+';border-radius:2px;transition:width .4s"></div>'
+      +'</div>'
+      +'<div style="font-size:10px;color:rgba(255,255,255,.35)">'+fmtV(d.val,d.ind.unit)+' <span style="color:rgba(255,255,255,.2)">/ meta</span> '+fmtV(d.goal,d.ind.unit)+'</div>'
+      +'</div>';
   }).join('');
 
+  // Action rows — only KPIs below 80%, clean table
+  var actionRows=sorted.filter(function(d){return d.pct<80;}).map(function(d,i){
+    var sa=saved_f[i]||{};
+    var c=d.pct<50?'#ef4444':'#f59e0b';
+    return '<div style="display:grid;grid-template-columns:180px 1fr 130px 120px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<span style="font-size:13px">'+d.ind.icon+'</span>'
+      +'<span style="font-size:11px;font-weight:700;color:'+c+'">'+d.ind.short+'</span>'
+      +'<span style="font-size:10px;color:rgba(255,255,255,.3)">'+Math.round(d.pct)+'%</span>'
+      +'</div>'
+      +'<input class="kact-inp act-text" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Descrever a ação..." value="'+(sa.text||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'<input class="kact-inp act-resp" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Responsável" value="'+(sa.resp||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'<input type="text" class="kact-inp act-prazo" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="dd/mm/aaaa" value="'+(sa.prazo||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'</div>';
+  }).join('');
+
+  var actionSection = sorted.some(function(d){return d.pct<80;})
+    ? '<div style="flex-shrink:0;border-top:1px solid rgba(255,255,255,.07);padding:16px 0 4px">'
+      +'<div style="font-size:9px;letter-spacing:3px;color:var(--amber);font-weight:700;text-transform:uppercase;margin-bottom:10px">⚡ Planos de Ação — KPIs em Atenção</div>'
+      +'<div style="font-size:9px;color:rgba(255,255,255,.2);display:grid;grid-template-columns:180px 1fr 130px 120px;gap:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.05);text-transform:uppercase;letter-spacing:1px">'
+      +'<span>KPI</span><span>Ação</span><span>Responsável</span><span>Prazo</span>'
+      +'</div>'
+      +actionRows
+      +'</div>'
+    : '';
+
   return '<div class="s1-wrap">'
-    // Col A
+    // Col A: score + groups
     +'<div class="s1-col-a">'
     +'<div class="s1-score-block">'
     +'<div class="s1-period">'+MES[parseInt(mo)-1]+' '+y+'</div>'
@@ -2963,12 +2966,14 @@ function buildSlide1(res){
     +'</div>'
     +'<div class="s1-groups">'+grpBars+'</div>'
     +assertH
-    
     +'</div>'
-    // Col B
-    +'<div class="s1-col-b">'
-    +'<div class="s1-col-title">KPIs — Pior para melhor</div>'
-    +'<div class="s1-kpi-grid" id="s1KpiGrid" style="grid-template-columns:repeat('+cols+',1fr);grid-template-rows:repeat('+rows+',1fr)">'+kpiCards+'</div>'
+    // Col B: KPI grid + action section
+    +'<div class="s1-col-b" style="display:flex;flex-direction:column;min-height:0;overflow:hidden">'
+    +'<div style="font-size:9px;letter-spacing:3px;color:rgba(255,255,255,.3);font-weight:700;text-transform:uppercase;margin-bottom:12px;flex-shrink:0">Resultados — KPIs</div>'
+    +'<div style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:0">'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex-shrink:0">'+kpiCards+'</div>'
+    +actionSection
+    +'</div>'
     +'</div>'
     +'</div>';
 }
