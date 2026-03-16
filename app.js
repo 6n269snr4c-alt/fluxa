@@ -2011,19 +2011,38 @@ function saveConfig(){
   _cfgDirty=false;
   sv();
   document.getElementById('coName').textContent=S.company;
-  // Feedback no botão salvar
+
+  // Feedback visual: mostra "✓ Salvo!" no botão por 2s antes de sumir
   const saveBtn=document.getElementById('cfgSaveBtn');
   if(saveBtn){
-    const orig=saveBtn.textContent;
-    saveBtn.textContent='✓ Salvo!';
+    saveBtn.textContent='✓ Configurações salvas!';
+    saveBtn.style.display='inline-block'; // força visível durante feedback
     saveBtn.style.background='#059669';
-    setTimeout(()=>{
-      saveBtn.style.display='none';
-      saveBtn.textContent=orig;
-      saveBtn.style.background='';
-    },1800);
+    saveBtn.style.color='#fff';
+    saveBtn.style.pointerEvents='none';
   }
-  _applyLockState();
+
+  // Atualiza estado visual dos campos (bloqueia inputs) SEM chamar _applyLockState
+  // para não sumir o botão de feedback prematuramente
+  const lockBtn=document.getElementById('lockBtn');
+  if(lockBtn){lockBtn.textContent='🔓 Clique para editar';lockBtn.className='lock-btn';}
+  ['cfgCo','cfgSec'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){el.disabled=true;el.style.opacity='.45';el.style.cursor='not-allowed';}
+  });
+  rGoalsTable(); // reconstrói tabela com valores salvos (campos bloqueados)
+
+  // Após 2s, esconde botão e restaura estado normal
+  setTimeout(()=>{
+    if(saveBtn){
+      saveBtn.style.display='none';
+      saveBtn.textContent='SALVAR';
+      saveBtn.style.background='';
+      saveBtn.style.color='';
+      saveBtn.style.pointerEvents='';
+    }
+  },2000);
+
   rDash();
 }
 function fetchBench(){
