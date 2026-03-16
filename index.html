@@ -311,7 +311,30 @@
       <div class="gtw"><table class="gt" id="goalsTable"></table></div>
     </div>
     <div class="cfg-sec">
-      <div class="cfg-sec-t">Peso, Benchmark e Direção por KPI</div>
+      <div class="cfg-sec-t">Modelo de DRE da Empresa</div>
+      <div style="font-size:11px;color:var(--mut);line-height:1.7;margin-bottom:12px">
+        Suba um DRE com as contas da sua empresa — pode ser com valores zerados ou qualquer mês passado.
+        O sistema vai classificar cada linha uma vez e usar isso como base para todas as importações futuras.
+        Quanto mais completo o modelo, menor o trabalho de revisão mês a mês.
+      </div>
+      <div id="dreModelStatus" style="margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="bs" onclick="document.getElementById('dreModelFile').click()" style="font-size:12px;padding:7px 16px">
+          📥 Subir DRE Modelo
+        </button>
+        <input type="file" id="dreModelFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="dreModelHandleFile(this)">
+        <button class="bs ghost" id="dreModelClearBtn" onclick="dreModelClear()" style="font-size:11px;padding:5px 10px;display:none">
+          🗑 Remover modelo
+        </button>
+      </div>
+      <!-- Review modal trigger — shown after upload -->
+      <div id="dreModelReviewWrap" style="display:none;margin-top:12px">
+        <div style="font-size:11px;color:var(--teal);margin-bottom:8px" id="dreModelReviewMsg"></div>
+        <button class="bs" onclick="dreModelOpenReview()" style="font-size:12px;padding:7px 16px">
+          ✏️ Revisar e Salvar Classificações
+        </button>
+      </div>
+    </div>
       <table class="kct" id="cfgGrid"></table>
     </div>
   </div>
@@ -499,6 +522,22 @@
       </div>
     </div>
     <div style="flex:1;overflow-y:auto;padding:16px 24px;display:grid;grid-template-columns:1fr 260px;gap:16px;min-height:0" id="lancModalBody"></div>
+  </div>
+</div>
+<!-- ══════════════ DRE MODEL REVIEW MODAL ══════════════ -->
+<div class="modal-bg" id="dreModelModal">
+  <div class="modal-box" style="width:min(860px,96vw);max-height:90vh;display:flex;flex-direction:column;padding:0;overflow:hidden">
+    <div style="padding:20px 24px 14px;border-bottom:1px solid var(--bdr);flex-shrink:0;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--teal)">Modelo de DRE</div>
+        <div style="font-size:11px;color:var(--mut);margin-top:2px" id="dreModelModalSub">Classifique cada conta — será usado como base para importações futuras</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="bs" onclick="dreModelSave()">💾 Salvar Modelo</button>
+        <button class="btn-cancel" onclick="dreModelCloseModal()">✕ Fechar</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px 24px;min-height:0" id="dreModelModalBody"></div>
   </div>
 </div>
 </div><!-- /main-content -->

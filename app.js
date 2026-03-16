@@ -3,33 +3,33 @@
 // CONSTANTS
 // ═══════════════════════════════════════════
 const IND = [
-  {id:'receita',  name:'Receita Bruta',               short:'Receita',   group:'tracao', icon:'💰', unit:'R$', goalDef:100000, hb:true,
+  {id:'receita',   name:'Receita Bruta',               short:'Receita',    group:'tracao', icon:'💰', unit:'R$', goalDef:100000, hb:true,
    formula:'Faturamento bruto do período',
    desc:'Receita total gerada pelas vendas antes de qualquer dedução. Principal indicador de tração e crescimento.'},
-  {id:'cac',      name:'CAC (Despesa Comercial %)',    short:'CAC%',      group:'tracao', icon:'🎯', unit:'%',  goalDef:10,     hb:false,
-   formula:'(Despesa Comercial / Receita Bruta) × 100',
-   desc:'Percentual da receita investido para adquirir clientes. Quanto menor, mais eficiente o processo comercial.'},
-  {id:'margem',   name:'Margem de Contribuição %',    short:'Margem',    group:'rentab', icon:'💹', unit:'%',  goalDef:40,     hb:true,
-   formula:'((Receita − Custos Variáveis) / Receita) × 100',
-   desc:'Percentual que sobra após custos variáveis. Indica quanto cada real vendido contribui para cobrir despesas fixas.'},
-  {id:'ebitda',   name:'EBITDA %',                    short:'EBITDA',    group:'rentab', icon:'📊', unit:'%',  goalDef:15,     hb:true,
-   formula:'((Receita − Custos Var. − Desp. Fixas) / Receita) × 100',
-   desc:'Lucro operacional como % da receita. Mede eficiência do modelo de negócio.'},
-  {id:'despop',   name:'Desp. Op. sobre Receita %',   short:'Desp.Op%',  group:'rentab', icon:'📋', unit:'%',  goalDef:30,     hb:false,
-   formula:'(Despesas Fixas / Receita Bruta) × 100',
-   desc:'Peso das despesas fixas sobre a receita. Estrutura pesada compromete a rentabilidade.'},
-  {id:'lucroliq', name:'Lucro Líquido %',              short:'Lucro Líq.', group:'rentab', icon:'💰', unit:'%',  goalDef:10,     hb:true,
-   formula:'(EBITDA R$ − Despesas Financeiras e Impostos) / Receita × 100',
-   desc:'O que sobrou de verdade após todas as despesas, juros e impostos. O KPI mais importante da empresa.'},
-  {id:'margbruta', name:'Margem Bruta %',              short:'Mg.Bruta',   group:'rentab', icon:'📦', unit:'%',  goalDef:50,     hb:true,
-   formula:'((Receita − CMV) / Receita) × 100',
+  {id:'cac',       name:'CAC (Despesa Comercial %)',    short:'CAC%',       group:'tracao', icon:'🎯', unit:'%',  goalDef:8,      hb:false,
+   formula:'Despesa Comercial ÷ Receita Líquida × 100',
+   desc:'Percentual da receita líquida investido em despesas comerciais. Quanto menor, mais eficiente.'},
+  {id:'margbruta', name:'Margem Bruta %',               short:'Mg.Bruta',   group:'rentab', icon:'📦', unit:'%',  goalDef:45,     hb:true,
+   formula:'(Receita Líquida − CMV) ÷ Receita Líquida × 100',
    desc:'Percentual que sobra após o custo direto do produto ou serviço. Indica a viabilidade do modelo antes das despesas operacionais.'},
-  {id:'pessoal',   name:'Peso do Pessoal %',           short:'Pessoal%',   group:'rentab', icon:'👥', unit:'%',  goalDef:25,     hb:false,
-   formula:'(Despesas com Pessoal / Receita Bruta) × 100',
-   desc:'Percentual da receita consumido pela folha de pagamento. Alto peso de pessoal reduz a flexibilidade operacional.'},
-  {id:'admperc',   name:'Peso Administrativo %',       short:'Adm%',       group:'rentab', icon:'🏢', unit:'%',  goalDef:15,     hb:false,
-   formula:'(Despesas Administrativas / Receita Bruta) × 100',
-   desc:'Percentual da receita consumido por despesas administrativas. Overhead elevado reduz a rentabilidade.'},
+  {id:'margem',    name:'Margem de Contribuição %',     short:'Margem',     group:'rentab', icon:'💹', unit:'%',  goalDef:40,     hb:true,
+   formula:'(Lucro Bruto − Custo Variável Comercial) ÷ Receita Líquida × 100',
+   desc:'Percentual que sobra após custos variáveis para cobrir despesas fixas e gerar lucro.'},
+  {id:'ebitda',    name:'EBITDA %',                     short:'EBITDA',     group:'rentab', icon:'📊', unit:'%',  goalDef:15,     hb:true,
+   formula:'(MC − Desp. Comercial − Pessoal − Adm.) ÷ Receita Líquida × 100',
+   desc:'Lucro operacional antes de juros, impostos, depreciação e amortização. Mede eficiência operacional pura.'},
+  {id:'despop',    name:'Desp. Op. sobre Receita %',    short:'Desp.Op%',   group:'rentab', icon:'📋', unit:'%',  goalDef:35,     hb:false,
+   formula:'(Desp. Comercial + Pessoal + Adm.) ÷ Receita Líquida × 100',
+   desc:'Peso total das despesas operacionais sobre a receita líquida. Estrutura pesada compromete a rentabilidade.'},
+  {id:'lucroliq',  name:'Lucro Líquido %',               short:'Lucro Líq.', group:'rentab', icon:'💰', unit:'%',  goalDef:10,     hb:true,
+   formula:'(EBITDA − Depreciação − Desp. Financeiras − IR/CSLL) ÷ Receita Líquida × 100',
+   desc:'O que sobrou de verdade após todas as despesas, juros e impostos. O KPI mais importante da empresa.'},
+  {id:'pessoal',   name:'Peso do Pessoal %',             short:'Pessoal%',   group:'rentab', icon:'👥', unit:'%',  goalDef:25,     hb:false,
+   formula:'Despesas com Pessoal ÷ Receita Líquida × 100',
+   desc:'Percentual da receita líquida consumido pela folha de pagamento. Alto peso reduz a flexibilidade operacional.'},
+  {id:'admperc',   name:'Peso Administrativo %',         short:'Adm%',       group:'rentab', icon:'🏢', unit:'%',  goalDef:12,     hb:false,
+   formula:'Despesas Administrativas ÷ Receita Líquida × 100',
+   desc:'Percentual da receita líquida consumido por despesas administrativas. Overhead elevado reduz a rentabilidade.'},
 ];
 const GC={tracao:'#3b82f6',rentab:'#10d4a8'};
 const GN={tracao:'Tração e Receita',rentab:'Rentabilidade'};
@@ -187,6 +187,9 @@ async function loadUserData(uid){
       if(d.actions)S.actions=d.actions;
       if(d.diagCache)S.diagCache=d.diagCache;
       if(d.sel)S.sel=d.sel;
+      if(d.dreMappings)S.dreMappings=d.dreMappings;
+      if(d.dreLines)S.dreLines=d.dreLines;
+      if(d.dreModel)S.dreModel=d.dreModel;
     }
   }catch(e){console.warn('Load error:',e);}
 }
@@ -1048,12 +1051,11 @@ function rDash(){
 }
 function rIndList(dets){
   const el=document.getElementById('indList');el.innerHTML='';
-  // Build forecast KPI map if available
   const fcRaw=S.sel&&S.forecast&&S.forecast[S.sel]?S.forecast[S.sel]:null;
   const fcKpis=fcRaw?calcKPIs(fcRaw):null;
   [...dets].sort((a,b)=>a.pct-b.pct).forEach(d=>{
-    const{ind,pct}=d,col=GC[ind.group],ac=pct<60?'r':d.conf!=='high'?'a':'h';
-    // Forecast bar
+    const{ind,pct,val,goal}=d,col=GC[ind.group],ac=pct<60?'r':d.conf!=='high'?'a':'h';
+    // Forecast comparison
     let fcPct=null,fcDelta=null;
     if(fcKpis){
       const fv=fcKpis[ind.id];
@@ -1062,7 +1064,27 @@ function rIndList(dets){
         let fp=hb?(d.goal===0?100:Math.min((fv/d.goal)*100,150)):(d.goal===0?100:Math.min((d.goal/Math.max(fv,.001))*100,150));
         fp=Math.max(0,Math.min(100,fp));
         fcPct=fp;
-        fcDelta=Math.round(pct-fp); // realizado − forecast (positivo = superou previsão)
+        fcDelta=Math.round(pct-fp);
+      }
+    }
+    // ── Gap: realizado vs meta ─────────────────────────────────────
+    // Monetary (R$): gap in % relative to goal
+    // Percentage (%): gap in percentage points (pp)
+    let gapStr='',gapCol='var(--mut)';
+    if(val!==null&&val!==undefined&&goal){
+      const hb=S.cfg[ind.id]?.hb??ind.hb;
+      if(ind.unit==='R$'){
+        // Gap = (realizado - meta) / meta * 100 → show as %
+        const gapPct=((val-goal)/goal)*100;
+        const above=hb?gapPct>=0:gapPct<=0; // "above" means good direction
+        gapCol=above?'var(--green)':'var(--red)';
+        gapStr=(gapPct>=0?'+':'')+gapPct.toFixed(1)+'% da meta';
+      } else if(ind.unit==='%'){
+        // Gap = realizado - meta → show in pp
+        const gapPP=val-goal;
+        const above=hb?gapPP>=0:gapPP<=0;
+        gapCol=above?'var(--green)':'var(--red)';
+        gapStr=(gapPP>=0?'+':'')+gapPP.toFixed(1)+' pp da meta';
       }
     }
     const row=document.createElement('div');row.className='ir';row.onclick=()=>openKpi(ind.id);
@@ -1070,9 +1092,21 @@ function rIndList(dets){
     const deltaStr=fcDelta===null?'':(fcDelta>=0?'+':'')+fcDelta+'%';
     const _cfg=S.cfg[ind.id]||{};
     const _isAI=S.benchMode==='ai'&&_cfg.benchGoal!=null;
-    const benchPill=_isAI?'<span title="Meta baseada em benchmark de mercado (IA)" style="font-size:8px;background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🏦 mercado</span>':'<span title="Meta manual configurada" style="font-size:8px;background:rgba(255,255,255,.06);color:var(--mut);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🎯 manual</span>';
+    const benchPill=_isAI
+      ?'<span style="font-size:8px;background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🏦 mercado</span>'
+      :'<span style="font-size:8px;background:rgba(255,255,255,.06);color:var(--mut);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:1px 5px;margin-left:4px;vertical-align:middle">🎯 manual</span>';
     row.innerHTML=`<div class="ii" style="background:${col}22;color:${col}">${ind.icon}</div>
-      <div><div class="inm">${ind.name}${benchPill}</div><div class="ing">${GN[ind.group]}</div></div>
+      <div style="flex:1;min-width:0">
+        <div class="inm">${ind.name}${benchPill}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap">
+          <span style="font-size:10px;color:rgba(255,255,255,.5)">
+            ${val!==null&&val!==undefined?fmtV(val,ind.unit):'—'}
+            <span style="color:var(--mut)"> / </span>
+            <span style="color:var(--mut)">${fmtV(goal,ind.unit)}</span>
+          </span>
+          ${gapStr?`<span style="font-size:9px;font-weight:700;color:${gapCol}">${gapStr}</span>`:''}
+        </div>
+      </div>
       <div class="ir-bars">
         <div class="ir-bar-row">
           <span class="ir-bar-lbl">META</span>
@@ -1775,6 +1809,9 @@ function rConfig(){
   if(mcEl) mcEl.textContent = mc > 0
     ? `${mc} classificações de contas aprendidas para ${S.company||'esta empresa'}`
     : 'Nenhum aprendizado salvo ainda — será criado após a primeira importação';
+
+  // Show DRE model status
+  dreModelRenderStatus();
 
   const btn=document.getElementById('lockBtn');btn.textContent=S.locked?'🔒 Clique para editar':'🔓 Editando';btn.className='lock-btn'+(S.locked?' locked':'');
   document.getElementById('cfgSaveBtn').style.display=S.locked?'none':'inline-block';
@@ -3920,34 +3957,41 @@ function lancUpdateLine(idx, newCat) {
     sel.style.borderColor = col + '55';
     sel.style.color = col;
   }
-  // Recalculate and update right panel live
-  const agg = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  // Recalculate live preview using correct aggregation
+  const agg = { f_fat:0, f_ded:0, f_cmv:0, f_cvc:0, f_pessoal:0, f_adm:0, f_dep:0, f_dc:0, f_depfin:0 };
   _lancEditLines.forEach(l => {
     const v = l.value;
-    if      (l.category === 'receita_bruta')          agg.f_fat    += v;
-    else if (l.category === 'deducao_receita')        agg.f_ded    += v;
-    else if (l.category === 'custo_variavel')         agg.f_cv     += v;
-    else if (l.category === 'despesa_comercial')      agg.f_dc     += v;
-    else if (l.category === 'despesa_pessoal')        agg.f_df     += v;
-    else if (l.category === 'despesa_administrativa') agg.f_df     += v;
-    else if (l.category === 'depreciacao')            agg.f_df     += v;
-    else if (l.category === 'despesa_financeira')     agg.f_depfin += v;
-    else if (l.category === 'imposto_lucro')          agg.f_depfin += v;
+    if      (l.category === 'receita_bruta')            agg.f_fat     += v;
+    else if (l.category === 'deducao_receita')          agg.f_ded     += v;
+    else if (l.category === 'custo_variavel')           agg.f_cmv     += v;
+    else if (l.category === 'custo_variavel_comercial') agg.f_cvc     += v;
+    else if (l.category === 'despesa_comercial')        agg.f_dc      += v;
+    else if (l.category === 'despesa_pessoal')          agg.f_pessoal += v;
+    else if (l.category === 'despesa_administrativa')   agg.f_adm     += v;
+    else if (l.category === 'depreciacao')              agg.f_dep     += v;
+    else if (l.category === 'despesa_financeira')       agg.f_depfin  += v;
+    else if (l.category === 'imposto_lucro')            agg.f_depfin  += v;
   });
-  // Store preview in a temp raw
+  // Store preview in a temp raw for live right panel update
   const previewRaw = {
-    f_fat: agg.f_fat || undefined,
-    f_cv:  (agg.f_cv + agg.f_ded) || undefined,
-    f_dc:  agg.f_dc || undefined,
-    f_df:  agg.f_df || undefined,
-    f_depfin: agg.f_depfin || undefined,
+    f_fat:     agg.f_fat                      || undefined,
+    f_cv:      (agg.f_cmv + agg.f_ded)        || undefined,
+    f_dc:      agg.f_dc                       || undefined,
+    f_df:      (agg.f_pessoal + agg.f_adm)    || undefined,
+    f_depfin:  agg.f_depfin                   || undefined,
+    f_cmv:     agg.f_cmv                      || undefined,
+    f_cvc:     agg.f_cvc                      || undefined,
+    f_ded:     agg.f_ded                      || undefined,
+    f_pessoal: agg.f_pessoal                  || undefined,
+    f_adm:     agg.f_adm                      || undefined,
+    f_dep:     agg.f_dep                      || undefined,
   };
-  // Update S.raw temp for lancRenderModal right panel
+  // Temporarily update S.raw for lancRenderModal right panel, restore after
   const origRaw = (S.raw && S.raw[_lancEditMk]) || {};
   if (!S.raw) S.raw = {};
   S.raw[_lancEditMk] = previewRaw;
   lancRenderModal(_lancEditMk);
-  S.raw[_lancEditMk] = origRaw; // restore until saved
+  S.raw[_lancEditMk] = origRaw;
 }
 
 function lancSaveEdits() {
@@ -4011,4 +4055,176 @@ function lancSaveEdits() {
   toast('✓ Classificações salvas e KPIs recalculados!');
   lancCloseModal();
   rLancamentos();
+}
+
+// ═══════════════════════════════════════════
+// DRE MODELO (Configuração)
+// ═══════════════════════════════════════════
+let _dreModelLines = []; // linhas carregadas do arquivo modelo
+
+function dreModelRenderStatus() {
+  const statusEl = document.getElementById('dreModelStatus');
+  const clearBtn = document.getElementById('dreModelClearBtn');
+  const reviewWrap = document.getElementById('dreModelReviewWrap');
+  if (!statusEl) return;
+
+  const model = S.dreModel || {};
+  const count = Object.keys(model).length;
+
+  if (count > 0) {
+    statusEl.innerHTML = `
+      <div style="background:rgba(0,240,200,.06);border:1px solid rgba(0,240,200,.2);border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">✅</span>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--teal)">Modelo configurado</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">${count} contas classificadas para ${S.company||'esta empresa'}</div>
+        </div>
+        <button onclick="dreModelOpenReview()" style="margin-left:auto;background:none;border:1px solid rgba(0,240,200,.3);color:var(--teal);border-radius:6px;font-size:11px;padding:4px 12px;cursor:pointer;font-family:'Outfit',sans-serif">
+          ✏️ Editar
+        </button>
+      </div>`;
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+    if (reviewWrap) reviewWrap.style.display = 'none';
+  } else {
+    statusEl.innerHTML = `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px 16px;font-size:11px;color:var(--mut)">
+        Nenhum modelo configurado. Suba um DRE para começar.
+      </div>`;
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (reviewWrap) reviewWrap.style.display = 'none';
+  }
+}
+
+function dreModelHandleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const lines = [];
+      rows.forEach(row => {
+        const name = String(row[0] || '').trim();
+        if (!name || name.length < 2) return;
+        // Values can be zero in a model DRE — we just need the account names
+        lines.push({ name, value: 0 });
+      });
+      if (!lines.length) { toast('⚠️ Nenhuma conta encontrada no arquivo'); return; }
+
+      // Pre-classify using existing mappings
+      const mappings = S.dreMappings || {};
+      const model = S.dreModel || {};
+      _dreModelLines = lines.map(l => ({
+        ...l,
+        category: model[l.name.toLowerCase().trim()]
+                || mappings[l.name.toLowerCase().trim()]
+                || 'ignorar'
+      }));
+
+      const reviewWrap = document.getElementById('dreModelReviewWrap');
+      const reviewMsg = document.getElementById('dreModelReviewMsg');
+      if (reviewMsg) reviewMsg.textContent = `${lines.length} contas encontradas — revise as classificações antes de salvar`;
+      if (reviewWrap) reviewWrap.style.display = 'block';
+      input.value = '';
+      toast(`✓ ${lines.length} contas carregadas — clique em "Revisar e Salvar"`);
+    } catch(err) {
+      toast('❌ Erro ao ler o arquivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function dreModelOpenReview() {
+  // If no lines loaded yet but model exists, rebuild from saved model
+  if (!_dreModelLines.length && S.dreModel) {
+    _dreModelLines = Object.entries(S.dreModel).map(([name, category]) => ({ name, value: 0, category }));
+  }
+  if (!_dreModelLines.length) { toast('⚠️ Suba um arquivo primeiro'); return; }
+
+  const body = document.getElementById('dreModelModalBody');
+  const sub = document.getElementById('dreModelModalSub');
+  if (sub) sub.textContent = `${_dreModelLines.length} contas · classifique cada uma e salve`;
+
+  const opts = DRE_CATS.map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+  let html = `<table class="dre-tbl" style="width:100%">
+    <thead><tr>
+      <th>Conta do DRE</th>
+      <th>Classificação</th>
+    </tr></thead><tbody>`;
+
+  _dreModelLines.forEach((line, i) => {
+    const cat = DRE_CATS.find(c => c.id === line.category);
+    const col = cat?.color || '#374151';
+    html += `<tr class="dre-tbl-row">
+      <td class="dre-td-name" title="${line.name}">${line.name}</td>
+      <td style="min-width:220px;padding:6px 12px">
+        <select class="dre-cat-sel" data-model-idx="${i}"
+          style="border-color:${col}55;color:${col}"
+          onchange="dreModelUpdateLine(${i},this.value)">
+          ${DRE_CATS.map(c => `<option value="${c.id}"${c.id===line.category?' selected':''}>${c.icon} ${c.label}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  body.innerHTML = html;
+  document.getElementById('dreModelModal').classList.add('open');
+}
+
+function dreModelUpdateLine(idx, newCat) {
+  _dreModelLines[idx].category = newCat;
+  const sel = document.querySelector(`[data-model-idx="${idx}"]`);
+  if (sel) {
+    const col = DRE_CATS.find(c => c.id === newCat)?.color || '#374151';
+    sel.style.borderColor = col + '55';
+    sel.style.color = col;
+  }
+}
+
+function dreModelSave() {
+  if (!_dreModelLines.length) return;
+  // Save model: name → category (ignoring "ignorar" entries)
+  if (!S.dreModel) S.dreModel = {};
+  _dreModelLines.forEach(l => {
+    if (l.category !== 'ignorar') {
+      S.dreModel[l.name.toLowerCase().trim()] = l.category;
+    }
+  });
+  // Also merge into dreMappings so next import benefits immediately
+  if (!S.dreMappings) S.dreMappings = {};
+  Object.assign(S.dreMappings, S.dreModel);
+
+  sv();
+  const count = Object.keys(S.dreModel).length;
+  toast(`✓ Modelo salvo — ${count} contas classificadas`);
+  dreModelCloseModal();
+  dreModelRenderStatus();
+
+  // Refresh mappings count in config
+  const mcEl = document.getElementById('mappingsCount');
+  if (mcEl) {
+    const mc = Object.keys(S.dreMappings).length;
+    mcEl.textContent = `${mc} classificações de contas aprendidas para ${S.company||'esta empresa'}`;
+  }
+}
+
+function dreModelCloseModal() {
+  document.getElementById('dreModelModal').classList.remove('open');
+}
+
+function dreModelClear() {
+  showDelDialog(
+    '🗑️ Remover Modelo de DRE',
+    'Remover o modelo de DRE configurado? O aprendizado de importações anteriores será mantido.',
+    () => {
+      S.dreModel = {};
+      _dreModelLines = [];
+      sv();
+      toast('✓ Modelo removido');
+      dreModelRenderStatus();
+    }
+  );
 }
