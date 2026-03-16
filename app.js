@@ -9,9 +9,6 @@ const IND = [
   {id:'cac',      name:'CAC (Despesa Comercial %)',    short:'CAC%',      group:'tracao', icon:'🎯', unit:'%',  goalDef:10,     hb:false,
    formula:'(Despesa Comercial / Receita Bruta) × 100',
    desc:'Percentual da receita investido para adquirir clientes. Quanto menor, mais eficiente o processo comercial.'},
-  {id:'churn',    name:'Taxa de Churn',                short:'Churn%',    group:'tracao', icon:'📉', unit:'%',  goalDef:3,      hb:false,
-   formula:'(Cancelamentos / Base de Clientes Início) × 100',
-   desc:'Percentual de clientes perdidos no período. Churn alto corrói a base e eleva o CAC.'},
   {id:'margem',   name:'Margem de Contribuição %',    short:'Margem',    group:'rentab', icon:'💹', unit:'%',  goalDef:40,     hb:true,
    formula:'((Receita − Custos Variáveis) / Receita) × 100',
    desc:'Percentual que sobra após custos variáveis. Indica quanto cada real vendido contribui para cobrir despesas fixas.'},
@@ -21,89 +18,62 @@ const IND = [
   {id:'despop',   name:'Desp. Op. sobre Receita %',   short:'Desp.Op%',  group:'rentab', icon:'📋', unit:'%',  goalDef:30,     hb:false,
    formula:'(Despesas Fixas / Receita Bruta) × 100',
    desc:'Peso das despesas fixas sobre a receita. Estrutura pesada compromete a rentabilidade.'},
-  {id:'caixa',    name:'Geração de Caixa Livre',      short:'Caixa',     group:'caixa',  icon:'💵', unit:'R$', goalDef:10000,  hb:true,
-   formula:'Entradas no Banco − Saídas no Banco',
-   desc:'Caixa efetivamente gerado. Um negócio pode ser lucrativo e ainda assim quebrar por falta de caixa.'},
-  {id:'ciclo',    name:'Ciclo de Caixa',               short:'Ciclo',     group:'caixa',  icon:'🔄', unit:'d',  goalDef:0,      hb:false,
-   formula:'Prazo Médio Recebimento − Prazo Médio Pagamento',
-   desc:'Gap entre receber e pagar. Ciclo positivo significa que a empresa financia os clientes.'},
-  {id:'runway',   name:'Meses de Sobrevivência',       short:'Runway',    group:'caixa',  icon:'⏳', unit:'m',  goalDef:6,      hb:true,
-   formula:'Saldo Bancário / Saídas Mensais',
-   desc:'Quantos meses a empresa sobrevive com o caixa atual. Abaixo de 3 meses é alerta crítico.'},
-  {id:'reccolab', name:'Receita por Colaborador',     short:'Rec/Colab', group:'operac', icon:'👤', unit:'R$', goalDef:10000,  hb:true,
-   formula:'Receita Bruta / Total de Colaboradores',
-   desc:'Produtividade da equipe. Queda sinaliza ineficiência ou headcount crescendo acima da receita.'},
-  {id:'estoque',  name:'Dias de Cobertura de Estoque',short:'Estoque',   group:'operac', icon:'📦', unit:'d',  goalDef:45,     hb:false,
-   formula:'(Estoque Total / Custos Variáveis) × 30',
-   desc:'Quantos dias o estoque sustenta as operações. Alta = capital parado; baixa = risco de ruptura.'},
-  {id:'turnover', name:'Turnover Voluntário %',       short:'Turnover',  group:'operac', icon:'👥', unit:'%',  goalDef:2,      hb:false,
-   formula:'(Saídas Voluntárias / Total Colaboradores) × 100',
-   desc:'Percentual de funcionários que pediram demissão. Alto turnover destrói cultura e eleva custos.'},
   {id:'lucroliq', name:'Lucro Líquido %',              short:'Lucro Líq.', group:'rentab', icon:'💰', unit:'%',  goalDef:10,     hb:true,
    formula:'(EBITDA R$ − Despesas Financeiras e Impostos) / Receita × 100',
    desc:'O que sobrou de verdade após todas as despesas, juros e impostos. O KPI mais importante da empresa.'},
+  {id:'margbruta', name:'Margem Bruta %',              short:'Mg.Bruta',   group:'rentab', icon:'📦', unit:'%',  goalDef:50,     hb:true,
+   formula:'((Receita − CMV) / Receita) × 100',
+   desc:'Percentual que sobra após o custo direto do produto ou serviço. Indica a viabilidade do modelo antes das despesas operacionais.'},
+  {id:'pessoal',   name:'Peso do Pessoal %',           short:'Pessoal%',   group:'rentab', icon:'👥', unit:'%',  goalDef:25,     hb:false,
+   formula:'(Despesas com Pessoal / Receita Bruta) × 100',
+   desc:'Percentual da receita consumido pela folha de pagamento. Alto peso de pessoal reduz a flexibilidade operacional.'},
+  {id:'admperc',   name:'Peso Administrativo %',       short:'Adm%',       group:'rentab', icon:'🏢', unit:'%',  goalDef:15,     hb:false,
+   formula:'(Despesas Administrativas / Receita Bruta) × 100',
+   desc:'Percentual da receita consumido por despesas administrativas. Overhead elevado reduz a rentabilidade.'},
 ];
-const GC={tracao:'#3b82f6',rentab:'#10d4a8',caixa:'#a855f7',operac:'#f59e0b'};
-const GN={tracao:'Tração e Mercado',rentab:'Rentabilidade',caixa:'Caixa & Liquidez',operac:'Operação & Capacidade'};
-const GI={tracao:'📈',rentab:'💰',caixa:'💵',operac:'⚙️'};
+const GC={tracao:'#3b82f6',rentab:'#10d4a8'};
+const GN={tracao:'Tração e Receita',rentab:'Rentabilidade'};
+const GI={tracao:'📈',rentab:'💰'};
 const MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
 const FIELDS=[
   {id:'f_fat',   label:'Faturamento Bruto',            unit:'R$',hint:'Receita total bruta do período',             group:'tracao'},
   {id:'f_dc',    label:'Despesa Comercial/Marketing',  unit:'R$',hint:'Gastos com vendas, marketing e aquisição',   group:'tracao'},
-  {id:'f_ncli',  label:'Novos Clientes',               unit:'',  hint:'Clientes conquistados no período',           group:'tracao'},
-  {id:'f_bcli',  label:'Base de Clientes (início)',    unit:'',  hint:'Total de clientes no início do período',     group:'tracao'},
-  {id:'f_cancel',label:'Cancelamentos/Churn',          unit:'',  hint:'Clientes que cancelaram no período',         group:'tracao'},
   {id:'f_cv',    label:'Custos Variáveis',             unit:'R$',hint:'CMV, impostos sobre venda, comissões',       group:'rentab'},
   {id:'f_df',    label:'Despesas Fixas',               unit:'R$',hint:'Folha de pagamento, aluguel, serviços fixos',group:'rentab'},
-  {id:'f_ent',   label:'Entradas no Banco',            unit:'R$',hint:'Total de recebimentos no período',           group:'caixa'},
-  {id:'f_said',  label:'Saídas no Banco',              unit:'R$',hint:'Total de pagamentos realizados',             group:'caixa'},
-  {id:'f_saldo', label:'Saldo Final em Contas',        unit:'R$',hint:'Caixa disponível no fim do período',         group:'caixa'},
-  {id:'f_pmr',   label:'Prazo Médio Recebimento',      unit:'d', hint:'Dias médios para receber dos clientes',      group:'caixa'},
-  {id:'f_pmp',   label:'Prazo Médio Pagamento',        unit:'d', hint:'Dias médios para pagar fornecedores',        group:'caixa'},
-  {id:'f_colab', label:'Total de Colaboradores',       unit:'',  hint:'Headcount total ativo no período',           group:'operac'},
-  {id:'f_saiv',  label:'Saídas Voluntárias',           unit:'',  hint:'Demissões a pedido do colaborador',          group:'operac'},
-  {id:'f_estq',  label:'Estoque Total (R$)',           unit:'R$',hint:'Valor do estoque no período',                group:'operac'},
   {id:'f_depfin',label:'Despesas Financeiras e Impostos s/ Lucro',unit:'R$',hint:'Juros, IOF, empréstimos e IR/CSLL do período',group:'rentab'},
 ];
-const FG={tracao:{label:'Vendas e Clientes',color:'var(--g-tracao)',bg:'rgba(59,130,246,.12)',icon:'📈'},
-          rentab:{label:'DRE e Eficiência', color:'var(--g-rentab)',bg:'rgba(16,212,168,.10)',icon:'💰'},
-          caixa: {label:'Tesouraria',       color:'var(--g-caixa)', bg:'rgba(168,85,247,.12)',icon:'💵'},
-          operac:{label:'Operação',         color:'var(--g-oper)',  bg:'rgba(245,158,11,.12)', icon:'⚙️'}};
+const FG={tracao:{label:'Vendas e Receita',  color:'var(--g-tracao)',bg:'rgba(59,130,246,.12)',icon:'📈'},
+          rentab:{label:'DRE e Eficiência', color:'var(--g-rentab)',bg:'rgba(16,212,168,.10)',icon:'💰'}};
 const FCAST_FIELDS=[
-  {id:'f_fat',  label:'Receita Prevista',          unit:'R$',group:'tracao'},
-  {id:'f_ncli', label:'Novos Clientes Previstos',  unit:'',  group:'tracao'},
-  {id:'f_cancel',label:'Cancelamentos Previstos',  unit:'',  group:'tracao'},
-  {id:'f_ent',  label:'Entradas Previstas',        unit:'R$',group:'caixa'},
-  {id:'f_said', label:'Saídas Previstas',          unit:'R$',group:'caixa'},
-  {id:'f_saldo',label:'Saldo Final Previsto',      unit:'R$',group:'caixa'},
-  {id:'f_colab',label:'Headcount Previsto',        unit:'',  group:'operac'},
+  {id:'f_fat',   label:'Receita Prevista',              unit:'R$',group:'tracao'},
+  {id:'f_dc',    label:'Desp. Comercial Prevista',      unit:'R$',group:'tracao'},
+  {id:'f_cv',    label:'Custos Variáveis Previstos',    unit:'R$',group:'rentab'},
+  {id:'f_df',    label:'Despesas Fixas Previstas',      unit:'R$',group:'rentab'},
+  {id:'f_depfin',label:'Desp. Financeiras Previstas',   unit:'R$',group:'rentab'},
 ];
 
 function calcKPIs(r){
   const v=k=>{const x=parseFloat(r[k]);return isNaN(x)?null:x;};
   const sd=(n,d)=>(d&&d!==0)?n/d:null;
   const pct=(n,d)=>{const x=sd(n,d);return x!==null?x*100:null;};
-  const fat=v('f_fat'),dc=v('f_dc'),nc=v('f_ncli'),bc=v('f_bcli'),ca=v('f_cancel');
-  const cv=v('f_cv'),df=v('f_df'),ent=v('f_ent'),sai=v('f_said'),sal=v('f_saldo');
-  const pmr=v('f_pmr'),pmp=v('f_pmp'),col=v('f_colab'),sv=v('f_saiv'),est=v('f_estq');
+  const fat=v('f_fat'),dc=v('f_dc');
+  const cv=v('f_cv'),df=v('f_df'),depfin=v('f_depfin');
+  const cmv=v('f_cmv');        // CMV puro — para Margem Bruta
+  const pessoal=v('f_pessoal');// Despesas com Pessoal — para Peso do Pessoal
+  const adm=v('f_adm');        // Despesas Adm — para Peso Administrativo
   const mc=(fat!==null&&cv!==null)?fat-cv:null;
   const ebitda_r=mc!==null&&df!==null?mc-df:null;
-  const depfin=v('f_depfin');
   return{
     receita:fat,
     cac:pct(dc,fat),
-    churn:pct(ca,bc),
     margem:pct(mc,fat),
-    ebitda:mc!==null&&df!==null?pct(mc-df,fat):null,
+    ebitda:ebitda_r!==null&&fat?pct(ebitda_r,fat):null,
     despop:pct(df,fat),
-    caixa:ent!==null&&sai!==null?ent-sai:null,
-    ciclo:pmr!==null&&pmp!==null?pmr-pmp:null,
-    runway:sd(sal,sai),
-    reccolab:sd(fat,col),
-    estoque:est!==null&&cv!==null&&cv>0?(est/cv)*30:null,
-    turnover:pct(sv,col),
     lucroliq:ebitda_r!==null&&depfin!==null&&fat?((ebitda_r-depfin)/fat)*100:null,
+    margbruta:cmv!==null&&fat?pct(fat-cmv,fat):null,
+    pessoal:pct(pessoal,fat),
+    admperc:pct(adm,fat),
   };
 }
 
@@ -475,7 +445,7 @@ function rWheel(dets,sz,svgId){
   const _wheelInds=IND.filter(i=>i.id!=='lucroliq');
   const n_w=_wheelInds.length,sa_w=(Math.PI*2)/n_w;
   // GROUP ARC RINGS
-  ['tracao','rentab','caixa','operac'].forEach(g=>{
+  ['tracao','rentab'].forEach(g=>{
     const inds=_wheelInds.filter(i=>i.group===g),fi=_wheelInds.indexOf(inds[0]),li=_wheelInds.indexOf(inds[inds.length-1]);
     if(fi<0)return;
     const _sa=sa_w;
@@ -1429,7 +1399,7 @@ function rInputFields(){
   if(_inputMode==='forecast'){rFcastFields(mk);return;}
   const raw=(S.raw&&S.raw[mk])||{};
   const left=document.getElementById('inpLeft');left.innerHTML='';
-  ['tracao','rentab','caixa','operac'].forEach(grp=>{
+  ['tracao','rentab'].forEach(grp=>{
     const fg=FG[grp],fields=FIELDS.filter(f=>f.group===grp);
     const bl=document.createElement('div');bl.className='inp-block';
     let html=`<div class="ibt"><div class="ibi" style="background:${fg.bg};color:${fg.color}">${fg.icon}</div><div class="ibl" style="color:${fg.color}">${fg.label}</div></div>`;
@@ -1469,7 +1439,7 @@ function rKpiLive(kpis,mk){
   const filled=Object.values(kpis).filter(v=>v!==null).length;
   if(sub)sub.textContent=filled>0?`${filled} de ${IND.length} KPIs calculados`:'Preencha os campos ao lado';
   let html='';
-  ['tracao','rentab','caixa','operac'].forEach(grp=>{
+  ['tracao','rentab'].forEach(grp=>{
     const col=GC[grp],inds=IND.filter(i=>i.group===grp);
     html+=`<div class="klp-grp"><div class="klp-glbl" style="color:${col}">${GI[grp]} ${GN[grp]}</div>`;
     inds.forEach(ind=>{
@@ -1493,7 +1463,7 @@ function rKpiLive(kpis,mk){
 function rFcastFields(mk){
   const left=document.getElementById('inpLeft');left.innerHTML='';
   const fc=(S.forecast&&S.forecast[mk])||{};
-  ['tracao','rentab','caixa','operac'].forEach(function(grp){
+  ['tracao','rentab'].forEach(function(grp){
     const fg=FG[grp];
     const fields=FIELDS.filter(function(f){return f.group===grp;});
     const bl=document.createElement('div');bl.className='inp-block';
@@ -1649,7 +1619,7 @@ function fillAllMonths(){
   toast('✓ Meses preenchidos com o valor padrão');
 }
 // KPIs onde benchmark de mercado faz sentido (métricas relativas)
-const _BENCHABLE=new Set(['cac','churn','margem','ebitda','despop','ciclo','reccolab','estoque','turnover','lucroliq']);
+const _BENCHABLE=new Set(['cac','margem','ebitda','despop','lucroliq','margbruta','pessoal','admperc']);
 function rCfgKpiTable(){
   const t=document.getElementById('cfgGrid');t.innerHTML='';
   const dis=S.locked?'disabled':'';
@@ -1855,7 +1825,7 @@ function initSim(){
   const modeColor=hasReal?'var(--mut)':'#a78bfa';
   right.innerHTML=`<div style="font-size:10px;color:${modeColor};letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bdr)">${modeLabel} — ${MES[parseInt(mo)-1]}/${y}</div>`;
 
-  ['tracao','rentab','caixa','operac'].forEach(grp=>{
+  ['tracao','rentab'].forEach(grp=>{
     const fg=FG[grp],fields=FIELDS.filter(f=>f.group===grp);
     const sec=document.createElement('div');sec.className='sim-sec';sec.style.color=fg.color;sec.textContent=`${fg.icon} ${fg.label}`;right.appendChild(sec);
     fields.forEach(fld=>{
@@ -2090,7 +2060,7 @@ function rMeth(){
   const intro=document.createElement('div');intro.className='mc2';intro.style.gridColumn='1/-1';
   intro.innerHTML=`<div class="mt">Como o Vital Diagnostic funciona</div><div class="mb">O sistema coleta <strong>15 dados financeiros brutos</strong> mensais e os transforma em <strong>${IND.length} KPIs estratégicos</strong> em 4 grupos. Cada KPI é pontuado 0–100% com base em metas mensais configuráveis, ponderado por importância e ajustado pela confiabilidade do dado. O resultado é um <strong>Score de Saúde 0–100</strong> que resume o estado do negócio.</div>`;
   grid.appendChild(intro);
-  ['tracao','rentab','caixa','operac'].forEach(grp=>{
+  ['tracao','rentab'].forEach(grp=>{
     const card=document.createElement('div');card.className='mc2';const col=GC[grp];
     const inds=IND.filter(i=>i.group===grp);
     card.innerHTML=`<span class="mpill" style="background:${col}22;color:${col}">${GI[grp]} ${GN[grp]}</span>
@@ -2361,7 +2331,7 @@ function buildSlide1(res){
     }
   }
   // Group bars
-  var grpBars=['tracao','rentab','caixa','operac'].map(function(grp){
+  var grpBars=['tracao','rentab'].map(function(grp){
     var dts=res.details.filter(function(d){return d.ind.group===grp;});
     var avg=dts.length?Math.round(dts.reduce(function(s,d){return s+d.pct;},0)/dts.length):0;
     var c=GC[grp];
@@ -3073,28 +3043,19 @@ function dreUpdateCat(idx, newCat) {
 }
 
 function dreAggregate() {
-  // f_fat  = Receita Bruta
-  // f_ded  = Deduções da Receita (impostos sobre venda, devoluções) → Receita Líquida = f_fat - f_ded
-  // f_cv   = Custo Variável / CMV → calcula Margem de Contribuição
-  // f_dc   = Despesa Comercial
-  // f_df   = Despesas Fixas (pessoal + administrativa + depreciação)
-  // f_depfin = Despesas Financeiras + IR/CSLL
-  // Lucro Líquido = Receita Líquida - f_cv - f_dc - f_df - f_depfin
-  const a = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  const a = { f_fat:0, f_ded:0, f_cmv:0, f_pessoal:0, f_adm:0, f_dc:0, f_depfin:0 };
   _dreClassified.forEach(l => {
     const v = l.value;
-    if      (l.category === 'receita_bruta')          a.f_fat    += v;
-    else if (l.category === 'deducao_receita')        a.f_ded    += v;
-    else if (l.category === 'custo_variavel')         a.f_cv     += v;
-    else if (l.category === 'despesa_comercial')      a.f_dc     += v;
-    else if (l.category === 'despesa_pessoal')        a.f_df     += v;
-    else if (l.category === 'despesa_administrativa') a.f_df     += v;
-    else if (l.category === 'depreciacao')            a.f_df     += v;
-    else if (l.category === 'despesa_financeira')     a.f_depfin += v;
-    else if (l.category === 'imposto_lucro')          a.f_depfin += v;
+    if      (l.category === 'receita_bruta')          a.f_fat     += v;
+    else if (l.category === 'deducao_receita')        a.f_ded     += v;
+    else if (l.category === 'custo_variavel')         a.f_cmv     += v;
+    else if (l.category === 'despesa_comercial')      a.f_dc      += v;
+    else if (l.category === 'despesa_pessoal')        a.f_pessoal += v;
+    else if (l.category === 'despesa_administrativa') a.f_adm     += v;
+    else if (l.category === 'depreciacao')            a.f_adm     += v;
+    else if (l.category === 'despesa_financeira')     a.f_depfin  += v;
+    else if (l.category === 'imposto_lucro')          a.f_depfin  += v;
   });
-  // For calcKPIs: f_cv already includes deductions so margin stays correct.
-  // We add deductions to f_cv so the Receita Líquida flows through existing formula.
   return a;
 }
 
@@ -3166,13 +3127,19 @@ function dreConfirm() {
   if (!S.dreLines) S.dreLines = {};
   S.dreLines[mk] = _dreClassified.map(l => ({ name: l.name, value: l.value, category: l.category }));
 
-  // Build raw for calcKPIs: deductions go into f_cv (reduces margin correctly)
+  // Build raw for calcKPIs
+  // f_cv = CMV + deduções (para Margem de Contribuição)
+  // f_df = pessoal + adm (para EBITDA e Desp.Op%)
+  // f_cmv, f_pessoal, f_adm salvos separadamente para novos KPIs
   const raw = {
-    f_fat:    agg.f_fat    || undefined,
-    f_cv:     (agg.f_cv + agg.f_ded) || undefined,  // CMV + deduções
-    f_dc:     agg.f_dc     || undefined,
-    f_df:     agg.f_df     || undefined,
-    f_depfin: agg.f_depfin || undefined,
+    f_fat:     agg.f_fat              || undefined,
+    f_cv:      (agg.f_cmv + agg.f_ded) || undefined,
+    f_dc:      agg.f_dc               || undefined,
+    f_df:      (agg.f_pessoal + agg.f_adm) || undefined,
+    f_depfin:  agg.f_depfin           || undefined,
+    f_cmv:     agg.f_cmv              || undefined,
+    f_pessoal: agg.f_pessoal          || undefined,
+    f_adm:     agg.f_adm              || undefined,
   };
   Object.keys(raw).forEach(k => { if (!raw[k]) delete raw[k]; });
 
@@ -3199,6 +3166,32 @@ function dreConfirm() {
   setTimeout(() => go('dashboard', document.querySelector('[data-page=dashboard]')), 900);
 }
 
+function lancDelete(mk) {
+  const parts = mk.split('-');
+  const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
+  showDelDialog(
+    '🗑️ Excluir Lançamento',
+    `Excluir todos os dados de <strong>${lbl}</strong>? Os KPIs, dados brutos e linhas do DRE serão removidos. Esta ação não pode ser desfeita.`,
+    () => {
+      // Remove all data for this month
+      if (S.months) S.months = S.months.filter(m => m !== mk);
+      if (S.data && S.data[mk])     delete S.data[mk];
+      if (S.raw && S.raw[mk])       delete S.raw[mk];
+      if (S.forecast && S.forecast[mk]) delete S.forecast[mk];
+      if (S.dreLines && S.dreLines[mk]) delete S.dreLines[mk];
+      if (S.diagCache && S.diagCache[mk]) delete S.diagCache[mk];
+      if (S.meetActions && S.meetActions[mk]) delete S.meetActions[mk];
+      // If deleted month was selected, reset to latest
+      if (S.sel === mk) {
+        const km = S.months && S.months.length ? S.months[S.months.length - 1] : null;
+        S.sel = km;
+      }
+      sv();
+      toast(`✓ Lançamento de ${lbl} removido`);
+      rLancamentos();
+    }
+  );
+}
 function dreFormatNum(n) {
   return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -3251,7 +3244,10 @@ function rLancamentos() {
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <span style="font-size:10px;color:var(--mut)">${hasLines ? lineCount + ' linhas do DRE' : 'Lançamento manual'}</span>
-        <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="event.stopPropagation();lancDelete('${mk}')" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑 Excluir</button>
+          <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
+        </div>
       </div>
     </div>`;
   });
@@ -3414,26 +3410,29 @@ function lancSaveEdits() {
   });
 
   // Recalculate aggregation
-  const agg = { f_fat:0, f_ded:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  const agg = { f_fat:0, f_ded:0, f_cmv:0, f_pessoal:0, f_adm:0, f_dc:0, f_depfin:0 };
   _lancEditLines.forEach(l => {
     const v = l.value;
-    if      (l.category === 'receita_bruta')          agg.f_fat    += v;
-    else if (l.category === 'deducao_receita')        agg.f_ded    += v;
-    else if (l.category === 'custo_variavel')         agg.f_cv     += v;
-    else if (l.category === 'despesa_comercial')      agg.f_dc     += v;
-    else if (l.category === 'despesa_pessoal')        agg.f_df     += v;
-    else if (l.category === 'despesa_administrativa') agg.f_df     += v;
-    else if (l.category === 'depreciacao')            agg.f_df     += v;
-    else if (l.category === 'despesa_financeira')     agg.f_depfin += v;
-    else if (l.category === 'imposto_lucro')          agg.f_depfin += v;
+    if      (l.category === 'receita_bruta')          agg.f_fat     += v;
+    else if (l.category === 'deducao_receita')        agg.f_ded     += v;
+    else if (l.category === 'custo_variavel')         agg.f_cmv     += v;
+    else if (l.category === 'despesa_comercial')      agg.f_dc      += v;
+    else if (l.category === 'despesa_pessoal')        agg.f_pessoal += v;
+    else if (l.category === 'despesa_administrativa') agg.f_adm     += v;
+    else if (l.category === 'depreciacao')            agg.f_adm     += v;
+    else if (l.category === 'despesa_financeira')     agg.f_depfin  += v;
+    else if (l.category === 'imposto_lucro')          agg.f_depfin  += v;
   });
 
   const raw = {
-    f_fat:    agg.f_fat    || undefined,
-    f_cv:     (agg.f_cv + agg.f_ded) || undefined,
-    f_dc:     agg.f_dc     || undefined,
-    f_df:     agg.f_df     || undefined,
-    f_depfin: agg.f_depfin || undefined,
+    f_fat:     agg.f_fat                      || undefined,
+    f_cv:      (agg.f_cmv + agg.f_ded)        || undefined,
+    f_dc:      agg.f_dc                       || undefined,
+    f_df:      (agg.f_pessoal + agg.f_adm)    || undefined,
+    f_depfin:  agg.f_depfin                   || undefined,
+    f_cmv:     agg.f_cmv                      || undefined,
+    f_pessoal: agg.f_pessoal                  || undefined,
+    f_adm:     agg.f_adm                      || undefined,
   };
   Object.keys(raw).forEach(k => { if (!raw[k]) delete raw[k]; });
   if (!S.raw) S.raw = {};
