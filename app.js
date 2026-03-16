@@ -2041,17 +2041,30 @@ let _simBase={},_simRaw={};
 function simChangePeriod(mk){
   if(mk){
     window._simMk=mk;
-    // Only update S.sel if this month has real data
-    if(S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0)S.sel=mk;
     initSim();
   }
 }
-let _simMode='real'; // 'real' ou 'forecast'
+function simSetMode(mode){
+  _simMode=mode;
+  const btnR=document.getElementById('simBtnReal');
+  const btnF=document.getElementById('simBtnFcast');
+  if(btnR)btnR.className='mode-btn'+(mode==='real'?' active':'');
+  if(btnF)btnF.className='mode-btn'+(mode==='forecast'?' active':'');
+  const mk=window._simMk||S.sel;
+  if(!mk)return;
+  const hasReal=mk&&S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
+  const hasFcast=mk&&S.forecast&&S.forecast[mk]&&Object.keys(S.forecast[mk]).length>0;
+  if(mode==='real')_simBase=hasReal?{...S.raw[mk]}:{};
+  else _simBase=hasFcast?{...S.forecast[mk]}:hasReal?{...S.raw[mk]}:{};
+  _simRaw={..._simBase};
+  simBuildFields(mk);
+  simCalc();
+}
+let _simMode='real';
 function initSim(){
   const now=new Date();
   const curY=now.getFullYear(),curMo=now.getMonth()+1;
 
-  // Build month list: all known + next 6 future months
   const knownWithData=getKnownMonths().filter(m=>S.raw&&S.raw[m]&&Object.keys(S.raw[m]).length>0);
   const futureMonths=[];
   for(let i=1;i<=6;i++){
@@ -2059,17 +2072,17 @@ function initSim(){
     const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
     if(!knownWithData.includes(mk))futureMonths.push(mk);
   }
-  // Also include months with only forecast
   const fcOnly=getKnownMonths().filter(m=>!knownWithData.includes(m)&&S.forecast&&S.forecast[m]&&Object.keys(S.forecast[m]).length>0);
   const allMonths=[...new Set([...knownWithData,...fcOnly,...futureMonths])].sort();
 
+  // Base month selector
   const sel=document.getElementById('simMonthSel');
   if(sel){
     sel.innerHTML=allMonths.map(m=>{
       const[y,mo]=m.split('-');
       const hasReal=knownWithData.includes(m);
       const hasFc=S.forecast&&S.forecast[m]&&Object.keys(S.forecast[m]).length>0;
-      const lbl=MES[parseInt(mo)-1]+'/'+y+(hasReal?'':hasFc?' 🔮':' ·futuro');
+      const lbl=MES[parseInt(mo)-1]+'/'+y+(hasReal?' ✓':hasFc?' 🔮':' ·');
       return`<option value="${m}"${m===(window._simMk||S.sel)?' selected':''}>${lbl}</option>`;
     }).join('');
     if(!sel.value&&allMonths.length)sel.value=allMonths[0];
@@ -2081,39 +2094,86 @@ function initSim(){
   const hasReal=mk&&S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
   const hasFcast=mk&&S.forecast&&S.forecast[mk]&&Object.keys(S.forecast[mk]).length>0;
 
-  // Determine mode
-  _simMode=hasReal?'real':'forecast';
+  // Mode buttons
+  const btnR=document.getElementById('simBtnReal');
+  const btnF=document.getElementById('simBtnFcast');
+  if(btnR){btnR.disabled=!hasReal;btnR.style.opacity=hasReal?'1':'.4';}
+  if(btnF){btnF.disabled=!hasFcast&&!hasReal;btnF.style.opacity=(hasFcast||hasReal)?'1':'.4';}
 
-  // Base: real data if exists, else forecast, else empty
-  _simBase=hasReal?{...S.raw[mk]}:hasFcast?{...S.forecast[mk]}:{};
+  // Auto select sensible mode
+  if(_simMode==='real'&&!hasReal&&hasFcast)_simMode='forecast';
+  if(btnR)btnR.className='mode-btn'+(_simMode==='real'?' active':'');
+  if(btnF)btnF.className='mode-btn'+(_simMode==='forecast'?' active':'');
+
+  // Set base
+  if(_simMode==='real')_simBase=hasReal?{...S.raw[mk]}:{};
+  else _simBase=hasFcast?{...S.forecast[mk]}:hasReal?{...S.raw[mk]}:{};
   _simRaw={..._simBase};
 
-  // Update mode badge
+  // Badge
   const badge=document.getElementById('simModeBadge');
-  const saveBtn=document.getElementById('simSaveFcastBtn');
   if(badge){
-    if(hasReal){
-      badge.textContent='✓ Fechamento';badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(0,232,155,.12);color:var(--green);border:1px solid rgba(0,232,155,.3)';
-    } else if(hasFcast){
-      badge.textContent='🔮 Previsão salva';badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(168,85,247,.12);color:#c084fc;border:1px solid rgba(168,85,247,.3)';
+    if(hasReal&&_simMode==='real'){
+      badge.textContent='✓ Fechamento';
+      badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(0,232,155,.12);color:var(--green);border:1px solid rgba(0,232,155,.3)';
+    } else if(_simMode==='forecast'&&hasFcast){
+      badge.textContent='🔮 Previsão';
+      badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(168,85,247,.12);color:#c084fc;border:1px solid rgba(168,85,247,.3)';
     } else {
-      badge.textContent='· Mês futuro';badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(255,255,255,.06);color:var(--mut);border:1px solid rgba(255,255,255,.1)';
+      badge.style.display='none';
     }
   }
-  if(saveBtn)saveBtn.style.display=(!hasReal)?'inline-block':'none';
+
+  // Save bar: populate future months selector
+  simUpdateSaveBar(allMonths, mk);
 
   requestAnimationFrame(()=>requestAnimationFrame(sizeSimWheel));
-  const right=document.getElementById('simRight');right.innerHTML='';
+  simBuildFields(mk);
+  simCalc();
+}
 
-  if(!mk){
-    right.innerHTML='<div style="font-size:12px;color:var(--mut)">Nenhum período disponível.</div>';
-    simCalc();return;
+function simUpdateSaveBar(allMonths, baseMk){
+  const saveBar=document.getElementById('simSaveBar');
+  const saveSel=document.getElementById('simSaveMonthSel');
+  if(!saveBar||!saveSel)return;
+
+  // Show save bar always (user can always project to a future month)
+  const now=new Date();
+  const curY=now.getFullYear(),curMo=now.getMonth()+1;
+
+  // Future months + months without real data
+  const futureCandidates=[];
+  for(let i=0;i<=12;i++){
+    const d=new Date(curY,curMo-1+i,1);
+    const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const hasReal=S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
+    if(!hasReal)futureCandidates.push(mk);
   }
-  const[y,mo]=mk.split('-');
-  const modeLabel=hasReal?'Ajuste de cenário':'Projeção de forecast';
-  const modeColor=hasReal?'var(--mut)':'#a78bfa';
-  right.innerHTML=`<div style="font-size:10px;color:${modeColor};letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bdr)">${modeLabel} — ${MES[parseInt(mo)-1]}/${y}</div>`;
 
+  if(!futureCandidates.length){saveBar.style.display='none';return;}
+  saveBar.style.display='flex';
+
+  // Select next month as default
+  const nextMk=(function(){
+    const d=new Date(curY,curMo,1);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  })();
+  saveSel.innerHTML=futureCandidates.map(m=>{
+    const[y,mo]=m.split('-');
+    const hasFc=S.forecast&&S.forecast[m]&&Object.keys(S.forecast[m]).length>0;
+    const lbl=MES[parseInt(mo)-1]+'/'+y+(hasFc?' (já tem previsão)':'');
+    return`<option value="${m}"${m===nextMk?' selected':''}>${lbl}</option>`;
+  }).join('');
+}
+
+function simBuildFields(mk){
+  const right=document.getElementById('simRight');
+  if(!right)return;
+  if(!mk){right.innerHTML='<div style="font-size:12px;color:var(--mut)">Nenhum período disponível.</div>';return;}
+  const[y,mo]=mk.split('-');
+  const modeColor=_simMode==='forecast'?'#a78bfa':'var(--mut)';
+  const modeLabel=_simMode==='forecast'?'Previsão':'Ajuste de cenário';
+  right.innerHTML=`<div style="font-size:10px;color:${modeColor};letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--bdr)">${modeLabel} — ${MES[parseInt(mo)-1]}/${y}</div>`;
   ['tracao','rentab'].forEach(grp=>{
     const fg=FG[grp],fields=FIELDS.filter(f=>f.group===grp);
     const sec=document.createElement('div');sec.className='sim-sec';sec.style.color=fg.color;sec.textContent=`${fg.icon} ${fg.label}`;right.appendChild(sec);
@@ -2121,8 +2181,7 @@ function initSim(){
       const baseV=_simBase[fld.id]!==undefined?_simBase[fld.id]:null;
       const curV=_simRaw[fld.id]!==undefined?_simRaw[fld.id]:'';
       const row=document.createElement('div');row.className='sim-row';
-      // For forecast mode, placeholder shows previous month's value if available
-      let ph=baseV!==null?baseV:'—';
+      const ph=baseV!==null?baseV:'—';
       row.innerHTML=`<span style="font-size:13px">${fg.icon}</span>
         <div style="min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fld.label}</div>${fld.unit?`<span style="font-size:10px;color:var(--mut)">${fld.unit}</span>`:''}</div>
         <input type="number" step="any" class="inp" style="font-size:12px;padding:4px 7px${_simMode==='forecast'?';border-color:rgba(168,85,247,.4)':''}" id="sf_${fld.id}" placeholder="${ph}" value="${curV}" oninput="simFldUpd('${fld.id}',this.value)">
@@ -2130,7 +2189,6 @@ function initSim(){
       right.appendChild(row);
     });
   });
-  simCalc();
 }
 function simFldUpd(fid,val){
   const num=val===''?undefined:parseFloat(val);
@@ -2243,35 +2301,38 @@ function simCalc(){
 function simReset(){
   const mk=window._simMk||S.sel;
   const hasReal=mk&&S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
-  _simBase=hasReal?{...S.raw[mk]}:(S.forecast&&S.forecast[mk]?{...S.forecast[mk]}:{});
+  const hasFcast=mk&&S.forecast&&S.forecast[mk]&&Object.keys(S.forecast[mk]).length>0;
+  if(_simMode==='real')_simBase=hasReal?{...S.raw[mk]}:{};
+  else _simBase=hasFcast?{...S.forecast[mk]}:hasReal?{...S.raw[mk]}:{};
   _simRaw={..._simBase};
-  initSim();
+  simBuildFields(mk);
+  simCalc();
+  toast('↺ Valores resetados para a base');
 }
 function simSaveForecast(){
-  const mk=window._simMk;
-  if(!mk){toast('⚠️ Nenhum período selecionado');return;}
-  const hasReal=S.raw&&S.raw[mk]&&Object.keys(S.raw[mk]).length>0;
-  if(hasReal){toast('⚠️ Este período já tem fechamento — use Lançamento para editar');return;}
-  // Collect current field values
+  const saveSel=document.getElementById('simSaveMonthSel');
+  const targetMk=saveSel?saveSel.value:null;
+  if(!targetMk){toast('⚠️ Selecione o mês de destino');return;}
+  // Collect current simulated field values
   const fc={};
   FIELDS.forEach(function(fld){
     const el=document.getElementById('sf_'+fld.id);
     if(el&&el.value!=='')fc[fld.id]=parseFloat(el.value);
+    else if(_simRaw[fld.id]!==undefined)fc[fld.id]=_simRaw[fld.id];
   });
-  if(!Object.keys(fc).length){toast('⚠️ Preencha pelo menos um campo');return;}
+  if(!Object.keys(fc).length){toast('⚠️ Ajuste pelo menos um campo antes de salvar');return;}
   if(!S.forecast)S.forecast={};
-  S.forecast[mk]=fc;
-  if(!S.months.includes(mk)){S.months.push(mk);S.months.sort();}
+  S.forecast[targetMk]=fc;
+  if(!S.months.includes(targetMk)){S.months.push(targetMk);S.months.sort();}
   sv();
-  // Update badge and button
-  const badge=document.getElementById('simModeBadge');
-  if(badge){badge.textContent='🔮 Previsão salva';badge.style.cssText='font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:inline-block;background:rgba(168,85,247,.12);color:#c084fc;border:1px solid rgba(168,85,247,.3)';}
-  // Update base so reset comes back to saved values
-  _simBase={...fc};
-  const[y,mo]=mk.split('-');
+  const[y,mo]=targetMk.split('-');
   toast('✓ Previsão de '+MES[parseInt(mo)-1]+'/'+y+' salva!');
-  // Refresh selector label
-  initSim();
+  // Refresh save bar to reflect saved state
+  const now=new Date();
+  const curY=now.getFullYear(),curMo=now.getMonth()+1;
+  const knownWithData=getKnownMonths().filter(m=>S.raw&&S.raw[m]&&Object.keys(S.raw[m]).length>0);
+  const allMonths=[...new Set([...knownWithData,...getKnownMonths()])].sort();
+  simUpdateSaveBar(allMonths, window._simMk||S.sel);
 }
 
 // ═══════════════════════════════════════════

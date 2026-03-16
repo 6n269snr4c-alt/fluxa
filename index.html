@@ -340,22 +340,42 @@
   </div>
 </div>
 <div class="page" id="page-sim">
-  <div class="ph" style="flex-shrink:0">
-    <div><div class="pt">Simulador de Cenários</div><div class="ps">Ajuste os campos brutos — os KPIs recalculam em tempo real</div></div>
+  <!-- ── HEADER ── -->
+  <div class="ph" style="flex-shrink:0;padding-bottom:12px">
+    <div>
+      <div class="pt">Simulador de Cenários</div>
+      <div class="ps">Escolha uma base, ajuste os valores — os KPIs recalculam em tempo real</div>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap">
-      <label style="font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Período</label>
-      <select id="simMonthSel" class="m-sel" style="font-size:12px;padding:5px 10px;min-width:140px" onchange="simChangePeriod(this.value)"></select>
-      <span id="simModeBadge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:none"></span>
       <button class="bs ghost" onclick="simReset()" style="font-size:12px;padding:6px 14px">↺ Resetar</button>
-      <button id="simSaveFcastBtn" onclick="simSaveForecast()" style="display:none;font-size:12px;padding:6px 14px;border-radius:8px;border:none;background:rgba(168,85,247,.2);color:#c084fc;font-weight:700;cursor:pointer;border:1px solid rgba(168,85,247,.4)">🔮 Salvar como Previsão</button>
     </div>
   </div>
+
+  <!-- ── BASE SELECTOR BAR ── -->
+  <div style="flex-shrink:0;padding:0 24px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--bdr)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:11px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Base</span>
+      <select id="simMonthSel" class="m-sel" style="font-size:12px;padding:5px 10px;min-width:140px" onchange="simChangePeriod(this.value)"></select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="simBtnReal" class="mode-btn active" onclick="simSetMode('real')">✅ Fechamento</button>
+      <button id="simBtnFcast" class="mode-btn" onclick="simSetMode('forecast')">🔮 Previsão</button>
+    </div>
+    <span id="simModeBadge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;display:none"></span>
+  </div>
+
+  <!-- ── MAIN LAYOUT ── -->
   <div class="sim-layout">
+    <!-- Left: wheel -->
     <div class="sim-left">
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;width:100%">
-        <div class="ssb"><span style="color:var(--mut);font-size:12px;letter-spacing:1px">ATUAL</span><span id="simScoreBase" style="color:var(--mut);font-size:20px">—</span><span style="color:var(--dim);font-size:18px;margin:0 4px">→</span><span id="simScoreSim" style="color:var(--teal);font-size:20px">—</span><span id="simDelta" style="font-size:13px;margin-left:4px"></span></div>
-        <div id="simGradeL" style="font-size:12px;font-weight:700;padding:4px 14px;border-radius:16px;border:1px solid var(--bdr)">—</div>
+      <div class="ssb">
+        <span style="color:var(--mut);font-size:12px;letter-spacing:1px">ATUAL</span>
+        <span id="simScoreBase" style="color:var(--mut);font-size:20px">—</span>
+        <span style="color:var(--dim);font-size:18px;margin:0 4px">→</span>
+        <span id="simScoreSim" style="color:var(--teal);font-size:20px">—</span>
+        <span id="simDelta" style="font-size:13px;margin-left:4px"></span>
       </div>
+      <div id="simGradeL" style="font-size:12px;font-weight:700;padding:4px 14px;border-radius:16px;border:1px solid var(--bdr)">—</div>
       <div id="simWheelBox">
         <svg id="simHw" style="display:block"></svg>
         <div class="sim-wc">
@@ -364,8 +384,7 @@
           <div class="score-grade" id="simSg" style="font-size:11px">—</div>
         </div>
       </div>
-      <!-- Lucro Líquido card -->
-      <div id="simLucroCard" style="display:none;margin-top:12px;width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;align-items:center;justify-content:space-between;gap:12px">
+      <div id="simLucroCard" style="display:none;width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 16px;align-items:center;justify-content:space-between;gap:12px">
         <div>
           <div style="font-size:9px;letter-spacing:2px;font-weight:700;color:var(--mut);margin-bottom:2px">💰 LUCRO LÍQUIDO</div>
           <div id="simLucroVal" style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--teal)">—</div>
@@ -377,7 +396,18 @@
         </div>
       </div>
     </div>
-    <div class="sim-right" id="simRight"><div style="font-size:12px;color:var(--mut)">Selecione um período com dados no Dashboard para simular cenários.</div></div>
+
+    <!-- Right: fields + save -->
+    <div class="sim-right" id="simRight">
+      <div style="font-size:12px;color:var(--mut)">Selecione um período base para simular cenários.</div>
+    </div>
+  </div>
+
+  <!-- ── SAVE AS FORECAST BAR ── -->
+  <div id="simSaveBar" style="display:none;flex-shrink:0;padding:12px 24px;border-top:1px solid var(--bdr);background:rgba(168,85,247,.06);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;color:#c084fc;flex:1">Salvar este cenário como previsão de qual mês?</span>
+    <select id="simSaveMonthSel" class="m-sel" style="font-size:12px;padding:5px 10px;min-width:140px;border-color:rgba(168,85,247,.4);color:#c084fc"></select>
+    <button onclick="simSaveForecast()" style="font-size:12px;padding:6px 16px;border-radius:8px;border:1px solid rgba(168,85,247,.4);background:rgba(168,85,247,.2);color:#c084fc;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif">🔮 Salvar como Previsão</button>
   </div>
 </div>
 <div class="scrollpage" id="page-import">
