@@ -1107,28 +1107,175 @@ function rIndListFcast(dets){
   });
 }
 function openKpi(id){
-  const ind=IND.find(i=>i.id===id);if(!ind)return;
-  const res=S.sel?calcScore(S.sel):null,det=res?res.details.find(d=>d.ind.id===id):null;
-  const col=GC[ind.group];
-  document.getElementById('kpiModal').classList.add('open');
-  document.getElementById('kpiModalBody').innerHTML=`<div style="font-size:26px;margin-bottom:4px">${ind.icon}</div>
-    <div style="font-size:10px;color:${col};letter-spacing:2px;text-transform:uppercase;font-weight:700;margin-bottom:4px">${GN[ind.group]}</div>
-    <div style="font-size:16px;font-weight:700;margin-bottom:10px">${ind.name}</div>
-    <div style="background:rgba(255,255,255,.04);border-radius:8px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--teal);margin-bottom:8px">${ind.formula}</div>
-    <p style="font-size:11px;color:#7a9abf;line-height:1.6;margin-bottom:12px">${ind.desc}</p>
-    ${det?`<div style="display:flex;gap:8px">
-      <div style="flex:1;background:${col}11;border:1px solid ${col}33;border-radius:8px;padding:10px;text-align:center">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:26px;color:${det.pct>=80?col:det.pct>=60?'var(--amber)':'var(--red)'}">${Math.round(det.pct)}%</div>
-        <div style="font-size:9px;color:var(--mut)">DA META</div></div>
-      <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:14px">${fmtV(det.val,ind.unit)}</div>
-        <div style="font-size:9px;color:var(--mut)">ATUAL</div></div>
-      <div style="flex:1;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:14px">${fmtV(det.goal,ind.unit)}</div>
-        <div style="font-size:9px;color:var(--mut)">META</div>
-        <div style="font-size:8px;margin-top:4px;padding:2px 6px;border-radius:8px;display:inline-block;${S.benchMode==='ai'&&(S.cfg[ind.id]||{}).benchGoal!=null?'background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3)':'background:rgba(255,255,255,.05);color:var(--mut);border:1px solid rgba(255,255,255,.1)'}">${S.benchMode==='ai'&&(S.cfg[ind.id]||{}).benchGoal!=null?'🏦 mercado':'🎯 manual'}</div>
+  const raw = S.sel && S.raw && S.raw[S.sel] ? S.raw[S.sel] : {};
+  _openKpiModal(id, raw);
+}
+
+function openKpiFromRaw(id, raw){
+  _openKpiModal(id, raw || {});
+}
+
+function _openKpiModal(id, raw){
+  const ind = IND.find(i=>i.id===id); if(!ind) return;
+  const res = S.sel ? calcScore(S.sel) : null;
+  const det = res ? res.details.find(d=>d.ind.id===id) : null;
+  const col = GC[ind.group];
+
+  // ── Recalculate intermediates from raw for display ──────────────
+  const fv = k => { const x = parseFloat(raw[k]); return isNaN(x) ? 0 : x; };
+  const fat    = fv('f_fat');
+  const ded    = fv('f_ded');
+  const cmv    = raw.f_cmv != null ? fv('f_cmv') : Math.max(0, fv('f_cv') - ded);
+  const dc     = fv('f_dc');
+  const pess   = fv('f_pessoal');
+  const adm    = fv('f_adm');
+  const dep    = fv('f_dep');
+  const depfin = fv('f_depfin');
+  const recLiq = fat - ded;
+  const base   = recLiq > 0 ? recLiq : fat;
+  const lucBruto = fat ? recLiq - cmv : 0;
+  const dfEfetivo = (pess > 0 || adm > 0) ? pess + adm : fv('f_df');
+  const ebitda_r = lucBruto - dc - dfEfetivo;
+  const lucro_r  = ebitda_r - dep - depfin;
+  const fmt = v => v ? 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+  const fmtP = v => v !== null && !isNaN(v) ? v.toFixed(1)+'%' : '—';
+
+  // ── Per-KPI calculation steps ───────────────────────────────────
+  const STEPS = {
+    receita: [
+      {op:'', label:'Receita Bruta (classificada no DRE)', val:fmt(fat), bold:true, color:'#00e89b'},
+    ],
+    cac: [
+      {op:'',  label:'Despesa Comercial',  val:fmt(dc)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'CAC %',              val:fmtP(base?dc/base*100:null), bold:true, color:col},
+    ],
+    margbruta: [
+      {op:'',  label:'Receita Líquida',    val:fmt(base), sub:'Rec.Bruta − Deduções'},
+      {op:'−', label:'CMV',                val:fmt(cmv)},
+      {op:'=', label:'Lucro Bruto',        val:fmt(lucBruto)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'Margem Bruta %',     val:fmtP(base?lucBruto/base*100:null), bold:true, color:col},
+    ],
+    margem: [
+      {op:'',  label:'Receita Líquida',    val:fmt(base), sub:'Rec.Bruta − Deduções'},
+      {op:'−', label:'CMV',                val:fmt(cmv)},
+      {op:'=', label:'Lucro Bruto / MC',   val:fmt(lucBruto)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'Margem de Contribuição %', val:fmtP(base?lucBruto/base*100:null), bold:true, color:col},
+    ],
+    ebitda: [
+      {op:'',  label:'Receita Líquida',    val:fmt(base), sub:'Rec.Bruta − Deduções'},
+      {op:'−', label:'CMV',                val:fmt(cmv)},
+      {op:'=', label:'Lucro Bruto',        val:fmt(lucBruto)},
+      {op:'−', label:'Despesa Comercial',  val:fmt(dc)},
+      {op:'−', label:'Despesas Pessoal',   val:fmt(pess)},
+      {op:'−', label:'Despesas Adm.',      val:fmt(adm)},
+      {op:'', label:'⚠ Depreciação NÃO entra no EBITDA', val:'', italic:true},
+      {op:'=', label:'EBITDA R$',          val:fmt(ebitda_r)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'EBITDA %',           val:fmtP(base?ebitda_r/base*100:null), bold:true, color:col},
+    ],
+    despop: [
+      {op:'',  label:'Despesa Comercial',  val:fmt(dc)},
+      {op:'+', label:'Despesas Pessoal',   val:fmt(pess)},
+      {op:'+', label:'Despesas Adm.',      val:fmt(adm)},
+      {op:'=', label:'Total Desp. Op.',    val:fmt(dc+dfEfetivo)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'Desp. Op. %',        val:fmtP(base?(dc+dfEfetivo)/base*100:null), bold:true, color:col},
+    ],
+    lucroliq: [
+      {op:'',  label:'EBITDA R$',          val:fmt(ebitda_r)},
+      {op:'−', label:'Depreciação',        val:fmt(dep)},
+      {op:'−', label:'Desp. Financeiras + IR/CSLL', val:fmt(depfin)},
+      {op:'=', label:'Lucro Líquido R$',   val:fmt(lucro_r)},
+      {op:'÷', label:'Receita Líquida',    val:fmt(base)},
+      {op:'=', label:'Lucro Líquido %',    val:fmtP(base?lucro_r/base*100:null), bold:true, color:col},
+    ],
+    pessoal: [
+      {op:'',  label:'Despesas com Pessoal', val:fmt(pess), sub:'Salários, pró-labore, encargos'},
+      {op:'÷', label:'Receita Líquida',      val:fmt(base)},
+      {op:'=', label:'Peso do Pessoal %',    val:fmtP(base?pess/base*100:null), bold:true, color:col},
+    ],
+    admperc: [
+      {op:'',  label:'Despesas Administrativas', val:fmt(adm), sub:'Aluguel, software, serviços gerais'},
+      {op:'÷', label:'Receita Líquida',           val:fmt(base)},
+      {op:'=', label:'Peso Adm. %',               val:fmtP(base?adm/base*100:null), bold:true, color:col},
+    ],
+  };
+
+  const steps = STEPS[id] || [];
+  const stepsHtml = steps.map(s =>
+    `<div class="kpi-calc-step" style="${s.bold?'background:rgba(255,255,255,.04);border-radius:6px;margin-top:4px;':''}">
+      <span class="kpi-calc-op" style="${s.bold?'color:var(--teal)':''}">${s.op}</span>
+      <span class="kpi-calc-label" style="${s.italic?'color:var(--amber);font-style:italic;font-size:10px':s.bold?'color:#c8dff5;font-weight:700':''}">
+        ${s.label}${s.sub?`<br><span style="font-size:9px;color:var(--mut)">${s.sub}</span>`:''}
+      </span>
+      <span class="kpi-calc-val" style="${s.bold?`color:${s.color||col};font-size:13px`:s.italic?'display:none':''}">${s.val}</span>
+    </div>`
+  ).join('');
+
+  // ── Source inputs panel ─────────────────────────────────────────
+  const hasRaw = fat > 0;
+  const inputsHtml = hasRaw ? `
+    <div style="margin-top:14px">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px">Valores utilizados (do DRE importado)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${[
+          {l:'Receita Bruta',    v:fat,    show:true},
+          {l:'Deduções',         v:ded,    show:ded>0},
+          {l:'Receita Líquida',  v:base,   show:true, hi:true},
+          {l:'CMV',              v:cmv,    show:cmv>0},
+          {l:'Desp. Comercial',  v:dc,     show:dc>0},
+          {l:'Desp. Pessoal',    v:pess,   show:pess>0},
+          {l:'Desp. Adm.',       v:adm,    show:adm>0},
+          {l:'Depreciação',      v:dep,    show:dep>0},
+          {l:'Desp. Fin.+IR',    v:depfin, show:depfin>0},
+        ].filter(i=>i.show).map(i=>`
+          <div style="background:rgba(255,255,255,.03);border:1px solid ${i.hi?'rgba(0,240,200,.2)':'rgba(255,255,255,.06)'};border-radius:7px;padding:7px 10px">
+            <div style="font-size:9px;color:${i.hi?'var(--teal)':'var(--mut)'};margin-bottom:2px">${i.l}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${i.hi?'var(--teal)':'#c8dff5'};font-weight:${i.hi?'700':'400'}">${fmt(i.v)}</div>
+          </div>`).join('')}
       </div>
-    </div>`:''}`;}
+    </div>` : `<div style="margin-top:12px;font-size:11px;color:var(--mut);font-style:italic">Nenhum dado importado para o período selecionado.</div>`;
+
+  document.getElementById('kpiModal').classList.add('open');
+  document.getElementById('kpiModalBody').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:28px">${ind.icon}</span>
+      <div>
+        <div style="font-size:10px;color:${col};letter-spacing:2px;text-transform:uppercase;font-weight:700">${GN[ind.group]}</div>
+        <div style="font-size:16px;font-weight:700;color:#e8f0ff">${ind.name}</div>
+      </div>
+    </div>
+
+    ${det ? `<div class="kpi-det-row">
+      <div class="kpi-det-box" style="border-color:${det.pct>=80?col:det.pct>=60?'rgba(244,165,34,.4)':'rgba(255,61,90,.4)'}">
+        <div class="kpi-det-lbl">% da Meta</div>
+        <div class="kpi-det-val" style="color:${det.pct>=80?col:det.pct>=60?'var(--amber)':'var(--red)'};font-size:24px">${Math.round(det.pct)}%</div>
+      </div>
+      <div class="kpi-det-box">
+        <div class="kpi-det-lbl">Valor Atual</div>
+        <div class="kpi-det-val">${fmtV(det.val,ind.unit)}</div>
+        <div style="font-size:9px;color:var(--mut);margin-top:3px">Meta: ${fmtV(det.goal,ind.unit)}</div>
+      </div>
+    </div>` : ''}
+
+    <div style="margin-bottom:12px">
+      <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:8px">Como é calculado</div>
+      <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 6px">
+        ${stepsHtml}
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--mut);margin-bottom:4px">💡 Descrição</div>
+      <p style="font-size:11px;color:#7a9abf;line-height:1.6">${ind.desc}</p>
+    </div>
+
+    ${inputsHtml}`;
+}
+
 function closeKpi(){document.getElementById('kpiModal').classList.remove('open');}
 
 // ═══════════════════════════════════════════
@@ -3295,14 +3442,24 @@ function dreRenderSummary() {
     const kpis = calcKPIs(raw);
     html += `<div class="dre-sum-title" style="margin-top:8px">Resultado calculado</div>`;
     const lucroCol = lucroR >= 0 ? 'var(--teal)' : 'var(--red)';
-    html += `<div class="dre-sum-item" style="border-color:${lucroCol}44">
+    html += `<div class="dre-sum-item" style="border-color:${lucroCol}44;cursor:pointer"
+      onmouseover="this.style.borderColor='${lucroCol}'" onmouseout="this.style.borderColor='${lucroCol}44'"
+      onclick="openKpiFromRaw('lucroliq', _dreGetLiveRaw())">
       <span class="dre-sum-label">💰 Lucro Líquido R$</span>
-      <span class="dre-sum-value" style="color:${lucroCol};font-size:12px">${fmt(lucroR)}</span>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span class="dre-sum-value" style="color:${lucroCol};font-size:12px">${fmt(lucroR)}</span>
+        <span style="font-size:9px;color:var(--mut)">ver →</span>
+      </div>
     </div>`;
     if (lucroP !== null) {
-      html += `<div class="dre-sum-item" style="border-color:${lucroCol}44">
+      html += `<div class="dre-sum-item" style="border-color:${lucroCol}44;cursor:pointer"
+        onmouseover="this.style.borderColor='${lucroCol}'" onmouseout="this.style.borderColor='${lucroCol}44'"
+        onclick="openKpiFromRaw('lucroliq', _dreGetLiveRaw())">
         <span class="dre-sum-label">💰 Lucro Líquido %</span>
-        <span class="dre-sum-value" style="color:${lucroCol}">${lucroP.toFixed(1)}%</span>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="dre-sum-value" style="color:${lucroCol}">${lucroP.toFixed(1)}%</span>
+          <span style="font-size:9px;color:var(--mut)">ver →</span>
+        </div>
       </div>`;
     }
     const kpiPreview = [
@@ -3316,13 +3473,34 @@ function dreRenderSummary() {
       const v = kpis[it.id];
       if (v === null || v === undefined || isNaN(v)) return;
       const col = v >= 0 ? 'var(--teal)' : 'var(--red)';
-      html += `<div class="dre-sum-item">
+      html += `<div class="dre-sum-item" style="cursor:pointer;transition:border-color .2s"
+        onmouseover="this.style.borderColor='rgba(0,240,200,.3)'" onmouseout="this.style.borderColor=''"
+        onclick="openKpiFromRaw('${it.id}', _dreGetLiveRaw())">
         <span class="dre-sum-label">${it.label}</span>
-        <span class="dre-sum-value" style="color:${col}">${v.toFixed(1)}%</span>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span class="dre-sum-value" style="color:${col}">${v.toFixed(1)}%</span>
+          <span style="font-size:9px;color:var(--mut)">ver detalhes →</span>
+        </div>
       </div>`;
     });
   }
   document.getElementById('dreReviewSummary').innerHTML = html;
+}
+
+function _dreGetLiveRaw() {
+  const a = dreAggregate();
+  return {
+    f_fat:     a.f_fat     || undefined,
+    f_cv:      (a.f_cmv + a.f_ded) || undefined,
+    f_dc:      a.f_dc      || undefined,
+    f_df:      (a.f_pessoal + a.f_adm) || undefined,
+    f_depfin:  a.f_depfin  || undefined,
+    f_cmv:     a.f_cmv     || undefined,
+    f_ded:     a.f_ded     || undefined,
+    f_pessoal: a.f_pessoal || undefined,
+    f_adm:     a.f_adm     || undefined,
+    f_dep:     a.f_dep     || undefined,
+  };
 }
 
 function dreConfirm() {

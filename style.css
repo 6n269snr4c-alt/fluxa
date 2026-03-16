@@ -167,9 +167,18 @@ button.cs{background:var(--teal);color:#07101c;border:none;border-radius:8px;pad
 .dash-diag{display:flex;flex-direction:column;overflow:hidden;min-width:0}
 .diag-top{flex-shrink:0;padding:12px 14px 8px;border-bottom:1px solid var(--bdr)}
 .diag-scroll{flex:1;overflow-y:auto;padding:10px 14px}
-.kpi-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center}
+.kpi-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;align-items:center;justify-content:center}
 .kpi-modal-bg.open{display:flex}
-.kpi-modal{background:#0d1e32;border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:400px;width:90%}
+.kpi-modal{background:#0d1e32;border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:520px;width:94%;max-height:88vh;overflow-y:auto}
+.kpi-det-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.kpi-det-box{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px}
+.kpi-det-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);font-weight:700;margin-bottom:4px}
+.kpi-det-val{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700}
+.kpi-calc-step{display:flex;align-items:baseline;justify-content:space-between;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px}
+.kpi-calc-step:last-child{border-bottom:none}
+.kpi-calc-op{color:var(--mut);font-size:11px;margin-right:6px;width:14px;text-align:center;flex-shrink:0}
+.kpi-calc-label{flex:1;color:rgba(255,255,255,.55)}
+.kpi-calc-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:#c8dff5;text-align:right}
 /* DIAGNÓSTICO PAGE */
 .diag-layout{display:grid;grid-template-columns:1fr 300px;flex:1;min-height:0;overflow:hidden}
 .diag-main{display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--bdr)}
