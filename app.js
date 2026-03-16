@@ -440,7 +440,7 @@ function go(name,btn){
   if(sbBtn)sbBtn.classList.add('active');
   if(name==='dashboard'){rDash();setTimeout(sizeWheel,60);}
   if(name==='diag')rDiagPage();
-  if(name==='input')rInput();
+  if(name==='input')dreInitPage();
   if(name==='config')rConfig();
   if(name==='sim')initSim();
   if(name==='import')rImportPage();
@@ -2862,3 +2862,322 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 });
 
+
+// ═══════════════════════════════════════════
+// DRE IMPORT FLOW
+// ═══════════════════════════════════════════
+let _dreLines = [];
+let _dreClassified = [];
+
+const DRE_CATS = [
+  {id:'receita_bruta',          label:'Receita Bruta',           color:'#00e89b', icon:'💰'},
+  {id:'deducao_receita',        label:'Dedução de Receita',      color:'#f59e0b', icon:'➖'},
+  {id:'custo_variavel',         label:'Custo Variável / CMV',    color:'#ef4444', icon:'📦'},
+  {id:'despesa_comercial',      label:'Despesa Comercial',       color:'#3b82f6', icon:'📣'},
+  {id:'despesa_pessoal',        label:'Despesa com Pessoal',     color:'#a855f7', icon:'👥'},
+  {id:'despesa_administrativa', label:'Despesa Administrativa',  color:'#f59e0b', icon:'🏢'},
+  {id:'despesa_financeira',     label:'Despesa Financeira',      color:'#ef4444', icon:'🏦'},
+  {id:'imposto_lucro',          label:'Imposto s/ Lucro (IR/CSLL)',color:'#dc2626',icon:'🏛'},
+  {id:'depreciacao',            label:'Depreciação / Amortização',color:'#64748b',icon:'📉'},
+  {id:'ignorar',                label:'Ignorar (total/subtotal)',  color:'#374151',icon:'🚫'},
+];
+
+function dreInitPage() {
+  // Fill year selector
+  const anoSel = document.getElementById('dreAno');
+  if (!anoSel) return;
+  if (!anoSel.options.length) {
+    const cur = new Date().getFullYear();
+    for (let y = cur - 2; y <= cur + 1; y++) {
+      const o = document.createElement('option');
+      o.value = y; o.textContent = y;
+      if (y === cur) o.selected = true;
+      anoSel.appendChild(o);
+    }
+  }
+  // Pre-select previous month
+  const now = new Date();
+  const pm = now.getMonth(); // 0-indexed → previous month index
+  document.getElementById('dreMes').value = String(pm === 0 ? 12 : pm).padStart(2, '0');
+  if (pm === 0) {
+    const opt = anoSel.querySelector(`option[value="${now.getFullYear()-1}"]`);
+    if (opt) opt.selected = true;
+  }
+  // Reset state
+  _dreLines = [];
+  _dreClassified = [];
+  document.getElementById('dreFileBadge').style.display = 'none';
+  document.getElementById('dreProcessBtn').style.display = 'none';
+  document.getElementById('dreStep1').style.display = 'flex';
+  document.getElementById('dreStep2').style.display = 'none';
+  document.getElementById('dreStep3').style.display = 'none';
+  dreSetStep(1);
+}
+
+function dreSetStep(n) {
+  [1, 2, 3].forEach(i => {
+    const el = document.getElementById('step-dot-' + i);
+    if (!el) return;
+    el.className = 'dre-step' + (i < n ? ' done' : i === n ? ' active' : '');
+    const numEl = el.querySelector('.dre-step-num');
+    if (numEl) numEl.textContent = i < n ? '✓' : String(i);
+  });
+}
+
+function dreHandleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const lines = [];
+      rows.forEach(row => {
+        const name = String(row[0] || '').trim();
+        if (!name || name.length < 2) return;
+        let value = null;
+        for (let c = 1; c < row.length; c++) {
+          const raw = String(row[c]).replace(/[R$\s]/g, '').replace('.', '').replace(',', '.');
+          const v = parseFloat(raw);
+          if (!isNaN(v) && Math.abs(v) > 0) { value = Math.abs(v); break; }
+        }
+        if (value !== null) lines.push({ name, value });
+      });
+      if (!lines.length) { toast('⚠️ Nenhuma linha com valor encontrada no arquivo'); return; }
+      _dreLines = lines;
+      document.getElementById('dreFileName').textContent = file.name;
+      document.getElementById('dreLineCount').textContent = '· ' + lines.length + ' linhas encontradas';
+      document.getElementById('dreFileBadge').style.display = 'flex';
+      document.getElementById('dreProcessBtn').style.display = 'inline-block';
+      input.value = '';
+    } catch(err) {
+      toast('❌ Erro ao ler o arquivo: ' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function dreClearFile() {
+  _dreLines = [];
+  document.getElementById('dreFileBadge').style.display = 'none';
+  document.getElementById('dreProcessBtn').style.display = 'none';
+}
+
+async function dreProcess() {
+  if (!_dreLines.length) { toast('⚠️ Selecione um arquivo primeiro'); return; }
+  document.getElementById('dreStep1').style.display = 'none';
+  document.getElementById('dreStep2').style.display = 'flex';
+  dreSetStep(2);
+
+  const msgs = [
+    'Lendo estrutura do arquivo...',
+    'Identificando contas de receita...',
+    'Classificando despesas operacionais...',
+    'Analisando custos variáveis...',
+    'Validando classificações...',
+    'Quase lá — finalizando análise...'
+  ];
+  const msgEl = document.getElementById('dreProcMsg');
+  const fillEl = document.getElementById('dreProcFill');
+  let mi = 0;
+  const ticker = setInterval(() => {
+    if (mi < msgs.length) {
+      msgEl.textContent = msgs[mi];
+      fillEl.style.width = ((mi + 1) / msgs.length * 82) + '%';
+      mi++;
+    }
+  }, 800);
+
+  try {
+    const savedMappings = S.dreMappings || {};
+    const res = await fetch('/api/classify-dre', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lines: _dreLines, savedMappings })
+    });
+    if (!res.ok) throw new Error('Erro na API (' + res.status + ')');
+    const data = await res.json();
+    clearInterval(ticker);
+    fillEl.style.width = '100%';
+
+    const classMap = {};
+    (data.classifications || []).forEach(c => { classMap[c.index] = c; });
+    _dreClassified = _dreLines.map((line, i) => ({
+      ...line,
+      category: classMap[i]?.category || 'ignorar',
+      confidence: classMap[i]?.confidence || 'low'
+    }));
+
+    setTimeout(() => {
+      document.getElementById('dreStep2').style.display = 'none';
+      document.getElementById('dreStep3').style.display = 'flex';
+      dreSetStep(3);
+      dreRenderReview();
+    }, 400);
+  } catch(err) {
+    clearInterval(ticker);
+    toast('❌ ' + err.message);
+    document.getElementById('dreStep2').style.display = 'none';
+    document.getElementById('dreStep1').style.display = 'flex';
+    dreSetStep(1);
+  }
+}
+
+function dreRenderReview() {
+  const autoCount = _dreClassified.filter(l => l.confidence === 'high' && l.category !== 'ignorar').length;
+  const reviewCount = _dreClassified.filter(l => l.confidence !== 'high' && l.category !== 'ignorar').length;
+  document.getElementById('dreReviewSub').textContent =
+    autoCount + ' linhas classificadas automaticamente' +
+    (reviewCount ? ' · ⚠️ ' + reviewCount + ' precisam de atenção' : '');
+
+  const opts = DRE_CATS.map(c => `<option value="${c.id}">${c.icon} ${c.label}</option>`).join('');
+  let rows = '';
+  _dreClassified.forEach((line, i) => {
+    const confIcon = line.confidence === 'high' ? '✅' : line.confidence === 'medium' ? '⚠️' : '❓';
+    const rowCls = line.confidence === 'low' ? 'dre-low' : line.confidence === 'medium' ? 'dre-med' : '';
+    const cat = DRE_CATS.find(c => c.id === line.category);
+    const catColor = cat?.color || '#64748b';
+    rows += `<tr class="dre-tbl-row ${rowCls}" id="dre-row-${i}">
+      <td class="dre-td-name" title="${line.name}">${line.name}</td>
+      <td class="dre-td-val">${dreFormatNum(line.value)}</td>
+      <td style="min-width:190px">
+        <select class="dre-cat-sel" data-idx="${i}"
+          style="border-color:${catColor}55;color:${catColor}"
+          onchange="dreUpdateCat(${i},this.value)">
+          ${DRE_CATS.map(c => `<option value="${c.id}"${c.id===line.category?' selected':''}>${c.icon} ${c.label}</option>`).join('')}
+        </select>
+      </td>
+      <td style="text-align:center;font-size:15px">${confIcon}</td>
+    </tr>`;
+  });
+  document.getElementById('dreReviewRows').innerHTML = rows;
+  dreRenderSummary();
+}
+
+function dreUpdateCat(idx, newCat) {
+  _dreClassified[idx].category = newCat;
+  _dreClassified[idx].confidence = 'high';
+  const row = document.getElementById('dre-row-' + idx);
+  if (row) row.className = 'dre-tbl-row';
+  const sel = document.querySelector(`[data-idx="${idx}"]`);
+  if (sel) {
+    const col = DRE_CATS.find(c => c.id === newCat)?.color || '#64748b';
+    sel.style.borderColor = col + '55';
+    sel.style.color = col;
+  }
+  dreRenderSummary();
+}
+
+function dreAggregate() {
+  const a = { f_fat:0, f_cv:0, f_df:0, f_dc:0, f_depfin:0 };
+  _dreClassified.forEach(l => {
+    const v = l.value;
+    if (l.category === 'receita_bruta')          a.f_fat    += v;
+    else if (l.category === 'deducao_receita')   a.f_cv     += v;
+    else if (l.category === 'custo_variavel')    a.f_cv     += v;
+    else if (l.category === 'despesa_comercial') a.f_dc     += v;
+    else if (l.category === 'despesa_pessoal')   a.f_df     += v;
+    else if (l.category === 'despesa_administrativa') a.f_df += v;
+    else if (l.category === 'depreciacao')       a.f_df     += v;
+    else if (l.category === 'despesa_financeira') a.f_depfin += v;
+    else if (l.category === 'imposto_lucro')     a.f_depfin += v;
+  });
+  return a;
+}
+
+function dreRenderSummary() {
+  const a = dreAggregate();
+  const kpis = calcKPIs(a);
+  const fmt = v => 'R$ ' + dreFormatNum(v);
+  const items = [
+    { label: '💰 Receita Bruta', field: 'f_fat',    color: '#00e89b' },
+    { label: '📦 Custos Variáveis', field: 'f_cv',  color: '#ef4444' },
+    { label: '📣 Despesa Comercial', field:'f_dc',   color: '#3b82f6' },
+    { label: '📋 Despesas Fixas',  field: 'f_df',   color: '#f59e0b' },
+    { label: '🏦 Desp. Fin. + IR', field: 'f_depfin', color: '#a855f7' },
+  ];
+  const kpiItems = [
+    { label: '📈 Margem de Contribuição', id: 'margem', unit:'%' },
+    { label: '📊 EBITDA',                 id: 'ebitda', unit:'%' },
+    { label: '💰 Lucro Líquido',          id: 'lucroliq', unit:'%' },
+  ];
+  let html = `<div class="dre-sum-title">Resumo de valores</div>`;
+  items.forEach(it => {
+    const v = a[it.field];
+    if (!v) return;
+    html += `<div class="dre-sum-item">
+      <span class="dre-sum-label" style="color:${it.color}">${it.label}</span>
+      <span class="dre-sum-value" style="color:${it.color}">${fmt(v)}</span>
+    </div>`;
+  });
+  if (a.f_fat > 0) {
+    html += `<div class="dre-sum-title" style="margin-top:8px">KPIs que serão gerados</div>`;
+    kpiItems.forEach(it => {
+      const v = kpis[it.id];
+      if (v === null || v === undefined) return;
+      const disp = v.toFixed(1) + it.unit;
+      const col = v >= 0 ? 'var(--teal)' : 'var(--red)';
+      html += `<div class="dre-sum-item">
+        <span class="dre-sum-label">${it.label}</span>
+        <span class="dre-sum-value" style="color:${col}">${disp}</span>
+      </div>`;
+    });
+  }
+  document.getElementById('dreReviewSummary').innerHTML = html;
+}
+
+function dreConfirm() {
+  const mes = document.getElementById('dreMes').value;
+  const ano = document.getElementById('dreAno').value;
+  if (!mes || !ano) { toast('⚠️ Selecione o mês e ano'); return; }
+  const mk = ano + '-' + mes;
+  const agg = dreAggregate();
+  if (!agg.f_fat) { toast('⚠️ Nenhuma linha classificada como Receita Bruta'); return; }
+
+  // Save mappings for future learning
+  if (!S.dreMappings) S.dreMappings = {};
+  _dreClassified.filter(l => l.category !== 'ignorar').forEach(l => {
+    S.dreMappings[l.name.toLowerCase().trim()] = l.category;
+  });
+
+  // Build raw and save
+  const raw = {};
+  Object.entries(agg).forEach(([k, v]) => { if (v > 0) raw[k] = v; });
+  if (!S.raw) S.raw = {};
+  S.raw[mk] = raw;
+
+  const kpis = calcKPIs(raw);
+  const filled = Object.values(kpis).filter(v => v !== null).length;
+  if (!S.data) S.data = {};
+  if (!S.data[mk]) S.data[mk] = {};
+
+  const KF = {
+    receita:['f_fat'], cac:['f_dc','f_fat'], churn:['f_cancel','f_bcli'],
+    margem:['f_fat','f_cv'], ebitda:['f_fat','f_cv','f_df'],
+    despop:['f_df','f_fat'], caixa:['f_ent','f_said'], ciclo:['f_pmr','f_pmp'],
+    runway:['f_saldo','f_said'], reccolab:['f_fat','f_colab'],
+    estoque:['f_estq','f_cv'], turnover:['f_saiv','f_colab'],
+    lucroliq:['f_fat','f_cv','f_df','f_depfin']
+  };
+  IND.forEach(ind => {
+    const v = kpis[ind.id];
+    if (v !== null) {
+      S.data[mk][ind.id] = { value: parseFloat(v.toFixed(4)), confidence: 'high' };
+    }
+  });
+
+  if (!S.months.includes(mk)) { S.months.push(mk); S.months.sort(); }
+  S.sel = mk;
+  if (S.diagCache) delete S.diagCache[mk];
+
+  sv();
+  toast('✓ ' + filled + ' KPIs gerados a partir do DRE!');
+  setTimeout(() => go('dashboard', document.querySelector('[data-page=dashboard]')), 900);
+}
+
+function dreFormatNum(n) {
+  return Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}

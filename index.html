@@ -159,27 +159,95 @@
 </div>
 
 <div class="page" id="page-input">
-  <div class="inp-wrap">
-    <div class="inp-topbar">
-      <span style="font-size:13px;font-weight:700">Lançamento Mensal</span>
-      <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
-        <select id="inpSelMes" class="csel" style="font-size:12px;padding:5px 10px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();_buildInpDelBtns(mk);})()"></select>
-        <select id="inpSelAno" class="csel" style="font-size:12px;padding:5px 10px;width:80px" onchange="(function(){var mk=document.getElementById('inpSelAno').value+'-'+document.getElementById('inpSelMes').value;S.sel=mk;_autoDetectMode(mk);rInputFields();_buildInpDelBtns(mk);})()"></select>
-        <button class="mode-btn active" id="modeReal" onclick="setInputMode('real',this)">✅ Fechamento</button>
-        <button class="mode-btn" id="modeFcast" onclick="setInputMode('forecast',this)">🔮 Previsão</button>
-        <span id="modeHint" style="font-size:11px;padding:3px 10px;border-radius:20px"></span>
+  <div class="dre-wrap">
+
+    <!-- ── STEP INDICATOR ── -->
+    <div class="dre-steps">
+      <div class="dre-step active" id="step-dot-1">
+        <div class="dre-step-num">1</div>
+        <div class="dre-step-lbl">Upload do DRE</div>
+      </div>
+      <div class="dre-step-line"></div>
+      <div class="dre-step" id="step-dot-2">
+        <div class="dre-step-num">2</div>
+        <div class="dre-step-lbl">Classificando</div>
+      </div>
+      <div class="dre-step-line"></div>
+      <div class="dre-step" id="step-dot-3">
+        <div class="dre-step-num">3</div>
+        <div class="dre-step-lbl">Revisão</div>
       </div>
     </div>
-    <div id="inpAssert"></div>
-    <div class="inp-2col">
-      <div class="inp-left" id="inpLeft"></div>
-      <div class="inp-right"><div class="klp"><div class="klp-title">KPIs em Tempo Real</div><div class="klp-sub" id="kpiSub">Preencha os campos ao lado</div><div id="kpiLiveBody"></div></div></div>
+
+    <!-- ── STEP 1: UPLOAD ── -->
+    <div class="dre-content" id="dreStep1">
+      <div class="dre-upload-zone" id="dreDropZone" onclick="document.getElementById('dreFileInput').click()">
+        <div class="dre-upload-icon">📊</div>
+        <div class="dre-upload-title">Arraste seu DRE aqui</div>
+        <div class="dre-upload-sub">ou clique para selecionar o arquivo</div>
+        <div class="dre-upload-hint">Excel exportado do ContaAzul, Omie, Totvs e outros ERPs</div>
+      </div>
+      <input type="file" id="dreFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="dreHandleFile(this)">
+
+      <div class="dre-month-row">
+        <span class="dre-month-label">A qual mês este DRE se refere?</span>
+        <div style="display:flex;gap:8px">
+          <select class="m-sel" id="dreMes">
+            <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+            <option value="03">Março</option><option value="04">Abril</option>
+            <option value="05">Maio</option><option value="06">Junho</option>
+            <option value="07">Julho</option><option value="08">Agosto</option>
+            <option value="09">Setembro</option><option value="10">Outubro</option>
+            <option value="11">Novembro</option><option value="12">Dezembro</option>
+          </select>
+          <select class="m-sel" id="dreAno" style="width:90px"></select>
+        </div>
+      </div>
+
+      <div class="dre-file-badge" id="dreFileBadge" style="display:none">
+        <span style="font-size:20px">📄</span>
+        <span id="dreFileName" style="font-weight:600;font-size:13px;flex:1"></span>
+        <span id="dreLineCount" style="color:var(--mut);font-size:11px;white-space:nowrap"></span>
+        <button onclick="dreClearFile()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;line-height:1;padding:0 0 0 8px">✕</button>
+      </div>
+
+      <button class="bs" id="dreProcessBtn" style="display:none" onclick="dreProcess()">🤖 Classificar com IA →</button>
     </div>
-    <div class="inp-save-bar">
-      <button class="bs" id="inpSaveBtn" onclick="saveData()">SALVAR &amp; GERAR DIAGNÓSTICO</button>
-      <button class="bs ghost" onclick="go('dashboard',document.querySelector('[data-page=dashboard]'))">← Dashboard</button>
-      <div id="inpDelBtns" style="display:flex;gap:6px;margin-left:auto"></div>
+
+    <!-- ── STEP 2: PROCESSING ── -->
+    <div class="dre-content" id="dreStep2" style="display:none">
+      <div class="dre-processing">
+        <div style="font-size:52px;margin-bottom:8px">🤖</div>
+        <div class="dre-proc-title">Analisando seu DRE...</div>
+        <div class="dre-proc-msg" id="dreProcMsg">Iniciando análise...</div>
+        <div class="dre-proc-bar"><div class="dre-proc-fill" id="dreProcFill"></div></div>
+      </div>
     </div>
+
+    <!-- ── STEP 3: REVIEW ── -->
+    <div class="dre-content dre-content-wide" id="dreStep3" style="display:none">
+      <div class="dre-review-hdr">
+        <div>
+          <div class="pt" style="font-size:16px">Revise as Classificações</div>
+          <div id="dreReviewSub" class="ps" style="margin-top:2px"></div>
+        </div>
+        <button class="bs" onclick="dreConfirm()">✓ Confirmar e Gerar KPIs</button>
+      </div>
+      <div class="dre-review-body">
+        <div class="dre-tbl-wrap">
+          <table class="dre-tbl"><thead><tr>
+            <th>Conta do DRE</th>
+            <th style="text-align:right">Valor (R$)</th>
+            <th>Classificação</th>
+            <th style="text-align:center">Conf.</th>
+          </tr></thead>
+          <tbody id="dreReviewRows"></tbody>
+          </table>
+        </div>
+        <div class="dre-summary" id="dreReviewSummary"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 <div class="scrollpage" id="page-config">
