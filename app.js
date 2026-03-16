@@ -3682,9 +3682,8 @@ async function dreProcess() {
 
   const msgs = [
     'Lendo estrutura do arquivo...',
-    'Identificando contas de receita...',
-    'Classificando despesas operacionais...',
-    'Analisando custos variáveis...',
+    'Aplicando aprendizado anterior...',
+    'Classificando contas desconhecidas com IA...',
     'Validando classificações...',
     'Quase lá — finalizando análise...'
   ];
@@ -3701,23 +3700,62 @@ async function dreProcess() {
 
   try {
     const savedMappings = S.dreMappings || {};
-    const res = await fetch('/api/classify-dre', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lines: _dreLines, savedMappings })
+    const dreModel = S.dreModel || {};
+
+    // ── Pré-classificar localmente contas já conhecidas ──────────────
+    // Ordem de prioridade: correção manual (dreMappings) > modelo base (dreModel)
+    const preClassified = _dreLines.map((line, i) => {
+      const key = line.name.toLowerCase().trim();
+      const known = savedMappings[key] || dreModel[key];
+      return { index: i, known: known || null };
     });
-    if (!res.ok) throw new Error('Erro na API (' + res.status + ')');
-    const data = await res.json();
+
+    const unknownLines = _dreLines
+      .map((line, i) => ({ ...line, _idx: i }))
+      .filter((_, i) => !preClassified[i].known);
+
+    let apiClassMap = {};
+
+    if (unknownLines.length > 0) {
+      // Só manda as linhas desconhecidas para a API
+      const res = await fetch('/api/classify-dre', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lines: unknownLines.map(l => ({ name: l.name, value: l.value })),
+          savedMappings // ainda passa como contexto para a IA raciocinar
+        })
+      });
+      if (!res.ok) throw new Error('Erro na API (' + res.status + ')');
+      const data = await res.json();
+      // Remapeia os índices da resposta da API para os índices originais
+      (data.classifications || []).forEach(c => {
+        const origIdx = unknownLines[c.index]?._idx;
+        if (origIdx !== undefined) apiClassMap[origIdx] = c;
+      });
+    }
+
     clearInterval(ticker);
     fillEl.style.width = '100%';
 
-    const classMap = {};
-    (data.classifications || []).forEach(c => { classMap[c.index] = c; });
-    _dreClassified = _dreLines.map((line, i) => ({
-      ...line,
-      category: classMap[i]?.category || 'ignorar',
-      confidence: classMap[i]?.confidence || 'low'
-    }));
+    // ── Monta resultado final: conhecido local + novo da API ─────────
+    _dreClassified = _dreLines.map((line, i) => {
+      const known = preClassified[i].known;
+      if (known) {
+        return { ...line, category: known, confidence: 'high' };
+      }
+      return {
+        ...line,
+        category: apiClassMap[i]?.category || 'ignorar',
+        confidence: apiClassMap[i]?.confidence || 'low'
+      };
+    });
+
+    const knownCount = preClassified.filter(p => p.known).length;
+    const newCount = unknownLines.length;
+    if (knownCount > 0) {
+      msgs[1] = `${knownCount} contas reconhecidas do histórico, ${newCount} classificadas pela IA`;
+    }
 
     setTimeout(() => {
       document.getElementById('dreStep2').style.display = 'none';
