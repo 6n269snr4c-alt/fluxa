@@ -3060,34 +3060,55 @@ function dreAggregate() {
 
 function dreRenderSummary() {
   const a = dreAggregate();
-  // Receita Líquida = Bruta - Deduções
-  const recLiq = a.f_fat - a.f_ded;
-  // Lucro Líquido R$ = Rec.Liq - CV - DC - DF - DepFin
-  const lucroR = recLiq - a.f_cv - a.f_dc - a.f_df - a.f_depfin;
+  // Campos corretos após refactor:
+  // a.f_fat = Receita Bruta
+  // a.f_ded = Deduções
+  // a.f_cmv = CMV / Custo Variável
+  // a.f_dc  = Despesa Comercial
+  // a.f_pessoal = Despesas com Pessoal
+  // a.f_adm = Despesas Administrativas + Depreciação
+  // a.f_depfin = Desp. Financeiras + IR/CSLL
+  const totalDF = a.f_pessoal + a.f_adm;
+  const totalCV = a.f_cmv + a.f_ded;  // CMV + deduções = Custo Variável total
+  // Lucro Líquido R$ = Receita - CV total - Desp.Comercial - Desp.Fixas - Desp.Fin
+  const lucroR = a.f_fat - totalCV - a.f_dc - totalDF - a.f_depfin;
   const lucroP = a.f_fat > 0 ? (lucroR / a.f_fat * 100) : null;
   const fmt = v => 'R$ ' + dreFormatNum(v);
   const items = [
-    { label: '💰 Receita Bruta',      val: a.f_fat,    color: '#00e89b' },
-    { label: '➖ Deduções',           val: a.f_ded,    color: '#64748b', hide: !a.f_ded },
-    { label: '📦 Custos Variáveis',   val: a.f_cv,     color: '#ef4444' },
-    { label: '📣 Despesa Comercial',  val: a.f_dc,     color: '#3b82f6', hide: !a.f_dc },
-    { label: '📋 Despesas Fixas',     val: a.f_df,     color: '#f59e0b' },
-    { label: '🏦 Desp. Fin. + IR',    val: a.f_depfin, color: '#a855f7', hide: !a.f_depfin },
+    { label: '💰 Receita Bruta',      val: a.f_fat,     color: '#00e89b' },
+    { label: '➖ Deduções',           val: a.f_ded,     color: '#64748b', hide: !a.f_ded },
+    { label: '📦 CMV / Custo Var.',   val: a.f_cmv,     color: '#ef4444', hide: !a.f_cmv },
+    { label: '📣 Despesa Comercial',  val: a.f_dc,      color: '#3b82f6', hide: !a.f_dc },
+    { label: '👥 Despesa Pessoal',    val: a.f_pessoal, color: '#a855f7', hide: !a.f_pessoal },
+    { label: '🏢 Despesa Adm.',       val: a.f_adm,     color: '#f59e0b', hide: !a.f_adm },
+    { label: '🏦 Desp. Fin. + IR',    val: a.f_depfin,  color: '#ef4444', hide: !a.f_depfin },
   ];
   let html = `<div class="dre-sum-title">Resumo de valores</div>`;
   items.forEach(it => {
     if (it.hide || !it.val) return;
     html += `<div class="dre-sum-item">
       <span class="dre-sum-label" style="color:${it.color}">${it.label}</span>
-      <span class="dre-sum-value" style="color:${it.color}">${fmt(it.val)}</span>
+      <span class="dre-sum-value" style="color:${it.color};font-size:12px">${fmt(it.val)}</span>
     </div>`;
   });
   if (a.f_fat > 0) {
+    // Calcula KPIs usando campos corretos
+    const raw = {
+      f_fat:     a.f_fat,
+      f_cv:      totalCV,
+      f_dc:      a.f_dc,
+      f_df:      totalDF,
+      f_depfin:  a.f_depfin,
+      f_cmv:     a.f_cmv,
+      f_pessoal: a.f_pessoal,
+      f_adm:     a.f_adm,
+    };
+    const kpis = calcKPIs(raw);
+    html += `<div class="dre-sum-title" style="margin-top:8px">Resultado calculado</div>`;
     const lucroCol = lucroR >= 0 ? 'var(--teal)' : 'var(--red)';
-    html += `<div class="dre-sum-title" style="margin-top:8px">Resultado calculado</div>
-    <div class="dre-sum-item" style="border-color:${lucroCol}44">
+    html += `<div class="dre-sum-item" style="border-color:${lucroCol}44">
       <span class="dre-sum-label">💰 Lucro Líquido R$</span>
-      <span class="dre-sum-value" style="color:${lucroCol}">${fmt(lucroR)}</span>
+      <span class="dre-sum-value" style="color:${lucroCol};font-size:12px">${fmt(lucroR)}</span>
     </div>`;
     if (lucroP !== null) {
       html += `<div class="dre-sum-item" style="border-color:${lucroCol}44">
@@ -3095,15 +3116,22 @@ function dreRenderSummary() {
         <span class="dre-sum-value" style="color:${lucroCol}">${lucroP.toFixed(1)}%</span>
       </div>`;
     }
-    const kpis = calcKPIs({ f_fat: a.f_fat, f_cv: a.f_cv + a.f_ded, f_df: a.f_df + a.f_dc, f_depfin: a.f_depfin });
-    const margem = kpis.margem;
-    if (margem !== null) {
-      const mc = margem >= 0 ? 'var(--teal)' : 'var(--red)';
+    const kpiPreview = [
+      { label: '📈 Margem Contribuição', id: 'margem' },
+      { label: '📦 Margem Bruta',        id: 'margbruta' },
+      { label: '📊 EBITDA',              id: 'ebitda' },
+      { label: '👥 Peso Pessoal',        id: 'pessoal' },
+      { label: '🏢 Peso Adm.',           id: 'admperc' },
+    ];
+    kpiPreview.forEach(it => {
+      const v = kpis[it.id];
+      if (v === null || v === undefined || isNaN(v)) return;
+      const col = v >= 0 ? 'var(--teal)' : 'var(--red)';
       html += `<div class="dre-sum-item">
-        <span class="dre-sum-label">📈 Margem de Contribuição</span>
-        <span class="dre-sum-value" style="color:${mc}">${margem.toFixed(1)}%</span>
+        <span class="dre-sum-label">${it.label}</span>
+        <span class="dre-sum-value" style="color:${col}">${v.toFixed(1)}%</span>
       </div>`;
-    }
+    });
   }
   document.getElementById('dreReviewSummary').innerHTML = html;
 }
