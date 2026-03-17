@@ -402,36 +402,52 @@ function rActions(){
     kpiSpan.style.cssText='font-size:11px;font-weight:700;color:#a78bfa;background:rgba(167,139,250,.1);padding:2px 8px;border-radius:20px';
     kpiSpan.textContent=a.kpi||'—';tdKpi.appendChild(kpiSpan);tr.appendChild(tdKpi);
 
-    // Ação
+    // Ação — editable
     var tdAct=document.createElement('td');
-    tdAct.style.cssText='padding:12px;color:var(--text);font-weight:500;max-width:260px';
-    tdAct.textContent=a.text;tr.appendChild(tdAct);
+    tdAct.style.cssText='padding:8px 12px;color:var(--text);font-weight:500;max-width:260px';
+    var actInp=document.createElement('input');
+    actInp.type='text';actInp.value=a.text||'';
+    actInp.style.cssText='background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);color:var(--text);font-size:13px;width:100%;outline:none;padding:2px 0;font-family:Outfit,sans-serif;font-weight:500';
+    actInp.onmouseover=function(){this.style.borderBottomColor='rgba(255,255,255,.3)';};
+    actInp.onmouseout=function(){if(document.activeElement!==this)this.style.borderBottomColor='rgba(255,255,255,.1)';};
+    (function(aid){actInp.addEventListener('change',function(){
+      var ac=S.actions.find(function(x){return x.id===aid;});
+      if(ac){ac.text=this.value;sv();}
+    });})(a.id);
+    tdAct.appendChild(actInp);tr.appendChild(tdAct);
 
-    // Responsável
-    var tdResp=document.createElement('td');tdResp.style.cssText='padding:12px;color:var(--mut)';
-    tdResp.textContent=a.resp||'—';tr.appendChild(tdResp);
+    // Responsável — editable
+    var tdResp=document.createElement('td');tdResp.style.cssText='padding:8px 12px';
+    var respInp=document.createElement('input');
+    respInp.type='text';respInp.value=a.resp||'';respInp.placeholder='—';
+    respInp.style.cssText='background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);color:var(--mut);font-size:12px;width:100%;outline:none;padding:2px 0;font-family:Outfit,sans-serif;min-width:80px';
+    respInp.onmouseover=function(){this.style.borderBottomColor='rgba(255,255,255,.3)';};
+    respInp.onmouseout=function(){if(document.activeElement!==this)this.style.borderBottomColor='rgba(255,255,255,.1)';};
+    (function(aid){respInp.addEventListener('change',function(){
+      var ac=S.actions.find(function(x){return x.id===aid;});
+      if(ac){ac.resp=this.value;sv();}
+    });})(a.id);
+    tdResp.appendChild(respInp);tr.appendChild(tdResp);
 
-    // Prazo
-    var tdPrazo=document.createElement('td');tdPrazo.style.cssText='padding:12px;white-space:nowrap';
-    if(a.prazo){
-      var prazoDate=parsePrazo(a.prazo);
-      var today=new Date();today.setHours(0,0,0,0);
-      var isOverdue=a.status==='open'&&prazoDate&&prazoDate<today;
-      var prazoSpan=document.createElement('span');
-      prazoSpan.style.cssText=isOverdue
-        ?'color:#ef4444;font-weight:700;font-size:12px'
-        :'color:var(--mut);font-size:12px';
-      prazoSpan.textContent=a.prazo; // exibe como digitado
-      tdPrazo.appendChild(prazoSpan);
-      if(isOverdue){
-        var badge=document.createElement('span');
-        badge.style.cssText='margin-left:6px;font-size:9px;font-weight:700;color:#ef4444;background:rgba(239,68,68,.12);padding:1px 6px;border-radius:20px;letter-spacing:.5px';
-        badge.textContent='ATRASADO';
-        tdPrazo.appendChild(badge);
-      }
-    } else {
-      var dash=document.createElement('span');dash.style.color='rgba(255,255,255,.2)';dash.textContent='—';
-      tdPrazo.appendChild(dash);
+    // Prazo — editable
+    var tdPrazo=document.createElement('td');tdPrazo.style.cssText='padding:8px 12px;white-space:nowrap';
+    var prazoInp=document.createElement('input');
+    prazoInp.type='text';prazoInp.value=a.prazo||'';prazoInp.placeholder='—';
+    var prazoDate=parsePrazo(a.prazo||'');
+    var today=new Date();today.setHours(0,0,0,0);
+    var isOverdue=a.status==='open'&&prazoDate&&prazoDate<today;
+    prazoInp.style.cssText='background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.1);font-size:12px;width:80px;outline:none;padding:2px 0;font-family:Outfit,sans-serif;color:'+(isOverdue?'#ef4444':'var(--mut)');
+    prazoInp.onmouseover=function(){this.style.borderBottomColor='rgba(255,255,255,.3)';};
+    prazoInp.onmouseout=function(){if(document.activeElement!==this)this.style.borderBottomColor='rgba(255,255,255,.1)';};
+    (function(aid){prazoInp.addEventListener('change',function(){
+      var ac=S.actions.find(function(x){return x.id===aid;});
+      if(ac){ac.prazo=this.value;sv();}
+    });})(a.id);
+    tdPrazo.appendChild(prazoInp);
+    if(isOverdue){
+      var badge=document.createElement('span');
+      badge.style.cssText='margin-left:6px;font-size:9px;font-weight:700;color:#ef4444;background:rgba(239,68,68,.12);padding:1px 6px;border-radius:20px;letter-spacing:.5px';
+      badge.textContent='ATRASADO';tdPrazo.appendChild(badge);
     }
     tr.appendChild(tdPrazo);
 
@@ -3892,26 +3908,18 @@ function _extractAdvisorActions(text, advisorId) {
       const m = line.match(/^\s*(\d+)\.\s+(.+)/);
       if (!m) return;
       let full = m[2].trim();
-      // Extract prazo — patterns like "30 dias", "2 semanas", "até março", "prazo: X"
       let prazo = '';
       let actionText = full;
-      const prazoPatterns = [
-        /[\—\-–]\s*prazo[:\s]+([^.]+)/i,
-        /[\—\-–]\s*(\d+\s*(?:dias?|semanas?|meses?))/i,
-        /\((\d+\s*(?:dias?|semanas?|meses?))\)/i,
-        /\bno prazo de ([^,.]+)/i,
-        /\bem até ([^,.]+)/i,
-        /\baté (\w+ de \d{4}|\d{1,2}\/\d{1,2}(?:\/\d{4})?)/i,
-      ];
-      for (const pat of prazoPatterns) {
-        const pm = full.match(pat);
-        if (pm) {
-          prazo = pm[1].trim();
-          actionText = full.replace(pm[0], '').replace(/\s+/g, ' ').trim();
-          break;
-        }
+
+      // Match any time reference — broad patterns
+      const prazoRe = /[\—\-–:]\s*(?:prazo[:\s]+)?(\d+\s*(?:dias?|semanas?|meses?|anos?))|(?:em\s+)?(\d+\s*(?:dias?|semanas?|meses?))\s*$/i;
+      const pm = full.match(prazoRe);
+      if (pm) {
+        prazo = (pm[1] || pm[2] || '').trim();
+        actionText = full.replace(pm[0], '').replace(/[\s\—\-–]+$/, '').trim();
       }
-      actions.push({ text: actionText, prazo });
+
+      actions.push({ text: actionText || full, prazo });
     });
   }
   return actions.slice(0, 5);
