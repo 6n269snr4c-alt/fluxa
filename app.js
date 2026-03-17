@@ -2789,10 +2789,7 @@ function saveMeetActions(){
   if(!S.meetActions)S.meetActions={};
   if(!S.meetActions[S.sel])S.meetActions[S.sel]={fechamento:[],forecast:[],adicionais:[]};
 
-  // Lê apenas os inputs do slide atualmente visível no DOM
-  // (slides são renderizados um por vez — só o atual existe no DOM)
-
-  // Ações adicionais (slide de planos extras, se visível)
+  // Ações adicionais (slide 3)
   var adicBody=document.getElementById('actAdicBody');
   if(adicBody){
     var _adic=[];
@@ -2805,24 +2802,43 @@ function saveMeetActions(){
     S.meetActions[S.sel].adicionais=_adic;
   }
 
-  // KPI inline actions — fechamento (se visíveis)
-  var texts=document.querySelectorAll('.kcard-act .act-text:not([data-type])');
-  if(texts.length){
-    var resps=document.querySelectorAll('.kcard-act .act-resp:not([data-type])');
-    var prazos=document.querySelectorAll('.kcard-act .act-prazo:not([data-type])');
+  // KPI inline actions — slide 1 usa .kact-inp por data-kpi
+  var kactInputs=document.querySelectorAll('.kact-inp.act-text');
+  if(kactInputs.length){
     var fech=[];
-    for(var i=0;i<texts.length;i++){
+    kactInputs.forEach(function(inp){
+      var kpiId=inp.dataset.kpi||'';
+      var row=inp.closest('div[style*="grid-template-columns"]')||inp.parentElement.parentElement;
+      var respInp=row?row.querySelector('.kact-inp.act-resp'):null;
+      var prazoInp=row?row.querySelector('.kact-inp.act-prazo'):null;
       fech.push({
-        text:(texts[i].value||'').trim(),
-        resp:(resps[i]?resps[i].value||'':'').trim(),
-        prazo:(prazos[i]?prazos[i].value||'':'').trim(),
-        kpi:texts[i].dataset.kpi||''
+        text:(inp.value||'').trim(),
+        resp:(respInp?respInp.value||'':'').trim(),
+        prazo:(prazoInp?prazoInp.value||'':'').trim(),
+        kpi:kpiId
       });
-    }
+    });
     S.meetActions[S.sel].fechamento=fech;
   }
 
-  // Forecast actions (se visíveis)
+  // KPI inline actions — older .kcard-act selector (fallback)
+  var kcardTexts=document.querySelectorAll('.kcard-act .act-text:not([data-type])');
+  if(kcardTexts.length){
+    var fech2=[];
+    var kcardResps=document.querySelectorAll('.kcard-act .act-resp:not([data-type])');
+    var kcardPrazos=document.querySelectorAll('.kcard-act .act-prazo:not([data-type])');
+    for(var i=0;i<kcardTexts.length;i++){
+      fech2.push({
+        text:(kcardTexts[i].value||'').trim(),
+        resp:(kcardResps[i]?kcardResps[i].value||'':'').trim(),
+        prazo:(kcardPrazos[i]?kcardPrazos[i].value||'':'').trim(),
+        kpi:kcardTexts[i].dataset.kpi||''
+      });
+    }
+    S.meetActions[S.sel].fechamento=fech2;
+  }
+
+  // Forecast actions (slide 2)
   var ftexts=document.querySelectorAll('.act-text[data-type="forecast"]');
   if(ftexts.length){
     var fresps=document.querySelectorAll('.act-resp[data-type="forecast"]');
@@ -3044,8 +3060,6 @@ function buildSlide1(res){
   var cols=3;var rows=Math.ceil(n/cols);
   // KPI cards — clean, no embedded action inputs
   var sorted=[].concat(res.details).sort(function(a,b){return a.pct-b.pct;});
-  var saved_f=(S.meetActions&&S.meetActions[S.sel]&&S.meetActions[S.sel].fechamento)||[];
-
   var kpiCards=sorted.map(function(d,i){
     var c=d.pct<50?'#ef4444':d.pct<75?'#f59e0b':'#10b981';
     var border=d.pct<80?c+'40':'rgba(255,255,255,.07)';
@@ -3065,8 +3079,13 @@ function buildSlide1(res){
   }).join('');
 
   // Action rows — only KPIs below 80%, clean table
-  var actionRows=sorted.filter(function(d){return d.pct<80;}).map(function(d,i){
-    var sa=saved_f[i]||{};
+  var saved_f=(S.meetActions&&S.meetActions[S.sel]&&S.meetActions[S.sel].fechamento)||[];
+  // Build lookup by kpi id for correct restore when returning to slide
+  var savedByKpi={};
+  saved_f.forEach(function(a){if(a.kpi)savedByKpi[a.kpi]=a;});
+
+  var actionRows=sorted.filter(function(d){return d.pct<80;}).map(function(d){
+    var sa=savedByKpi[d.ind.id]||{};
     var c=d.pct<50?'#ef4444':'#f59e0b';
     return '<div style="display:grid;grid-template-columns:180px 1fr 130px 120px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
       +'<div style="display:flex;align-items:center;gap:6px">'
@@ -3074,9 +3093,9 @@ function buildSlide1(res){
       +'<span style="font-size:11px;font-weight:700;color:'+c+'">'+d.ind.short+'</span>'
       +'<span style="font-size:10px;color:rgba(255,255,255,.3)">'+Math.round(d.pct)+'%</span>'
       +'</div>'
-      +'<input class="kact-inp act-text" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Descrever a ação..." value="'+(sa.text||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
-      +'<input class="kact-inp act-resp" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="Responsável" value="'+(sa.resp||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
-      +'<input type="text" class="kact-inp act-prazo" data-kpi="'+d.ind.id+'" data-idx="'+i+'" placeholder="dd/mm/aaaa" value="'+(sa.prazo||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'<input class="kact-inp act-text" data-kpi="'+d.ind.id+'" placeholder="Descrever a ação..." value="'+(sa.text||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'<input class="kact-inp act-resp" data-kpi="'+d.ind.id+'" placeholder="Responsável" value="'+(sa.resp||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
+      +'<input type="text" class="kact-inp act-prazo" data-kpi="'+d.ind.id+'" placeholder="dd/mm/aaaa" value="'+(sa.prazo||'').replace(/"/g,'&quot;')+'" style="font-size:11px">'
       +'</div>';
   }).join('');
 
