@@ -746,9 +746,9 @@ function rCashflow() {
           Nenhum extrato importado
         </div>
         <div style="font-size:13px;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6">
-          Importe um extrato bancário (OFX ou CSV) para ver análises automáticas de fluxo de caixa, tendências, padrões e projeções — tudo sem configuração.
+          Importe extratos bancários (OFX ou CSV) em <strong>Lançamentos</strong> para ver análises automáticas de fluxo de caixa, tendências, padrões e projeções.
         </div>
-        <button class="bs" onclick="importExtrato()">📤 Importar Primeiro Extrato</button>
+        <button class="bs" onclick="go('lancamentos')">🗂️ Ir para Lançamentos</button>
       </div>
     `;
     return;

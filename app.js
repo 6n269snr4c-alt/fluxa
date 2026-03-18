@@ -4815,117 +4815,336 @@ function rLancamentos() {
   const extratos = (S.extratos || []).slice().sort((a,b) => b.periodoId.localeCompare(a.periodoId));
   
   if (!months.length && !extratos.length) {
-    body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="eico">🗂️</div><p>Nenhum lançamento ainda.<br>Use Importar DRE ou Saúde de Caixa para começar.</p></div>';
+    body.innerHTML = `
+      <div class="empty" style="padding:60px 20px">
+        <div class="eico">🗂️</div>
+        <p style="margin-bottom:20px">Nenhum lançamento ainda.<br>Comece importando seus dados financeiros.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button class="bs" onclick="document.getElementById('dreFileInput').click()" style="padding:10px 20px">📤 Importar DRE</button>
+          <button class="bs" onclick="importExtrato()" style="padding:10px 20px">💰 Importar Extrato</button>
+        </div>
+      </div>
+    `;
     return;
   }
   
-  let html = '<div style="display:flex;flex-direction:column;gap:24px">';
+  let html = `
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+      <button class="bs" onclick="document.getElementById('dreFileInput').click()" style="padding:10px 20px;font-size:13px">
+        📤 Importar DRE
+      </button>
+      <button class="bs" onclick="importExtrato()" style="padding:10px 20px;font-size:13px">
+        💰 Importar Extrato Bancário
+      </button>
+    </div>
+  `;
   
-  // ── EXTRATOS BANCÁRIOS ────────────────────────────────────────────
-  if (extratos.length) {
-    html += `
-      <div>
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <span>💰 EXTRATOS BANCÁRIOS</span>
-          <span style="background:rgba(0,232,155,.15);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px">${extratos.length}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
-    
-    extratos.forEach(e => {
-      const [y, m] = e.periodoId.split('-');
-      const lbl = MES[parseInt(m) - 1] + '/' + y;
-      const importDate = new Date(e.importedAt).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
-      const conta = S.contasBancarias.find(c => c.id === e.contaId);
-      const contaNome = conta ? conta.nome : e.contaNome || 'Conta removida';
-      
-      html += `<div style="background:rgba(0,232,155,.04);border:1px solid rgba(0,232,155,.15);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:all .2s"
-        onmouseover="this.style.borderColor='rgba(0,232,155,.35)'" onmouseout="this.style.borderColor='rgba(0,232,155,.15)'">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div>
-            <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--teal)">${lbl}</div>
-            <div style="font-size:10px;color:var(--mut);margin-top:2px">💳 ${contaNome}</div>
-          </div>
-          <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(0,232,155,.12);color:var(--teal);border:1px solid rgba(0,232,155,.3)">EXTRATO</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px">
-            <div style="font-size:9px;color:#10b981;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Entradas</div>
-            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#10b981">${fmtV(e.totalIn, 'R$')}</div>
-          </div>
-          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:8px 10px">
-            <div style="font-size:9px;color:#ef4444;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Saídas</div>
-            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ef4444">${fmtV(e.totalOut, 'R$')}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:10px;color:var(--mut)">${e.count} transações · ${importDate}</span>
-          <div style="display:flex;align-items:center;gap:6px">
-            <button onclick="viewExtratoDetail(${e.id})" style="background:rgba(0,232,155,.1);border:1px solid rgba(0,232,155,.25);color:var(--teal);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;font-weight:600" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='rgba(0,232,155,.25)'">👁️ Ver</button>
-            <button onclick="deleteExtrato(${e.id})" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑</button>
-          </div>
-        </div>
-      </div>`;
+  html += '<div style="display:flex;flex-direction:column;gap:32px">';
+  
+  // ── TIMELINE DE DREs ────────────────────────────────────────────
+  if (months.length) {
+    // Agrupar por ano
+    const byYear = {};
+    months.forEach(mk => {
+      const [y] = mk.split('-');
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].push(mk);
     });
     
-    html += '</div></div>';
+    const years = Object.keys(byYear).sort().reverse();
+    const currentYear = new Date().getFullYear();
+    const selectedYear = window._lancDreYear || currentYear;
+    
+    html += `
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3b82f6;font-weight:700;display:flex;align-items:center;gap:8px">
+            <span>📊 DREs IMPORTADOS</span>
+            <span style="background:rgba(59,130,246,.15);color:#3b82f6;padding:2px 8px;border-radius:10px;font-size:10px">${months.length}</span>
+          </div>
+          <select onchange="setLancDreYear(this.value)" style="padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eef4ff;font-size:12px;font-family:'Outfit',sans-serif;outline:none;cursor:pointer">
+            ${years.map(y => `<option value="${y}"${y == selectedYear ? ' selected' : ''}>${y}</option>`).join('')}
+          </select>
+        </div>
+        
+        <div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.15);border-radius:14px;padding:24px">
+          ${renderDRETimeline(selectedYear, byYear[selectedYear] || [])}
+        </div>
+      </div>
+    `;
   }
   
-  // ── DREs IMPORTADOS ────────────────────────────────────────────────
-  if (months.length) {
+  // ── EXTRATOS AGRUPADOS ──────────────────────────────────────────
+  if (extratos.length) {
+    // Filtros
+    const anos = [...new Set(extratos.map(e => e.periodoId.split('-')[0]))].sort().reverse();
+    const meses = [...new Set(extratos.map(e => e.periodoId))].sort().reverse();
+    const contas = [...new Set(extratos.map(e => e.contaId))];
+    
+    const selectedAno = window._lancExtAno || anos[0];
+    const selectedMes = window._lancExtMes || 'todos';
+    const selectedConta = window._lancExtConta || 'todas';
+    
+    // Filtrar extratos
+    let filtrados = extratos.filter(e => e.periodoId.startsWith(selectedAno));
+    if (selectedMes !== 'todos') {
+      filtrados = filtrados.filter(e => e.periodoId === selectedMes);
+    }
+    if (selectedConta !== 'todas') {
+      filtrados = filtrados.filter(e => e.contaId == selectedConta);
+    }
+    
     html += `
       <div>
-        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3b82f6;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
-          <span>📊 DREs IMPORTADOS</span>
-          <span style="background:rgba(59,130,246,.15);color:#3b82f6;padding:2px 8px;border-radius:10px;font-size:10px">${months.length}</span>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
-    
-    months.forEach(mk => {
-      const parts = mk.split('-');
-      const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
-      const hasLines = S.dreLines && S.dreLines[mk];
-      const raw = S.raw && S.raw[mk];
-      const kpis = raw ? calcKPIs(raw) : {};
-      const score = S.data && S.data[mk] ? calcScore(mk) : null;
-      const g = score ? grade(score.score) : null;
-      const recVal = raw && raw.f_fat ? 'R$ ' + dreFormatNum(raw.f_fat) : '—';
-      const lucroVal = kpis.lucroliq !== null && kpis.lucroliq !== undefined
-        ? kpis.lucroliq.toFixed(1) + '%' : '—';
-      const lucroCol = kpis.lucroliq > 0 ? 'var(--teal)' : kpis.lucroliq < 0 ? 'var(--red)' : 'var(--mut)';
-      const lineCount = hasLines ? S.dreLines[mk].filter(l => l.category !== 'ignorar').length : 0;
-
-      html += `<div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s;cursor:pointer"
-        onmouseover="this.style.borderColor='rgba(0,240,200,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.075)'"
-        onclick="lancOpenModal('${mk}')">
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:#c8dff5">${lbl}</div>
-          ${g ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:${g.c}18;color:${g.c};border:1px solid ${g.c}44">${g.l}</span>` : '<span style="font-size:10px;color:var(--mut)">Sem score</span>'}
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
-            <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Receita</div>
-            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--teal)">${recVal}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:700;display:flex;align-items:center;gap:8px">
+            <span>💰 EXTRATOS BANCÁRIOS</span>
+            <span style="background:rgba(0,232,155,.15);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px">${extratos.length}</span>
           </div>
-          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
-            <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Lucro Líq.</div>
-            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${lucroCol}">${lucroVal}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select onchange="setLancExtAno(this.value)" style="padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eef4ff;font-size:11px;font-family:'Outfit',sans-serif;outline:none;cursor:pointer">
+              ${anos.map(a => `<option value="${a}"${a == selectedAno ? ' selected' : ''}>${a}</option>`).join('')}
+            </select>
+            <select onchange="setLancExtMes(this.value)" style="padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eef4ff;font-size:11px;font-family:'Outfit',sans-serif;outline:none;cursor:pointer">
+              <option value="todos">Todos os meses</option>
+              ${meses.filter(m => m.startsWith(selectedAno)).map(m => {
+                const [y, mm] = m.split('-');
+                const label = MES[parseInt(mm)-1] + '/' + y;
+                return `<option value="${m}"${m == selectedMes ? ' selected' : ''}>${label}</option>`;
+              }).join('')}
+            </select>
+            ${contas.length > 1 ? `
+              <select onchange="setLancExtConta(this.value)" style="padding:6px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#eef4ff;font-size:11px;font-family:'Outfit',sans-serif;outline:none;cursor:pointer">
+                <option value="todas">Todas as contas</option>
+                ${S.contasBancarias.filter(c => contas.includes(c.id)).map(c => 
+                  `<option value="${c.id}"${c.id == selectedConta ? ' selected' : ''}>${c.nome}</option>`
+                ).join('')}
+              </select>
+            ` : ''}
           </div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:10px;color:var(--mut)">${hasLines ? lineCount + ' linhas do DRE' : 'Lançamento manual'}</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button onclick="event.stopPropagation();lancDelete('${mk}')" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑 Excluir</button>
-            <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
-          </div>
+        
+        <div style="background:rgba(0,232,155,.04);border:1px solid rgba(0,232,155,.15);border-radius:14px;padding:20px">
+          ${renderExtratosAgrupados(filtrados)}
         </div>
-      </div>`;
-    });
-    
-    html += '</div></div>';
+      </div>
+    `;
   }
   
   html += '</div>';
   body.innerHTML = html;
+}
+
+function renderDRETimeline(year, monthKeys) {
+  // Criar array de 12 meses
+  const timeline = [];
+  for (let m = 1; m <= 12; m++) {
+    const mk = `${year}-${String(m).padStart(2, '0')}`;
+    const hasDRE = monthKeys.includes(mk);
+    const raw = hasDRE && S.raw ? S.raw[mk] : null;
+    const score = hasDRE && S.data && S.data[mk] ? calcScore(mk).score : null;
+    
+    timeline.push({
+      month: m,
+      mk: mk,
+      hasDRE: hasDRE,
+      score: score,
+      raw: raw
+    });
+  }
+  
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:8px;margin-bottom:20px">
+  `;
+  
+  timeline.forEach(t => {
+    const active = t.hasDRE;
+    const color = active ? '#3b82f6' : 'rgba(255,255,255,.1)';
+    const label = MES[t.month - 1].substr(0, 3).toUpperCase();
+    
+    html += `
+      <div onclick="${active ? `selectDREMonth('${t.mk}')` : ''}" style="cursor:${active ? 'pointer' : 'default'};text-align:center;padding:12px 8px;background:${active ? 'rgba(59,130,246,.1)' : 'rgba(255,255,255,.02)'};border:2px solid ${color};border-radius:10px;transition:all .2s" ${active ? `onmouseover="this.style.borderColor='#3b82f6';this.style.background='rgba(59,130,246,.15)'" onmouseout="this.style.borderColor='${color}';this.style.background='${active ? 'rgba(59,130,246,.1)' : 'rgba(255,255,255,.02)'}'"` : ''}>
+        <div style="font-size:9px;color:${active ? '#3b82f6' : 'var(--mut)'};font-weight:700;margin-bottom:4px">${label}</div>
+        <div style="font-size:18px;margin-bottom:2px">${active ? '●' : '○'}</div>
+        <div style="font-size:10px;font-weight:700;color:${active ? '#3b82f6' : 'var(--mut)'}">${t.score !== null ? t.score : '--'}</div>
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  
+  // Card de detalhes do mês selecionado
+  const selectedMk = window._lancSelectedDreMk || monthKeys[0];
+  if (selectedMk) {
+    const [y, m] = selectedMk.split('-');
+    const lbl = MES[parseInt(m) - 1] + '/' + y;
+    const raw = S.raw && S.raw[selectedMk];
+    const kpis = raw ? calcKPIs(raw) : {};
+    const score = S.data && S.data[selectedMk] ? calcScore(selectedMk).score : null;
+    const g = score ? grade(score) : null;
+    
+    html += `
+      <div style="background:rgba(255,255,255,.04);border:1px solid rgba(59,130,246,.2);border-radius:12px;padding:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:#3b82f6">${lbl}</div>
+            <div style="font-size:11px;color:var(--mut);margin-top:2px">DRE Importado</div>
+          </div>
+          ${g ? `<span style="font-size:11px;font-weight:700;padding:4px 12px;border-radius:10px;background:${g.c}18;color:${g.c};border:1px solid ${g.c}44">${g.l} · ${score}</span>` : ''}
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px">
+          <div style="background:rgba(0,232,155,.08);border:1px solid rgba(0,232,155,.2);border-radius:10px;padding:12px">
+            <div style="font-size:9px;color:var(--teal);letter-spacing:1px;font-weight:700;margin-bottom:4px">RECEITA</div>
+            <div style="font-size:16px;font-weight:800;color:var(--teal)">${raw && raw.f_fat ? 'R$ ' + dreFormatNum(raw.f_fat) : '—'}</div>
+          </div>
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px">
+            <div style="font-size:9px;color:#ef4444;letter-spacing:1px;font-weight:700;margin-bottom:4px">CUSTOS VAR.</div>
+            <div style="font-size:16px;font-weight:800;color:#ef4444">${raw && raw.f_cv ? 'R$ ' + dreFormatNum(raw.f_cv) : '—'}</div>
+          </div>
+          <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px">
+            <div style="font-size:9px;color:#f59e0b;letter-spacing:1px;font-weight:700;margin-bottom:4px">LUCRO LÍQ.</div>
+            <div style="font-size:16px;font-weight:800;color:${kpis.lucroliq > 0 ? 'var(--teal)' : '#ef4444'}">${kpis.lucroliq !== null ? kpis.lucroliq.toFixed(1) + '%' : '—'}</div>
+          </div>
+        </div>
+        
+        <div style="display:flex;gap:8px">
+          <button onclick="lancOpenModal('${selectedMk}')" class="bs ghost" style="font-size:11px;padding:6px 14px;flex:1">👁️ Ver Detalhes</button>
+          <button onclick="lancDelete('${selectedMk}')" class="bs ghost" style="font-size:11px;padding:6px 14px;color:rgba(255,61,90,.8);border-color:rgba(255,61,90,.3)">🗑️ Excluir</button>
+        </div>
+      </div>
+    `;
+  }
+  
+  return html;
+}
+
+function renderExtratosAgrupados(extratos) {
+  if (!extratos.length) {
+    return '<div style="padding:40px;text-align:center;color:var(--mut);font-size:13px">Nenhum extrato encontrado com os filtros selecionados</div>';
+  }
+  
+  // Agrupar por período
+  const byPeriod = {};
+  extratos.forEach(e => {
+    if (!byPeriod[e.periodoId]) byPeriod[e.periodoId] = [];
+    byPeriod[e.periodoId].push(e);
+  });
+  
+  const periodos = Object.keys(byPeriod).sort().reverse();
+  const expanded = window._lancExtExpanded || {};
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:10px">';
+  
+  periodos.forEach(pid => {
+    const [y, m] = pid.split('-');
+    const label = MES[parseInt(m) - 1] + '/' + y;
+    const exts = byPeriod[pid];
+    const isExpanded = expanded[pid];
+    
+    // Totais do período
+    const totalIn = exts.reduce((sum, e) => sum + e.totalIn, 0);
+    const totalOut = exts.reduce((sum, e) => sum + e.totalOut, 0);
+    const saldo = totalIn - totalOut;
+    
+    html += `
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden">
+        <div onclick="toggleExtPeriod('${pid}')" style="padding:14px 18px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background='transparent'">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:16px;color:var(--teal);transition:transform .2s;transform:rotate(${isExpanded ? '90deg' : '0deg'})">▶</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#c8dff5">${label}</div>
+              <div style="font-size:10px;color:var(--mut);margin-top:2px">${exts.length} conta(s)</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center">
+            <div style="text-align:right">
+              <div style="font-size:9px;color:#10b981;letter-spacing:1px;font-weight:700">ENTRADAS</div>
+              <div style="font-size:13px;font-weight:700;color:#10b981">${fmtV(totalIn, 'R$')}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:9px;color:#ef4444;letter-spacing:1px;font-weight:700">SAÍDAS</div>
+              <div style="font-size:13px;font-weight:700;color:#ef4444">${fmtV(totalOut, 'R$')}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:9px;color:var(--teal);letter-spacing:1px;font-weight:700">SALDO</div>
+              <div style="font-size:13px;font-weight:700;color:${saldo >= 0 ? 'var(--teal)' : '#ef4444'}">${fmtV(saldo, 'R$')}</div>
+            </div>
+          </div>
+        </div>
+        
+        ${isExpanded ? `
+          <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:8px">
+            ${exts.map(e => {
+              const conta = S.contasBancarias.find(c => c.id === e.contaId);
+              const contaNome = conta ? conta.nome : e.contaNome || 'Conta removida';
+              const status = e.saldo >= 0 ? '🟢' : '🔴';
+              
+              return `
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:8px">
+                  <div style="font-size:20px">💳</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:12px;font-weight:600;color:#c8dff5">${contaNome}</div>
+                    <div style="font-size:10px;color:var(--mut);margin-top:2px">${e.count} transações</div>
+                  </div>
+                  <div style="display:flex;gap:12px;align-items:center">
+                    <div style="text-align:right">
+                      <div style="font-size:8px;color:#10b981;letter-spacing:1px;font-weight:700">ENTRADAS</div>
+                      <div style="font-size:11px;font-weight:700;color:#10b981">${fmtV(e.totalIn, 'R$')}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font-size:8px;color:#ef4444;letter-spacing:1px;font-weight:700">SAÍDAS</div>
+                      <div style="font-size:11px;font-weight:700;color:#ef4444">${fmtV(e.totalOut, 'R$')}</div>
+                    </div>
+                    <div style="font-size:18px">${status}</div>
+                    <button onclick="viewExtratoDetail(${e.id})" class="bs ghost" style="font-size:10px;padding:4px 10px">👁️</button>
+                    <button onclick="deleteExtrato(${e.id})" class="bs ghost" style="font-size:10px;padding:4px 10px;color:rgba(255,61,90,.8);border-color:rgba(255,61,90,.3)">🗑️</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+  
+  html += '</div>';
+  return html;
+}
+
+// Funções de controle de estado
+function setLancDreYear(year) {
+  window._lancDreYear = year;
+  window._lancSelectedDreMk = null; // Reset seleção
+  rLancamentos();
+}
+
+function selectDREMonth(mk) {
+  window._lancSelectedDreMk = mk;
+  rLancamentos();
+}
+
+function setLancExtAno(ano) {
+  window._lancExtAno = ano;
+  window._lancExtMes = 'todos';
+  rLancamentos();
+}
+
+function setLancExtMes(mes) {
+  window._lancExtMes = mes;
+  rLancamentos();
+}
+
+function setLancExtConta(conta) {
+  window._lancExtConta = conta;
+  rLancamentos();
+}
+
+function toggleExtPeriod(pid) {
+  if (!window._lancExtExpanded) window._lancExtExpanded = {};
+  window._lancExtExpanded[pid] = !window._lancExtExpanded[pid];
+  rLancamentos();
 }
 
 function lancOpenModal(mk) {

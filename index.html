@@ -308,6 +308,7 @@
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="bs ghost" onclick="clearAllData()" style="font-size:11px;padding:5px 10px">🗑 Limpar todos os dados</button>
           <button class="bs ghost" onclick="clearMappings()" style="font-size:11px;padding:5px 10px" id="clearMappingsBtn">🧠 Limpar aprendizado do DRE</button>
+          <button class="bs ghost" onclick="clearExtratos()" style="font-size:11px;padding:5px 10px">💰 Limpar extratos bancários</button>
         </div>
         <div id="mappingsCount" style="font-size:10px;color:var(--mut);margin-top:4px"></div>
       </div>
@@ -648,11 +649,7 @@
   <div class="ph">
     <div>
       <div class="pt">💰 Saúde de Caixa</div>
-      <div class="ps">Análise automática do seu fluxo bancário — sem configuração</div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="adm" onclick="importExtrato()">📤 Importar Extrato</button>
-      <button class="adm" onclick="clearExtratos()" style="background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:#ef4444">🗑️ Limpar</button>
+      <div class="ps">Análise automática do seu fluxo bancário</div>
     </div>
   </div>
   <div style="padding:16px 24px 40px" id="cashflowBody"></div>
