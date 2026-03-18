@@ -5062,7 +5062,7 @@ function renderDRETimeline(year, monthKeys) {
   }
   
   let html = `
-    <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:8px;margin-bottom:20px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:8px;margin-bottom:20px">
   `;
   
   timeline.forEach(t => {
