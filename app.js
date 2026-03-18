@@ -518,6 +518,7 @@ function go(name,btn){
   // Activate sidebar button
   const sbBtn=document.querySelector('.tb[data-page="'+name+'"]');
   if(sbBtn)sbBtn.classList.add('active');
+  mobOnNav(); // close sidebar on mobile when navigating
   if(name==='dashboard'){rDash();setTimeout(sizeWheel,60);}
   if(name==='diag')rDiagPage();
   if(name==='input')dreInitPage();
@@ -4040,6 +4041,71 @@ function rAdvisorCfgCards() {
   _renderAdvisorCards('cfgAdvisorCards', true);
 }
 
+// ═══════════════════════════════════════════
+// MOBILE RESPONSIVO
+// ═══════════════════════════════════════════
+const _isMobile = () => window.innerWidth <= 768;
+
+function mobInit() {
+  if (!_isMobile()) return;
+  // Show mobile top bar
+  const topBar = document.getElementById('mobTopBar');
+  if (topBar) topBar.style.display = 'flex';
+  // Adjust shell height to account for top bar
+  const shell = document.querySelector('.shell');
+  if (shell) shell.style.flex = '1';
+}
+
+function mobToggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('mobSidebarOverlay');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.contains('mob-open');
+  if (isOpen) {
+    sidebar.classList.remove('mob-open');
+    if (overlay) overlay.classList.remove('open');
+  } else {
+    sidebar.classList.add('mob-open');
+    if (overlay) overlay.classList.add('open');
+  }
+}
+
+function mobCloseSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('mobSidebarOverlay');
+  if (sidebar) sidebar.classList.remove('mob-open');
+  if (overlay) overlay.classList.remove('open');
+}
+
+// Close sidebar when navigating on mobile
+const _origGo = typeof go === 'function' ? go : null;
+
+function mobOnNav() {
+  if (_isMobile()) mobCloseSidebar();
+}
+
+// Show/hide mobile meeting notice
+function mobCheckMeeting() {
+  const notice = document.getElementById('mobMeetingNotice');
+  if (!notice) return;
+  notice.style.display = _isMobile() ? 'flex' : 'none';
+}
+
+// Re-run on resize (tablet rotation etc.)
+window.addEventListener('resize', () => {
+  if (_isMobile()) {
+    mobInit();
+  } else {
+    // Restore desktop state
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobSidebarOverlay');
+    const topBar = document.getElementById('mobTopBar');
+    if (sidebar) sidebar.classList.remove('mob-open');
+    if (overlay) overlay.classList.remove('open');
+    if (topBar) topBar.style.display = 'none';
+  }
+});
+
 function doLogout(){auth.signOut();}
 function toggleFullscreen(){
   if(!document.fullscreenElement){
@@ -4114,6 +4180,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       document.getElementById('appShell').style.display='block';
       document.getElementById('loginScreen').style.display='none';
       rDash();setTimeout(sizeWheel,100);
+      mobInit();
     } else {
       document.getElementById('appShell').style.display='none';
       document.getElementById('loginScreen').style.display='flex';

@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-mobile.css">
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -28,6 +29,14 @@
   <div style="font-size:11px;color:rgba(255,255,255,.2);margin-top:24px">Vital Diagnostic · Acesso restrito</div>
 </div>
 <div id="appShell" style="display:none">
+<!-- Mobile top bar — hidden on desktop via JS, shown on mobile via CSS -->
+<div id="mobTopBar" style="display:none">
+  <button id="mobMenuBtn" onclick="mobToggleSidebar()">☰</button>
+  <div id="mobTopTitle">VITAL <em>DIAGNOSTIC</em></div>
+  <div id="mobTopRight"></div>
+</div>
+<!-- Sidebar overlay for mobile -->
+<div id="mobSidebarOverlay" onclick="mobCloseSidebar()"></div>
 <div class="shell">
 <aside class="sidebar" id="sidebar">
   <!-- Top: logo + toggle -->
@@ -551,6 +560,13 @@
 </div>
 
 <div id="meetingOverlay">
+  <!-- Mobile notice — only visible on mobile via CSS -->
+  <div id="mobMeetingNotice" style="display:none">
+    <div class="mob-notice-icon">🖥️</div>
+    <div class="mob-notice-title">Modo Apresentação</div>
+    <div class="mob-notice-desc">O modo de apresentação foi desenvolvido para desktop. Acesse em um computador para aproveitar todos os recursos.</div>
+    <button class="mob-notice-close" onclick="closeMeeting()">← Voltar</button>
+  </div>
   <div class="mhdr">
     <div class="mhdr-l">
       <img class="mhdr-logo" id="meetLogo" alt="">
