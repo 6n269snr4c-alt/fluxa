@@ -5005,7 +5005,7 @@ function renderDRETimeline(year, monthKeys) {
           </div>
           <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px">
             <div style="font-size:9px;color:#f59e0b;letter-spacing:1px;font-weight:700;margin-bottom:4px">LUCRO LÍQ.</div>
-            <div style="font-size:16px;font-weight:800;color:${kpis.lucroliq > 0 ? 'var(--teal)' : '#ef4444'}">${kpis.lucroliq !== null ? kpis.lucroliq.toFixed(1) + '%' : '—'}</div>
+            <div style="font-size:16px;font-weight:800;color:${kpis.lucroliq > 0 ? 'var(--teal)' : '#ef4444'}">${kpis.lucroliq !== null && kpis.lucroliq !== undefined ? kpis.lucroliq.toFixed(1) + '%' : '—'}</div>
           </div>
         </div>
         
