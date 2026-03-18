@@ -322,6 +322,18 @@
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px" id="cfgAdvisorCards"></div>
     </div>
 
+    <!-- ── CONTAS BANCÁRIAS ── -->
+    <div class="cfg-sec">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div>
+          <div class="cfg-sec-t" style="margin-bottom:2px">💳 Contas Bancárias</div>
+          <div style="font-size:11px;color:var(--mut)">Gerencie as contas usadas na importação de extratos bancários</div>
+        </div>
+        <button class="bs" onclick="showNovaContaModal()" style="font-size:11px;padding:5px 12px;flex-shrink:0">+ Adicionar Conta</button>
+      </div>
+      <div id="contasBancariasTable"></div>
+    </div>
+
     <!-- ── MAPEAMENTOS APRENDIDOS ── -->
     <div class="cfg-sec">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">

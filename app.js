@@ -1934,6 +1934,11 @@ function rConfig(){
   dreModelRenderStatus();
   rMappingsTable();
   rAdvisorCfgCards();
+  
+  // Renderizar contas bancárias (se a função existir no cashflow.js)
+  if (typeof rContasBancariasTable === 'function') {
+    rContasBancariasTable();
+  }
 
   // Popula year select ANTES de chamar rGoalsTable
   const ys=document.getElementById('goalsYear');
@@ -4805,52 +4810,120 @@ let _lancEditLines = [];
 function rLancamentos() {
   const body = document.getElementById('lancBody');
   if (!body) return;
+  
   const months = (S.months || []).slice().sort().reverse();
-  if (!months.length) {
-    body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="eico">🗂️</div><p>Nenhum lançamento ainda.<br>Use Lançamento para importar um DRE.</p></div>';
+  const extratos = (S.extratos || []).slice().sort((a,b) => b.periodoId.localeCompare(a.periodoId));
+  
+  if (!months.length && !extratos.length) {
+    body.innerHTML = '<div class="empty" style="padding:40px 0"><div class="eico">🗂️</div><p>Nenhum lançamento ainda.<br>Use Importar DRE ou Saúde de Caixa para começar.</p></div>';
     return;
   }
-  let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
-  months.forEach(mk => {
-    const parts = mk.split('-');
-    const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
-    const hasLines = S.dreLines && S.dreLines[mk];
-    const raw = S.raw && S.raw[mk];
-    const kpis = raw ? calcKPIs(raw) : {};
-    const score = S.data && S.data[mk] ? calcScore(mk) : null;
-    const g = score ? grade(score.score) : null;
-    const recVal = raw && raw.f_fat ? 'R$ ' + dreFormatNum(raw.f_fat) : '—';
-    const lucroVal = kpis.lucroliq !== null && kpis.lucroliq !== undefined
-      ? kpis.lucroliq.toFixed(1) + '%' : '—';
-    const lucroCol = kpis.lucroliq > 0 ? 'var(--teal)' : kpis.lucroliq < 0 ? 'var(--red)' : 'var(--mut)';
-    const lineCount = hasLines ? S.dreLines[mk].filter(l => l.category !== 'ignorar').length : 0;
+  
+  let html = '<div style="display:flex;flex-direction:column;gap:24px">';
+  
+  // ── EXTRATOS BANCÁRIOS ────────────────────────────────────────────
+  if (extratos.length) {
+    html += `
+      <div>
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--teal);font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <span>💰 EXTRATOS BANCÁRIOS</span>
+          <span style="background:rgba(0,232,155,.15);color:var(--teal);padding:2px 8px;border-radius:10px;font-size:10px">${extratos.length}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
+    
+    extratos.forEach(e => {
+      const [y, m] = e.periodoId.split('-');
+      const lbl = MES[parseInt(m) - 1] + '/' + y;
+      const importDate = new Date(e.importedAt).toLocaleDateString('pt-BR', {day: '2-digit', month: 'short'});
+      const conta = S.contasBancarias.find(c => c.id === e.contaId);
+      const contaNome = conta ? conta.nome : e.contaNome || 'Conta removida';
+      
+      html += `<div style="background:rgba(0,232,155,.04);border:1px solid rgba(0,232,155,.15);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:all .2s"
+        onmouseover="this.style.borderColor='rgba(0,232,155,.35)'" onmouseout="this.style.borderColor='rgba(0,232,155,.15)'">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:var(--teal)">${lbl}</div>
+            <div style="font-size:10px;color:var(--mut);margin-top:2px">💳 ${contaNome}</div>
+          </div>
+          <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:rgba(0,232,155,.12);color:var(--teal);border:1px solid rgba(0,232,155,.3)">EXTRATO</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:8px 10px">
+            <div style="font-size:9px;color:#10b981;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Entradas</div>
+            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#10b981">${fmtV(e.totalIn, 'R$')}</div>
+          </div>
+          <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:8px 10px">
+            <div style="font-size:9px;color:#ef4444;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Saídas</div>
+            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#ef4444">${fmtV(e.totalOut, 'R$')}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:10px;color:var(--mut)">${e.count} transações · ${importDate}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button onclick="viewExtratoDetail(${e.id})" style="background:rgba(0,232,155,.1);border:1px solid rgba(0,232,155,.25);color:var(--teal);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;font-weight:600" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='rgba(0,232,155,.25)'">👁️ Ver</button>
+            <button onclick="deleteExtrato(${e.id})" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑</button>
+          </div>
+        </div>
+      </div>`;
+    });
+    
+    html += '</div></div>';
+  }
+  
+  // ── DREs IMPORTADOS ────────────────────────────────────────────────
+  if (months.length) {
+    html += `
+      <div>
+        <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#3b82f6;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+          <span>📊 DREs IMPORTADOS</span>
+          <span style="background:rgba(59,130,246,.15);color:#3b82f6;padding:2px 8px;border-radius:10px;font-size:10px">${months.length}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">`;
+    
+    months.forEach(mk => {
+      const parts = mk.split('-');
+      const lbl = MES[parseInt(parts[1]) - 1] + '/' + parts[0];
+      const hasLines = S.dreLines && S.dreLines[mk];
+      const raw = S.raw && S.raw[mk];
+      const kpis = raw ? calcKPIs(raw) : {};
+      const score = S.data && S.data[mk] ? calcScore(mk) : null;
+      const g = score ? grade(score.score) : null;
+      const recVal = raw && raw.f_fat ? 'R$ ' + dreFormatNum(raw.f_fat) : '—';
+      const lucroVal = kpis.lucroliq !== null && kpis.lucroliq !== undefined
+        ? kpis.lucroliq.toFixed(1) + '%' : '—';
+      const lucroCol = kpis.lucroliq > 0 ? 'var(--teal)' : kpis.lucroliq < 0 ? 'var(--red)' : 'var(--mut)';
+      const lineCount = hasLines ? S.dreLines[mk].filter(l => l.category !== 'ignorar').length : 0;
 
-    html += `<div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s;cursor:pointer"
-      onmouseover="this.style.borderColor='rgba(0,240,200,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.075)'"
-      onclick="lancOpenModal('${mk}')">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:#c8dff5">${lbl}</div>
-        ${g ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:${g.c}18;color:${g.c};border:1px solid ${g.c}44">${g.l}</span>` : '<span style="font-size:10px;color:var(--mut)">Sem score</span>'}
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
-          <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Receita</div>
-          <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--teal)">${recVal}</div>
+      html += `<div style="background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .2s;cursor:pointer"
+        onmouseover="this.style.borderColor='rgba(0,240,200,.3)'" onmouseout="this.style.borderColor='rgba(255,255,255,.075)'"
+        onclick="lancOpenModal('${mk}')">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;color:#c8dff5">${lbl}</div>
+          ${g ? `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:10px;background:${g.c}18;color:${g.c};border:1px solid ${g.c}44">${g.l}</span>` : '<span style="font-size:10px;color:var(--mut)">Sem score</span>'}
         </div>
-        <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
-          <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Lucro Líq.</div>
-          <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${lucroCol}">${lucroVal}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
+            <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Receita</div>
+            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--teal)">${recVal}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px">
+            <div style="font-size:9px;color:var(--mut);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">Lucro Líq.</div>
+            <div style="font-size:13px;font-weight:700;font-family:'JetBrains Mono',monospace;color:${lucroCol}">${lucroVal}</div>
+          </div>
         </div>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:10px;color:var(--mut)">${hasLines ? lineCount + ' linhas do DRE' : 'Lançamento manual'}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button onclick="event.stopPropagation();lancDelete('${mk}')" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑 Excluir</button>
-          <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:10px;color:var(--mut)">${hasLines ? lineCount + ' linhas do DRE' : 'Lançamento manual'}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="event.stopPropagation();lancDelete('${mk}')" style="background:none;border:1px solid rgba(255,61,90,.25);color:rgba(255,61,90,.6);border-radius:6px;font-size:10px;padding:3px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s" onmouseover="this.style.borderColor='#ff3d5a';this.style.color='#ff3d5a'" onmouseout="this.style.borderColor='rgba(255,61,90,.25)';this.style.color='rgba(255,61,90,.6)'">🗑 Excluir</button>
+            <span style="font-size:11px;color:var(--teal);font-weight:600">Ver detalhes →</span>
+          </div>
         </div>
-      </div>
-    </div>`;
-  });
+      </div>`;
+    });
+    
+    html += '</div></div>';
+  }
+  
   html += '</div>';
   body.innerHTML = html;
 }
