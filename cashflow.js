@@ -169,8 +169,8 @@ function showExtratoConfirmModal() {
         <!-- Período -->
         <div style="margin-bottom:16px;padding:12px 16px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.06)">
           <div style="font-size:10px;letter-spacing:1px;color:var(--mut);font-weight:700;margin-bottom:4px">PERÍODO DETECTADO</div>
-          <div style="font-size:13px;color:#eef4ff;font-weight:600">${formatDate(p.firstDate)} a ${formatDate(p.lastDate)}</div>
-          <div style="font-size:11px;color:var(--teal);margin-top:2px">${p.transactions.length} transações · ${mesLabel}</div>
+          <div style="font-size:16px;color:var(--teal);font-weight:700;margin-bottom:4px">${mesLabel}</div>
+          <div style="font-size:11px;color:var(--mut)">${formatDate(p.firstDate)} a ${formatDate(p.lastDate)} · ${p.transactions.length} transações</div>
         </div>
         
         <!-- Seleção de Conta (NOVO) -->
