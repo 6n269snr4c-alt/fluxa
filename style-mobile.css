@@ -22,8 +22,7 @@
   /* ── SIDEBAR — slide-over drawer ─────────────────── */
   .sidebar {
     position: fixed;
-    top: 52px;
-    left: 0;
+    top: 52px; left: 0;
     height: calc(100% - 52px);
     width: 260px !important;
     z-index: 500;
@@ -96,10 +95,16 @@
   /* ── PAGE HEADERS ─────────────────────────────────── */
   .ph { padding: 12px 14px 0; flex-wrap: wrap; gap: 8px; }
 
-  /* ── DASHBOARD HEADER ─────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     DASHBOARD
+  ═══════════════════════════════════════════════════ */
+
+  /* Header row */
   .dash-title { font-size: 10px !important; letter-spacing: 2px; }
   #kpiToggleBtn { display: none; }
   .adm { font-size: 11px !important; padding: 4px 8px !important; }
+
+  /* Month pills — single-line horizontal scroll */
   .mpills {
     gap: 4px;
     flex-wrap: nowrap;
@@ -107,10 +112,11 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
+  .mpills::-webkit-scrollbar { display: none; }
   .mp { padding: 4px 9px 4px 8px !important; flex-shrink: 0; }
   .mp .mp-label { font-size: 12px; }
 
-  /* ── DASHBOARD LAYOUT ─────────────────────────────── */
+  /* Layout — stack vertically */
   .dash-layout {
     grid-template-columns: 1fr;
     overflow-y: auto;
@@ -124,9 +130,19 @@
     padding: 10px 12px;
   }
   .dash-right { border-right: none; overflow: visible; min-height: 280px; }
-  .wheel-col { min-height: 220px; max-height: 280px; }
+
+  /* Wheel — bigger, no overlap with score */
+  .wheel-col {
+    min-height: 300px;
+    max-height: 360px;
+    padding: 8px 0;
+  }
+
+  /* Score + progress bar */
   .sp-wrap { flex-wrap: wrap; gap: 8px; padding: 8px 12px 10px; }
   .tStats { gap: 10px; }
+
+  /* KPI list */
   .ind-list { padding: 4px 12px; }
   .ir { grid-template-columns: 28px 1fr 64px 36px 8px; gap: 6px; padding: 7px 2px; }
   .ii { width: 28px; height: 28px; font-size: 14px; }
@@ -134,7 +150,9 @@
   .ip  { font-size: 12px; }
   .dash-diag { min-height: 200px; }
 
-  /* ── DIAGNÓSTICO PAGE ─────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     DIAGNÓSTICO PAGE
+  ═══════════════════════════════════════════════════ */
   .diag-layout {
     grid-template-columns: 1fr;
     overflow-y: auto;
@@ -143,24 +161,101 @@
   .diag-main { border-right: none; border-bottom: 1px solid var(--bdr); overflow: visible; }
   .diag-side { min-height: 280px; }
 
-  /* ── SIMULADOR ────────────────────────────────────── */
-  .sim-layout {
+  /* ═══════════════════════════════════════════════════
+     SIMULADOR
+  ═══════════════════════════════════════════════════ */
+
+  /* Whole page scrollable */
+  #page-sim .sim-layout {
     grid-template-columns: 1fr;
-    overflow-y: auto;
+    overflow-y: visible;
     overflow-x: hidden;
   }
+
+  /* Top bar: BASE + month select + mode buttons — stack */
+  #page-sim .inp-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+
+  /* BASE row — keep label + select inline */
+  .ssb {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px !important;
+    padding: 6px 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Mode buttons row — full width, equal size */
+  #page-sim > div > div:has(#simBtnReal) {
+    width: 100%;
+    display: flex;
+    gap: 6px;
+  }
+  #simBtnReal, #simBtnFcast {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+
+  /* Wheel side — full width, comfortable height */
   .sim-left {
     border-right: none;
     border-bottom: 1px solid var(--bdr);
-    min-height: 240px;
-    max-height: 300px;
-    padding: 8px;
+    min-height: 280px;
+    max-height: 340px;
+    padding: 10px 12px;
+    overflow: visible;
+    gap: 6px;
+  }
+
+  /* Score bar above wheel */
+  #page-sim .ssb {
+    justify-content: center;
+    font-size: 13px;
+  }
+
+  /* Lucro Líquido card — stack on mobile */
+  #simLucroCard {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    padding: 10px 12px !important;
+  }
+
+  /* Right side fields */
+  .sim-right {
+    padding: 12px 14px;
     overflow: visible;
   }
-  .sim-right { padding: 12px 14px; overflow: visible; }
-  .sim-row { grid-template-columns: 20px 1fr 90px 44px; gap: 5px; }
 
-  /* ── IMPORTAR DRE ─────────────────────────────────── */
+  /* Sim row — drop the slider column, keep icon+label+input */
+  .sim-row {
+    grid-template-columns: 20px 1fr 100px;
+    gap: 6px;
+  }
+  /* Hide stepper arrows on mobile (4th column) */
+  .sim-row > *:nth-child(4) { display: none; }
+
+  /* Save bar — stack vertically */
+  #simSaveBar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 14px 14px !important;
+  }
+  #simSaveBar span { flex: none !important; font-size: 12px; }
+  #simSaveMonthSel { width: 100%; }
+  #simSaveBar button { width: 100%; padding: 10px 16px !important; }
+
+  /* ═══════════════════════════════════════════════════
+     IMPORTAR DRE
+  ═══════════════════════════════════════════════════ */
   .dre-wrap { padding: 16px 12px; gap: 16px; }
   .dre-steps { padding: 12px 16px; flex-wrap: nowrap; overflow-x: auto; }
   .dre-step-lbl { font-size: 10px; }
@@ -172,7 +267,9 @@
   .dre-tbl-wrap { min-height: 280px; max-height: 50vh; }
   .dre-summary { max-height: 40vh; }
 
-  /* ── CONFIGURAÇÃO ─────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     CONFIGURAÇÃO
+  ═══════════════════════════════════════════════════ */
   .cfg-body { padding: 12px; gap: 12px; }
   .cfg-row { flex-direction: column; align-items: flex-start; gap: 6px; }
   .cfg-row label { width: auto; }
@@ -180,34 +277,44 @@
   #cfgAdvisorCards { grid-template-columns: 1fr !important; }
   .gtw { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
-  /* ── CONSELHEIRO ──────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     CONSELHEIRO
+  ═══════════════════════════════════════════════════ */
   #advisorCards { grid-template-columns: 1fr !important; }
 
-  /* ── PLANOS DE AÇÃO ───────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     PLANOS DE AÇÃO
+  ═══════════════════════════════════════════════════ */
   #actionsTable { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   #actionsTable table { min-width: 640px; }
 
-  /* ── LANÇAMENTOS ──────────────────────────────────── */
+  /* ═══════════════════════════════════════════════════
+     LANÇAMENTOS
+  ═══════════════════════════════════════════════════ */
   .inp-2col { grid-template-columns: 1fr; overflow-y: auto; }
-  .inp-left { padding: 12px; overflow: visible; }
+  .inp-left  { padding: 12px; overflow: visible; }
   .inp-right { border-left: none; border-top: 1px solid var(--bdr); padding: 12px; overflow: visible; }
 
-  /* ── METODOLOGIA ──────────────────────────────────── */
-  .mg { grid-template-columns: 1fr; padding: 12px; }
+  /* ═══════════════════════════════════════════════════
+     METODOLOGIA
+  ═══════════════════════════════════════════════════ */
+  .mg  { grid-template-columns: 1fr; padding: 12px; }
   .mkg { grid-template-columns: 1fr; }
 
-  /* ── MODAIS ───────────────────────────────────────── */
-  .modal-box { padding: 20px 16px; width: calc(100vw - 32px) !important; min-width: 0 !important; }
-  .kpi-modal { width: calc(100vw - 24px); max-width: none; max-height: 90vh; padding: 16px; }
+  /* ═══════════════════════════════════════════════════
+     MODAIS
+  ═══════════════════════════════════════════════════ */
+  .modal-box   { padding: 20px 16px; width: calc(100vw - 32px) !important; min-width: 0 !important; }
+  .kpi-modal   { width: calc(100vw - 24px); max-width: none; max-height: 90vh; padding: 16px; }
   .kpi-det-row { grid-template-columns: 1fr; }
 
-  /* ── MEETING MODE — desktop only notice ───────────── */
+  /* ═══════════════════════════════════════════════════
+     MEETING MODE — desktop only notice
+  ═══════════════════════════════════════════════════ */
   #mobMeetingNotice { display: none; }
-
   #meetingOverlay.open #meetSlides { display: none !important; }
   #meetingOverlay.open .mnav       { display: none !important; }
   #meetingOverlay.open .mhdr       { display: none !important; }
-
   #meetingOverlay.open #mobMeetingNotice {
     display: flex;
     flex-direction: column;
