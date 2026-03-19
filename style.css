@@ -71,15 +71,15 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);back
   flex-shrink:0;padding:8px 12px;border-top:1px solid var(--bdr);
   display:flex;align-items:center;gap:8px;overflow:hidden;
 }
-#userEmail{font-size:10px;color:rgba(255,255,255,.3);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#userEmail{font-size:11px;color:rgba(255,255,255,.6);font-weight:500;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sidebar.collapsed #userEmail{display:none}
 .logout-btn{
-  flex-shrink:0;background:none;border:1px solid rgba(255,255,255,.1);
-  border-radius:6px;color:rgba(255,255,255,.3);font-size:11px;
-  padding:4px 8px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;
+  flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);
+  border-radius:6px;color:rgba(255,255,255,.7);font-size:11px;font-weight:500;
+  padding:6px 12px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;
   white-space:nowrap;
 }
-.logout-btn:hover{border-color:#ff5050;color:#ff5050}
+.logout-btn:hover{background:rgba(255,61,90,.1);border-color:rgba(255,61,90,.5);color:#ff3d5a}
 .sidebar.collapsed .logout-btn{padding:4px 6px;font-size:13px}
 
 /* Main content area */
