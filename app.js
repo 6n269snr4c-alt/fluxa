@@ -4600,7 +4600,14 @@ function dreRenderReview() {
           ${DRE_CATS.map(c => `<option value="${c.id}"${c.id===line.category?' selected':''}>${c.icon} ${c.label}</option>`).join('')}
         </select>
       </td>
-      <td style="text-align:center;font-size:15px">${confIcon}</td>
+      <td style="text-align:center;min-width:110px">
+        <select class="dre-conf-sel" data-idx="${i}" onchange="dreUpdateConf(${i},this.value)"
+          style="padding:4px 8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#eef4ff;font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;outline:none">
+          <option value="high"${line.confidence==='high'?' selected':''}>✅ Alta</option>
+          <option value="medium"${line.confidence==='medium'?' selected':''}>⚠️ Média</option>
+          <option value="low"${line.confidence==='low'?' selected':''}>❓ Baixa</option>
+        </select>
+      </td>
     </tr>`;
   });
   document.getElementById('dreReviewRows').innerHTML = rows;
@@ -4609,15 +4616,37 @@ function dreRenderReview() {
 
 function dreUpdateCat(idx, newCat) {
   _dreClassified[idx].category = newCat;
-  _dreClassified[idx].confidence = 'high';
+  // NÃO força mais confidence = 'high' automaticamente
   const row = document.getElementById('dre-row-' + idx);
-  if (row) row.className = 'dre-tbl-row';
+  if (row) {
+    // Remove classes de confiança antigas
+    row.className = 'dre-tbl-row';
+    // Adiciona classe baseada na confiabilidade atual
+    const conf = _dreClassified[idx].confidence;
+    if (conf === 'low') row.classList.add('dre-low');
+    else if (conf === 'medium') row.classList.add('dre-med');
+  }
   const sel = document.querySelector(`[data-idx="${idx}"]`);
   if (sel) {
     const col = DRE_CATS.find(c => c.id === newCat)?.color || '#64748b';
     sel.style.borderColor = col + '55';
     sel.style.color = col;
   }
+  dreRenderSummary();
+}
+
+function dreUpdateConf(idx, newConf) {
+  _dreClassified[idx].confidence = newConf;
+  const row = document.getElementById('dre-row-' + idx);
+  if (row) {
+    // Remove classes antigas
+    row.classList.remove('dre-low', 'dre-med');
+    // Adiciona nova classe
+    if (newConf === 'low') row.classList.add('dre-low');
+    else if (newConf === 'medium') row.classList.add('dre-med');
+  }
+  dreRenderSummary();
+}
   dreRenderSummary();
 }
 
@@ -4766,9 +4795,9 @@ function dreConfirm() {
     S.dreMappings[l.name.toLowerCase().trim()] = l.category;
   });
 
-  // Save raw DRE lines so they can be reviewed/edited later
+  // Save raw DRE lines so they can be reviewed/edited later (incluindo confidence)
   if (!S.dreLines) S.dreLines = {};
-  S.dreLines[mk] = _dreClassified.map(l => ({ name: l.name, value: l.value, category: l.category }));
+  S.dreLines[mk] = _dreClassified.map(l => ({ name: l.name, value: l.value, category: l.category, confidence: l.confidence }));
 
   // Build raw for calcKPIs
   // f_cv = CMV + deduções (para Margem de Contribuição)
@@ -4792,6 +4821,46 @@ function dreConfirm() {
   if (!S.raw) S.raw = {};
   S.raw[mk] = raw;
 
+  // Calcular confiabilidade de cada KPI baseada nas linhas que o compõem
+  const kpiConfidence = {};
+  
+  // Mapear quais linhas afetam cada KPI
+  const kpiLineMapping = {
+    'receita': ['receita_bruta'],
+    'cac': ['despesa_comercial'],
+    'margbruta': ['receita_bruta', 'deducao_receita', 'custo_variavel'],
+    'margem': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial'],
+    'ebitda': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'despop': ['despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'lucroliq': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa', 'depreciacao', 'despesa_financeira', 'imposto_lucro'],
+    'pessoal': ['despesa_pessoal'],
+    'admperc': ['despesa_administrativa'],
+    'spread': ['despesa_financeira', 'imposto_lucro'],
+    'eficiencia': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'margseg': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa']
+  };
+  
+  // Para cada KPI, calcular confiabilidade média das linhas envolvidas
+  Object.keys(kpiLineMapping).forEach(kpiId => {
+    const relevantCategories = kpiLineMapping[kpiId];
+    const relevantLines = _dreClassified.filter(l => relevantCategories.includes(l.category));
+    
+    if (relevantLines.length === 0) {
+      kpiConfidence[kpiId] = 'high'; // Se não tem linhas, assume alta
+    } else {
+      // Calcular confiabilidade média
+      const confScores = relevantLines.map(l => 
+        l.confidence === 'high' ? 100 : l.confidence === 'medium' ? 60 : 20
+      );
+      const avgScore = confScores.reduce((a, b) => a + b, 0) / confScores.length;
+      
+      // Converter de volta para high/medium/low
+      if (avgScore >= 90) kpiConfidence[kpiId] = 'high';
+      else if (avgScore >= 50) kpiConfidence[kpiId] = 'medium';
+      else kpiConfidence[kpiId] = 'low';
+    }
+  });
+
   const kpis = calcKPIs(raw);
   const filled = Object.values(kpis).filter(v => v !== null).length;
   if (!S.data) S.data = {};
@@ -4799,7 +4868,10 @@ function dreConfirm() {
   IND.forEach(ind => {
     const v = kpis[ind.id];
     if (v !== null) {
-      S.data[mk][ind.id] = { value: parseFloat(v.toFixed(4)), confidence: 'high' };
+      S.data[mk][ind.id] = { 
+        value: parseFloat(v.toFixed(4)), 
+        confidence: kpiConfidence[ind.id] || 'high'
+      };
     }
   });
 
@@ -5449,13 +5521,51 @@ function lancSaveEdits() {
   if (!S.raw) S.raw = {};
   S.raw[mk] = raw;
 
+  // Calcular confiabilidade de cada KPI baseada nas linhas que o compõem
+  const kpiConfidence = {};
+  const kpiLineMapping = {
+    'receita': ['receita_bruta'],
+    'cac': ['despesa_comercial'],
+    'margbruta': ['receita_bruta', 'deducao_receita', 'custo_variavel'],
+    'margem': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial'],
+    'ebitda': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'despop': ['despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'lucroliq': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa', 'depreciacao', 'despesa_financeira', 'imposto_lucro'],
+    'pessoal': ['despesa_pessoal'],
+    'admperc': ['despesa_administrativa'],
+    'spread': ['despesa_financeira', 'imposto_lucro'],
+    'eficiencia': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa'],
+    'margseg': ['receita_bruta', 'deducao_receita', 'custo_variavel', 'despesa_comercial', 'despesa_pessoal', 'despesa_administrativa']
+  };
+  
+  Object.keys(kpiLineMapping).forEach(kpiId => {
+    const relevantCategories = kpiLineMapping[kpiId];
+    const relevantLines = _lancEditLines.filter(l => relevantCategories.includes(l.category));
+    
+    if (relevantLines.length === 0) {
+      kpiConfidence[kpiId] = 'high';
+    } else {
+      const confScores = relevantLines.map(l => 
+        l.confidence === 'high' ? 100 : l.confidence === 'medium' ? 60 : 20
+      );
+      const avgScore = confScores.reduce((a, b) => a + b, 0) / confScores.length;
+      
+      if (avgScore >= 90) kpiConfidence[kpiId] = 'high';
+      else if (avgScore >= 50) kpiConfidence[kpiId] = 'medium';
+      else kpiConfidence[kpiId] = 'low';
+    }
+  });
+
   // Recalculate KPIs
   const kpis = calcKPIs(raw);
   if (!S.data) S.data = {};
   if (!S.data[mk]) S.data[mk] = {};
   IND.forEach(ind => {
     const v = kpis[ind.id];
-    if (v !== null) S.data[mk][ind.id] = { value: parseFloat(v.toFixed(4)), confidence: 'high' };
+    if (v !== null) S.data[mk][ind.id] = { 
+      value: parseFloat(v.toFixed(4)), 
+      confidence: kpiConfidence[ind.id] || 'high'
+    };
   });
   if (S.diagCache) delete S.diagCache[mk];
 
