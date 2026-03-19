@@ -4175,11 +4175,11 @@ IMPORTANTE: Formate sua resposta usando markdown simples (negrito com **, listas
         </div>` : ''}
       </div>`;
 
-    // Fala a resposta automaticamente
-    setTimeout(() => {
-      const textToSpeak = document.getElementById('advisorRespText').textContent;
-      speakText(textToSpeak);
-    }, 500);
+    // Não fala automaticamente - deixa usuário escolher
+    // setTimeout(() => {
+    //   const textToSpeak = document.getElementById('advisorRespText').textContent;
+    //   speakText(textToSpeak);
+    // }, 500);
 
     // Save to history
     if (!S.advisorHistory) S.advisorHistory = { analytics:[], growth:[], strategist:[] };
