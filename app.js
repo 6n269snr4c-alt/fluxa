@@ -2007,26 +2007,12 @@ const _BENCHABLE=new Set(['cac','margem','ebitda','despop','lucroliq','margbruta
 function rCfgKpiTable(){
   const t=document.getElementById('cfgGrid');t.innerHTML='';
   const dis=S.locked?'disabled':'';
-  let html=`<thead><tr><th>KPI</th><th>Grupo</th><th>Peso</th><th>Meta (quadro acima)</th><th>Benchmark</th><th>Direção</th></tr></thead><tbody>`;
+  let html=`<thead><tr><th>KPI</th><th>Grupo</th><th>Peso</th><th>Direção</th></tr></thead><tbody>`;
   IND.forEach(ind=>{
-    const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb,benchMode:'manual'};const col=GC[ind.group];
-    const canBench=_BENCHABLE.has(ind.id);
-    const isAI=canBench&&cfg.benchMode==='ai'&&cfg.benchGoal!=null;
-    // Meta column: when AI mode, show bench value read-only; otherwise empty (uses goals table above)
-    const metaCell=isAI
-      ?`<span style="font-size:11px;color:#c084fc;font-weight:700">${cfg.benchGoal} ${ind.unit} <span style="font-size:9px;opacity:.7">(IA)</span></span>`
-      :`<span style="font-size:11px;color:var(--mut)">do quadro acima</span>`;
-    const benchCell=canBench
-      ?`<div class="dir-sel" id="bm_${ind.id}">
-          <button class="dir-btn ${!isAI?'active':''}" onclick="setKpiBM('${ind.id}','manual')" ${dis}>🎯 Manual</button>
-          <button class="dir-btn ${isAI?'active':''}" style="${isAI?'color:#c084fc':''}" onclick="setKpiBM('${ind.id}','ai')" ${dis}>🏦 Mercado</button>
-        </div>`
-      :`<span style="font-size:10px;color:var(--mut)">só manual</span>`;
+    const cfg=S.cfg[ind.id]||{weight:1,hb:ind.hb};const col=GC[ind.group];
     html+=`<tr id="cfgrow_${ind.id}"><td style="font-size:12px">${ind.icon} ${ind.name}</td>
       <td style="font-size:11px;color:${col}">${GN[ind.group].split(' ')[0]}</td>
       <td><input type="number" min="0" max="5" step=".5" class="gi2" id="cw_${ind.id}" value="${cfg.weight}" ${dis}></td>
-      <td>${metaCell}</td>
-      <td>${benchCell}</td>
       <td><div class="dir-sel" id="hb_${ind.id}">
         <button class="dir-btn ${cfg.hb?'active':''}" onclick="setHb('${ind.id}',true)" ${dis}>↑ Maior</button>
         <button class="dir-btn ${!cfg.hb?'active':''}" onclick="setHb('${ind.id}',false)" ${dis}>↓ Menor</button>

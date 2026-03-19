@@ -345,19 +345,10 @@
       </div>
       <div id="mappingsTableWrap"></div>
     </div>
+    
+    <!-- ── MODELO DE DRE ── MOVIDO PARA CÁ -->
     <div class="cfg-sec">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div class="cfg-sec-t" style="margin-bottom:0">Metas por KPI e Mês</div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:11px;color:var(--mut)">Ano:</span>
-          <select class="csel" id="goalsYear" style="width:72px" onchange="rGoalsTable()"></select>
-          <button class="bs ghost" onclick="fillAllMonths()" style="font-size:11px;padding:4px 10px">↔ Replicar padrão</button>
-        </div>
-      </div>
-      <div class="gtw"><table class="gt" id="goalsTable"></table></div>
-    </div>
-    <div class="cfg-sec">
-      <div class="cfg-sec-t">Modelo de DRE da Empresa</div>
+      <div class="cfg-sec-t">📋 Modelo de DRE da Empresa</div>
       <div style="font-size:11px;color:var(--mut);line-height:1.7;margin-bottom:12px">
         Suba um DRE com as contas da sua empresa — pode ser com valores zerados ou qualquer mês passado.
         O sistema vai classificar cada linha uma vez e usar isso como base para todas as importações futuras.
@@ -381,8 +372,20 @@
         </button>
       </div>
     </div>
+    
     <div class="cfg-sec">
-      <div class="cfg-sec-t">Peso, Benchmark e Direção por KPI</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="cfg-sec-t" style="margin-bottom:0">Metas por KPI e Mês</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:11px;color:var(--mut)">Ano:</span>
+          <select class="csel" id="goalsYear" style="width:72px" onchange="rGoalsTable()"></select>
+          <button class="bs ghost" onclick="fillAllMonths()" style="font-size:11px;padding:4px 10px">↔ Replicar padrão</button>
+        </div>
+      </div>
+      <div class="gtw"><table class="gt" id="goalsTable"></table></div>
+    </div>
+    <div class="cfg-sec">
+      <div class="cfg-sec-t">⚙️ Peso e Direção dos KPIs</div>
       <table class="kct" id="cfgGrid"></table>
     </div>
   </div>
