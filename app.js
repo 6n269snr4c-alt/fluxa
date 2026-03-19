@@ -602,8 +602,13 @@ function addToCalendar(actionId) {
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     
-    // Tenta abrir o calendário nativo
-    window.location.href = url;
+    // Cria link temporário e clica (abre Calendar app)
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `plano-${action.id}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
     // Limpa URL após 1 segundo
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -657,7 +662,7 @@ function showCalendarModal(action, icsContent) {
   `;
   
   modal.innerHTML = `
-    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.5)">
       <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">
         📅 Adicionar ao Calendário
       </div>
@@ -666,36 +671,46 @@ function showCalendarModal(action, icsContent) {
       </div>
       
       <div style="display:flex;flex-direction:column;gap:10px">
+        
+        <!-- DESTAQUE: Download .ics (funciona em tudo) -->
+        <button onclick="downloadICSFile('${action.id}');closeCalendarModal()" 
+          style="background:linear-gradient(135deg, rgba(59,130,246,.15) 0%, rgba(59,130,246,.08) 100%);border:2px solid rgba(59,130,246,.4);border-radius:10px;padding:16px;color:#3b82f6;font-size:14px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:12px;box-shadow:0 4px 12px rgba(59,130,246,.15)"
+          onmouseover="this.style.background='linear-gradient(135deg, rgba(59,130,246,.22) 0%, rgba(59,130,246,.12) 100%)';this.style.borderColor='rgba(59,130,246,.6)';this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,.25)'"
+          onmouseout="this.style.background='linear-gradient(135deg, rgba(59,130,246,.15) 0%, rgba(59,130,246,.08) 100%)';this.style.borderColor='rgba(59,130,246,.4)';this.style.transform='translateY(0)';this.style.boxShadow='0 4px 12px rgba(59,130,246,.15)'">
+          <span style="font-size:28px">📥</span>
+          <div style="flex:1">
+            <div style="font-size:15px;margin-bottom:2px">Baixar Evento (.ics)</div>
+            <div style="font-size:11px;opacity:.7;font-weight:400">Abre automaticamente no seu calendário</div>
+          </div>
+        </button>
+        
+        <!-- Linha divisória -->
+        <div style="display:flex;align-items:center;gap:12px;margin:4px 0">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+          <div style="font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:1px">ou escolha</div>
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08)"></div>
+        </div>
+        
+        <!-- Opções online -->
         <button onclick="window.open('${googleUrl}');closeCalendarModal()" 
-          style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);border-radius:8px;padding:12px;color:#3b82f6;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px"
-          onmouseover="this.style.background='rgba(59,130,246,.15)';this.style.borderColor='rgba(59,130,246,.5)'"
-          onmouseout="this.style.background='rgba(59,130,246,.1)';this.style.borderColor='rgba(59,130,246,.3)'">
+          style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px"
+          onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.borderColor='rgba(255,255,255,.2)'"
+          onmouseout="this.style.background='rgba(255,255,255,.04)';this.style.borderColor='rgba(255,255,255,.1)'">
           <span style="font-size:20px">🗓️</span>
-          <div>
+          <div style="flex:1">
             <div>Google Calendar</div>
-            <div style="font-size:10px;opacity:.7;font-weight:400">Abre em nova aba</div>
+            <div style="font-size:10px;opacity:.6;font-weight:400">Abre no navegador</div>
           </div>
         </button>
         
         <button onclick="window.open('${outlookUrl}');closeCalendarModal()" 
-          style="background:rgba(139,92,246,.1);border:1px solid rgba(139,92,246,.3);border-radius:8px;padding:12px;color:#8b5cf6;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px"
-          onmouseover="this.style.background='rgba(139,92,246,.15)';this.style.borderColor='rgba(139,92,246,.5)'"
-          onmouseout="this.style.background='rgba(139,92,246,.1)';this.style.borderColor='rgba(139,92,246,.3)'">
+          style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px"
+          onmouseover="this.style.background='rgba(255,255,255,.08)';this.style.borderColor='rgba(255,255,255,.2)'"
+          onmouseout="this.style.background='rgba(255,255,255,.04)';this.style.borderColor='rgba(255,255,255,.1)'">
           <span style="font-size:20px">📧</span>
-          <div>
+          <div style="flex:1">
             <div>Outlook</div>
-            <div style="font-size:10px;opacity:.7;font-weight:400">Abre em nova aba</div>
-          </div>
-        </button>
-        
-        <button onclick="downloadICSFile('${action.id}');closeCalendarModal()" 
-          style="background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:12px;color:#10b981;font-size:13px;font-weight:600;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s;text-align:left;display:flex;align-items:center;gap:10px"
-          onmouseover="this.style.background='rgba(16,185,129,.15)';this.style.borderColor='rgba(16,185,129,.5)'"
-          onmouseout="this.style.background='rgba(16,185,129,.1)';this.style.borderColor='rgba(16,185,129,.3)'">
-          <span style="font-size:20px">📥</span>
-          <div>
-            <div>Baixar .ics</div>
-            <div style="font-size:10px;opacity:.7;font-weight:400">Apple Calendar, outros</div>
+            <div style="font-size:10px;opacity:.6;font-weight:400">Abre no navegador</div>
           </div>
         </button>
       </div>
@@ -703,6 +718,11 @@ function showCalendarModal(action, icsContent) {
       <button onclick="closeCalendarModal()" 
         style="width:100%;margin-top:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px;color:var(--mut);font-size:12px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .2s"
         onmouseover="this.style.background='rgba(255,255,255,.08)'"
+        onmouseout="this.style.background='rgba(255,255,255,.06)'">
+        Cancelar
+      </button>
+    </div>
+  `;
         onmouseout="this.style.background='rgba(255,255,255,.06)'">
         Cancelar
       </button>
