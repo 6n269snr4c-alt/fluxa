@@ -607,14 +607,25 @@ function addToCalendar(actionId) {
   if (isMobile) {
     // Mobile: gera .ics e abre app nativo
     const icsContent = generateICS(action);
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    
+    // MIME type correto para iOS reconhecer
+    const blob = new Blob([icsContent], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `plano-${action.id}.ics`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    // Para iOS: precisa ser window.location ou window.open
+    if (isIOS) {
+      // iOS: window.location abre Calendar app
+      window.location.href = url;
+    } else {
+      // Android: download normal
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `plano-${action.id}.ics`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     
   } else {
