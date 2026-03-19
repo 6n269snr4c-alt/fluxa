@@ -603,18 +603,43 @@ function addToCalendar(actionId) {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isAndroid = /Android/.test(navigator.userAgent);
   const isMobile = isIOS || isAndroid;
+  const isChrome = /CriOS/.test(navigator.userAgent); // Chrome no iOS
   
   if (isMobile) {
-    // Mobile: gera .ics e abre app nativo
-    const icsContent = generateICS(action);
+    // Chrome no iOS: não consegue abrir Calendar app, usa Google Calendar web
+    if (isIOS && isChrome) {
+      const formatGoogleDate = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}${m}${d}`;
+      };
+      
+      const googleDate = formatGoogleDate(prazoDate);
+      const title = encodeURIComponent(action.text || 'Plano de Ação');
+      const details = encodeURIComponent(
+        `KPI: ${action.kpi || '—'}\n` +
+        `Responsável: ${action.resp || '—'}\n` +
+        `Observação: ${action.obs || '—'}`
+      );
+      
+      const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+        `&text=${title}` +
+        `&dates=${googleDate}/${googleDate}` +
+        `&details=${details}`;
+      
+      window.open(googleUrl, '_blank');
+      toast('📅 Calendário aberto');
+      return;
+    }
     
-    // MIME type correto para iOS reconhecer
+    // Safari iOS ou Android: tenta .ics
+    const icsContent = generateICS(action);
     const blob = new Blob([icsContent], { type: 'text/calendar' });
     const url = URL.createObjectURL(blob);
     
-    // Para iOS: precisa ser window.location ou window.open
     if (isIOS) {
-      // iOS: window.location abre Calendar app
+      // Safari iOS: tenta window.location
       window.location.href = url;
     } else {
       // Android: download normal
