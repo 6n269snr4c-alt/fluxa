@@ -4633,8 +4633,6 @@ function dreUpdateConf(idx, newConf) {
   }
   dreRenderSummary();
 }
-  dreRenderSummary();
-}
 
 function dreAggregate() {
   const a = { f_fat:0, f_ded:0, f_cmv:0, f_cvc:0, f_pessoal:0, f_adm:0, f_dep:0, f_dc:0, f_depfin:0 };
