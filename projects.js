@@ -391,9 +391,6 @@ window.deleteTask = function deleteTask(projIdx, taskIdx) {
     tasksList.innerHTML = renderProjectTasks(proj, projIdx);
   }
 }
-  
-  document.body.appendChild(modal);
-}
 
 // ═══════════════════════════════════════════
 // TOGGLE AÇÃO DO PROJETO
