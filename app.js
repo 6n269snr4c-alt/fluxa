@@ -4508,7 +4508,15 @@ function rAdvisorCfgCards() {
 // ═══════════════════════════════════════════
 // MOBILE RESPONSIVO
 // ═══════════════════════════════════════════
-const _isMobile = () => window.innerWidth <= 768;
+const _isMobile = () => {
+  // Verifica se é realmente um dispositivo móvel (não apenas tela pequena)
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  const isSmallScreen = window.innerWidth <= 768;
+  const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  
+  // É mobile apenas se: tela pequena E (dispositivo touch OU user agent mobile)
+  return isSmallScreen && (isTouchDevice || isMobileUA);
+};
 
 function mobInit() {
   if (!_isMobile()) return;
