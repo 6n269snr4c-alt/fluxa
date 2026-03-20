@@ -563,7 +563,7 @@ function generateICS(action) {
   
   return `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Vital Diagnostic//Plano de Ação//PT
+PRODID:-//Fluxa//Plano de Ação//PT
 CALSCALE:GREGORIAN
 METHOD:PUBLISH
 BEGIN:VEVENT
@@ -2863,7 +2863,7 @@ function rMeth(){
   const intro=document.createElement('div');
   intro.className='mc2';intro.style.gridColumn='1/-1';
   intro.innerHTML=`
-    <div class="mt">Como o Vital Diagnostic funciona</div>
+    <div class="mt">Como o Fluxa funciona</div>
     <div class="mb">O sistema processa o DRE mensal da empresa e o transforma em <strong>${IND.length} KPIs estratégicos</strong>.
     Cada KPI é pontuado 0–100% com base em metas configuráveis, ponderado por importância e ajustado pela confiabilidade do dado.
     O resultado é um <strong>Score de Saúde 0–100</strong> que resume o estado financeiro do negócio em um único número.</div>
@@ -3945,7 +3945,7 @@ ${acts_fc_clean.length?acts_fc_clean.map(a=>`<tr><td>${a.text||'—'}</td><td>${
 </tbody></table>`
 :`<div style="color:#94a3b8;font-style:italic;padding:12px 0">Sem previsão lançada para ${nextLabel}. Use Lançamento → Previsão.</div>`}
 
-<div class="footer">Vital Diagnostic &nbsp;·&nbsp; ${S.company||'Empresa'} &nbsp;·&nbsp; Reunião em ${today} &nbsp;·&nbsp; Fechamento ${mesLabel}</div>
+<div class="footer">Fluxa &nbsp;·&nbsp; ${S.company||'Empresa'} &nbsp;·&nbsp; Reunião em ${today} &nbsp;·&nbsp; Fechamento ${mesLabel}</div>
 </body></html>`;
 
   const win=window.open('','_blank');win.document.write(html);win.document.close();
