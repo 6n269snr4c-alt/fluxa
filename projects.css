@@ -242,43 +242,6 @@ textarea.form-input {
   min-height: 80px;
 }
 
-.btn-sm {
-  background: rgba(16, 212, 168, 0.12);
-  border: 1px solid rgba(16, 212, 168, 0.25);
-  border-radius: 8px;
-  color: var(--teal);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Outfit', sans-serif;
-}
-
-.btn-sm:hover {
-  background: rgba(16, 212, 168, 0.2);
-  border-color: var(--teal);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  color: var(--mut);
-  font-size: 13px;
-  font-weight: 600;
-  padding: 10px 20px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: 'Outfit', sans-serif;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--fg);
-}
-
 /* Info cards */
 .info-card {
   background: rgba(255, 255, 255, 0.02);

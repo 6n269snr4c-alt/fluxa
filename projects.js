@@ -21,7 +21,7 @@ function rProjects() {
         <div style="font-size:64px;margin-bottom:16px">📂</div>
         <div style="font-size:18px;font-weight:600;margin-bottom:8px;color:var(--fg)">Nenhum projeto cadastrado</div>
         <div style="font-size:14px;margin-bottom:24px">Crie seu primeiro projeto para agrupar planos de ação e acompanhar o progresso</div>
-        <button class="btn" onclick="newProject()">➕ Criar Primeiro Projeto</button>
+        <button class="btn-ok" onclick="newProject()">➕ Criar Primeiro Projeto</button>
       </div>
     `;
     return;
@@ -238,7 +238,7 @@ function viewProject(idx) {
         <div style="margin-bottom:16px">
           <div style="font-weight:600;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
             <span>📋 Planos de Ação</span>
-            <button class="btn-sm" onclick="linkActionsToProject(${idx})">➕ Vincular Ações</button>
+            <button class="btn-ok" style="padding:6px 12px;font-size:12px" onclick="linkActionsToProject(${idx})">➕ Vincular Ações</button>
           </div>
           <div class="actions-list">
             ${actionsHTML}
@@ -247,8 +247,8 @@ function viewProject(idx) {
       </div>
       
       <div class="modal-footer">
-        <button class="btn" onclick="editProject(${idx});this.closest('.modal-overlay').remove()">✏️ Editar Projeto</button>
-        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+        <button class="btn-ok" onclick="editProject(${idx});this.closest('.modal-overlay').remove()">✏️ Editar Projeto</button>
+        <button class="btn-cancel" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
       </div>
     </div>
   `;
@@ -287,12 +287,19 @@ function linkActionsToProject(projIdx) {
   // Fechar modal atual
   document.querySelector('.modal-overlay')?.remove();
   
+  // Verificar se S.actions existe e tem itens
+  if (!S.actions || S.actions.length === 0) {
+    toast('⚠️ Nenhum plano de ação cadastrado. Crie planos de ação primeiro no Modo Reunião.');
+    setTimeout(() => viewProject(projIdx), 100);
+    return;
+  }
+  
   // Listar ações disponíveis (que não estão canceladas)
   const availableActions = S.actions.filter(a => a.status !== 'cancelled');
   
   if (availableActions.length === 0) {
     toast('⚠️ Nenhuma ação disponível para vincular');
-    viewProject(projIdx);
+    setTimeout(() => viewProject(projIdx), 100);
     return;
   }
   
@@ -332,8 +339,8 @@ function linkActionsToProject(projIdx) {
       </div>
       
       <div class="modal-footer">
-        <button class="btn" onclick="saveLinkedActions(${projIdx})">💾 Salvar</button>
-        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove();viewProject(${projIdx})">Cancelar</button>
+        <button class="btn-ok" onclick="saveLinkedActions(${projIdx})">💾 Salvar</button>
+        <button class="btn-cancel" onclick="this.closest('.modal-overlay').remove();viewProject(${projIdx})">Cancelar</button>
       </div>
     </div>
   `;
@@ -407,8 +414,8 @@ function showProjectModal(proj = null) {
       </div>
       
       <div class="modal-footer">
-        <button class="btn" onclick="saveProject()">${isEdit ? '💾 Salvar' : '➕ Criar Projeto'}</button>
-        <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+        <button class="btn-ok" onclick="saveProject()">${isEdit ? '💾 Salvar' : '➕ Criar Projeto'}</button>
+        <button class="btn-cancel" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
       </div>
     </div>
   `;
