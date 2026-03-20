@@ -3425,11 +3425,18 @@ function buildSlideDiag(res){
   var sz=420;
   var wheelId='meetDiagWheel';
 
-  // Get diagnosis from cache — strip the outer diag-box wrapper to re-style
+  // Get FULL diagnosis from S.data (não o cache HTML resumido)
   var diagInner='';
-  var cached=S.diagCache&&S.diagCache[S.sel];
-  if(cached&&cached.html){
-    diagInner=cached.html;
+  var diagData = S.data && S.data[S.sel] ? S.data[S.sel] : {};
+  
+  if (diagData.diagnosis) {
+    // Tem diagnóstico completo - renderiza usando _renderDiag
+    var tempDiv = document.createElement('div');
+    const sorted = [...res.details].sort((a, b) => a.adjPct - b.adjPct);
+    const worst = sorted.slice(0, 3);
+    const best = sorted.slice(-2);
+    _renderDiag(tempDiv, diagData.diagnosis, res, worst, best, period);
+    diagInner = tempDiv.innerHTML;
   } else {
     diagInner='<div style="color:var(--mut);font-size:13px;line-height:1.8">'
       +'Abra o Dashboard primeiro para gerar o diagnóstico de IA deste período.'
