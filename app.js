@@ -834,8 +834,8 @@ function sizeWheel(){
   const svg=document.getElementById('hw');
   if(!svg)return;
   
-  // No novo layout executivo, a roda tem tamanho fixo de 200px
-  const sz = 200;
+  // No novo layout executivo, a roda tem tamanho fixo de 280px
+  const sz = 280;
   svg.setAttribute('width',sz);
   svg.setAttribute('height',sz);
   svg.setAttribute('viewBox',`0 0 ${sz} ${sz}`);
@@ -6303,8 +6303,13 @@ if (window.speechSynthesis) {
 // ═══════════════════════════════════════════
 
 function renderExecutiveDashboard() {
+  console.log('🎯 renderExecutiveDashboard chamado');
+  
   const known = getKnownMonths();
+  console.log('📅 Meses conhecidos:', known);
+  
   if (!known || known.length === 0) {
+    console.log('⚠️ Sem dados - mostrando placeholders');
     // Sem dados - mostra placeholders
     document.getElementById('execLucro').textContent = '—';
     document.getElementById('execLucroVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
@@ -6322,16 +6327,29 @@ function renderExecutiveDashboard() {
   const latestKey = known[known.length - 1];
   const previousKey = known.length > 1 ? known[known.length - 2] : null;
   
+  console.log('📊 Mês atual:', latestKey);
+  console.log('📊 Mês anterior:', previousKey);
+  
   const latestRaw = S.raw && S.raw[latestKey] ? S.raw[latestKey] : {};
   const previousRaw = previousKey && S.raw && S.raw[previousKey] ? S.raw[previousKey] : {};
   
+  console.log('💾 Raw atual:', latestRaw);
+  console.log('💾 Raw anterior:', previousRaw);
+  
   const latestKpis = calcKPIs(latestRaw);
   const previousKpis = previousKey ? calcKPIs(previousRaw) : {};
+  
+  console.log('📈 KPIs atual:', latestKpis);
+  console.log('📈 KPIs anterior:', previousKpis);
   
   // Calcular métricas
   const lucro = latestKpis.lucroliq_val || 0;
   const receita = latestKpis.receitatotal || 0;
   const margem = latestKpis.lucroliq || 0;
+  
+  console.log('💰 Lucro:', lucro);
+  console.log('💵 Receita:', receita);
+  console.log('📊 Margem:', margem);
   
   // Variações vs mês anterior
   const lucroVar = previousKey && previousKpis.lucroliq_val ? ((lucro - previousKpis.lucroliq_val) / Math.abs(previousKpis.lucroliq_val || 1)) * 100 : 0;
@@ -6351,6 +6369,8 @@ function renderExecutiveDashboard() {
   document.getElementById('execReceita').style.color = '#c8dff5';
   document.getElementById('execReceitaVar').innerHTML = formatVariation(receitaVar, receita);
   
+  console.log('✅ Cards atualizados');
+  
   // Renderizar mini gráfico
   renderExecChart();
   
@@ -6365,6 +6385,8 @@ function renderExecutiveDashboard() {
   
   // Renderizar alertas
   renderExecAlertas();
+  
+  console.log('✅ Dashboard executivo renderizado completamente');
 }
 
 function formatVariation(variation, value, suffix = '') {
