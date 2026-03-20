@@ -27,7 +27,7 @@ function toast(msg) {
 // ═══════════════════════════════════════════
 // RENDERIZAÇÃO DA LISTA DE PROJETOS
 // ═══════════════════════════════════════════
-function rProjects() {
+window.rProjects = function rProjects() {
   if (!S.projects) S.projects = [];
   
   const cont = document.getElementById('projectsList');
@@ -156,7 +156,8 @@ function getProjectStatus(proj) {
 // ═══════════════════════════════════════════
 // NOVO PROJETO
 // ═══════════════════════════════════════════
-function newProject() {
+window.newProject = function newProject() {
+  console.log('[PROJETOS] newProject() chamado');
   _editingProject = null;
   showProjectModal();
 }
@@ -164,7 +165,8 @@ function newProject() {
 // ═══════════════════════════════════════════
 // EDITAR PROJETO
 // ═══════════════════════════════════════════
-function editProject(idx) {
+window.editProject = function editProject(idx) {
+  console.log('[PROJETOS] editProject() chamado, idx:', idx);
   _editingProject = idx;
   showProjectModal(S.projects[idx]);
 }
@@ -172,7 +174,7 @@ function editProject(idx) {
 // ═══════════════════════════════════════════
 // VISUALIZAR PROJETO
 // ═══════════════════════════════════════════
-function viewProject(idx) {
+window.viewProject = function viewProject(idx) {
   const proj = S.projects[idx];
   if (!proj) return;
   
@@ -323,7 +325,7 @@ function renderProjectTasks(proj, projIdx) {
 // ═══════════════════════════════════════════
 // ALTERNAR ENTRE ABAS DO PROJETO
 // ═══════════════════════════════════════════
-function switchProjectTab(projIdx, tabName, btn) {
+window.switchProjectTab = function switchProjectTab(projIdx, tabName, btn) {
   // Remover active de todas as abas
   btn.parentElement.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
@@ -337,7 +339,7 @@ function switchProjectTab(projIdx, tabName, btn) {
 // ═══════════════════════════════════════════
 // ADICIONAR TAREFA AO PROJETO
 // ═══════════════════════════════════════════
-function addTaskToProject(projIdx) {
+window.addTaskToProject = function addTaskToProject(projIdx) {
   const taskText = prompt('Digite a nova tarefa:');
   if (!taskText || !taskText.trim()) return;
   
@@ -351,7 +353,7 @@ function addTaskToProject(projIdx) {
     createdAt: new Date().toISOString()
   });
   
-  sv();
+  if (typeof sv === 'function') sv();
   
   // Atualizar UI
   const tasksList = document.getElementById(`tasksList-${projIdx}`);
@@ -363,25 +365,25 @@ function addTaskToProject(projIdx) {
 // ═══════════════════════════════════════════
 // TOGGLE TAREFA
 // ═══════════════════════════════════════════
-function toggleTask(projIdx, taskIdx, done) {
+window.toggleTask = function toggleTask(projIdx, taskIdx, done) {
   const proj = S.projects[projIdx];
   if (!proj || !proj.tasks || !proj.tasks[taskIdx]) return;
   
   proj.tasks[taskIdx].done = done;
-  sv();
+  if (typeof sv === 'function') sv();
 }
 
 // ═══════════════════════════════════════════
 // EXCLUIR TAREFA
 // ═══════════════════════════════════════════
-function deleteTask(projIdx, taskIdx) {
+window.deleteTask = function deleteTask(projIdx, taskIdx) {
   if (!confirm('Excluir esta tarefa?')) return;
   
   const proj = S.projects[projIdx];
   if (!proj || !proj.tasks) return;
   
   proj.tasks.splice(taskIdx, 1);
-  sv();
+  if (typeof sv === 'function') sv();
   
   // Atualizar UI
   const tasksList = document.getElementById(`tasksList-${projIdx}`);
@@ -396,7 +398,7 @@ function deleteTask(projIdx, taskIdx) {
 // ═══════════════════════════════════════════
 // TOGGLE AÇÃO DO PROJETO
 // ═══════════════════════════════════════════
-function toggleActionFromProject(actionId, checked) {
+window.toggleActionFromProject = function toggleActionFromProject(actionId, checked) {
   const act = S.actions.find(a => a.id === actionId);
   if (!act) return;
   
@@ -417,7 +419,7 @@ function toggleActionFromProject(actionId, checked) {
 // ═══════════════════════════════════════════
 // VINCULAR AÇÕES AO PROJETO
 // ═══════════════════════════════════════════
-function linkActionsToProject(projIdx) {
+window.linkActionsToProject = function linkActionsToProject(projIdx) {
   const proj = S.projects[projIdx];
   if (!proj) return;
   
@@ -494,7 +496,7 @@ function linkActionsToProject(projIdx) {
 // ═══════════════════════════════════════════
 // CRIAR AÇÃO INLINE (DIRETO DO PROJETO)
 // ═══════════════════════════════════════════
-function showCreateActionInline(projIdx) {
+window.showCreateActionInline = function showCreateActionInline(projIdx) {
   const proj = S.projects[projIdx];
   if (!proj) return;
   
@@ -544,7 +546,7 @@ function showCreateActionInline(projIdx) {
 // ═══════════════════════════════════════════
 // SALVAR AÇÃO INLINE
 // ═══════════════════════════════════════════
-function saveActionInline(projIdx) {
+window.saveActionInline = function saveActionInline(projIdx) {
   const title = document.getElementById('inlineActionTitle').value.trim();
   const responsible = document.getElementById('inlineActionResp').value.trim();
   const deadline = document.getElementById('inlineActionDeadline').value;
@@ -584,7 +586,7 @@ function saveActionInline(projIdx) {
 // ═══════════════════════════════════════════
 // SALVAR AÇÕES VINCULADAS
 // ═══════════════════════════════════════════
-function saveLinkedActions(projIdx) {
+window.saveLinkedActions = function saveLinkedActions(projIdx) {
   const proj = S.projects[projIdx];
   if (!proj) return;
   
@@ -609,12 +611,16 @@ function saveLinkedActions(projIdx) {
 // MODAL DE CRIAÇÃO/EDIÇÃO
 // ═══════════════════════════════════════════
 function showProjectModal(proj = null) {
+  console.log('[PROJETOS] showProjectModal() chamado, proj:', proj);
+  
   const isEdit = proj !== null;
   const title = isEdit ? 'Editar Projeto' : 'Novo Projeto';
   
   // Data padrão: 3 meses a partir de hoje
   const defaultDeadline = new Date();
   defaultDeadline.setMonth(defaultDeadline.getMonth() + 3);
+  
+  console.log('[PROJETOS] Criando modal...');
   
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -653,17 +659,46 @@ function showProjectModal(proj = null) {
     </div>
   `;
   
+  console.log('[PROJETOS] Adicionando modal ao DOM...');
   document.body.appendChild(modal);
-  document.getElementById('projName').focus();
+  
+  console.log('[PROJETOS] Focando no campo de nome...');
+  const nameInput = document.getElementById('projName');
+  if (nameInput) {
+    nameInput.focus();
+    console.log('[PROJETOS] Campo de nome focado');
+  } else {
+    console.error('[PROJETOS] Campo projName não encontrado!');
+  }
 }
 
 // ═══════════════════════════════════════════
 // SALVAR PROJETO
 // ═══════════════════════════════════════════
-function saveProject() {
-  const name = document.getElementById('projName').value.trim();
-  const objective = document.getElementById('projObjective').value.trim();
-  const deadline = document.getElementById('projDeadline').value;
+window.saveProject = function saveProject() {
+  console.log('[PROJETOS] saveProject() chamado');
+  
+  const nameEl = document.getElementById('projName');
+  const objectiveEl = document.getElementById('projObjective');
+  const deadlineEl = document.getElementById('projDeadline');
+  
+  console.log('[PROJETOS] Elementos encontrados:', {
+    nameEl: !!nameEl,
+    objectiveEl: !!objectiveEl,
+    deadlineEl: !!deadlineEl
+  });
+  
+  if (!nameEl || !objectiveEl || !deadlineEl) {
+    console.error('[PROJETOS] Elementos do formulário não encontrados!');
+    toast('❌ Erro: Formulário não encontrado');
+    return;
+  }
+  
+  const name = nameEl.value.trim();
+  const objective = objectiveEl.value.trim();
+  const deadline = deadlineEl.value;
+  
+  console.log('[PROJETOS] Valores do formulário:', { name, objective, deadline });
   
   if (!name) {
     toast('⚠️ Preencha o nome do projeto');
@@ -676,6 +711,8 @@ function saveProject() {
   }
   
   try {
+    console.log('[PROJETOS] Criando projeto...');
+    
     const projectData = {
       id: _editingProject !== null ? S.projects[_editingProject].id : 'proj_' + Date.now(),
       name,
@@ -686,34 +723,50 @@ function saveProject() {
       createdAt: _editingProject !== null ? S.projects[_editingProject].createdAt : new Date().toISOString()
     };
     
+    console.log('[PROJETOS] Dados do projeto:', projectData);
+    
     if (_editingProject !== null) {
       // Editar existente
       S.projects[_editingProject] = projectData;
+      console.log('[PROJETOS] Projeto atualizado');
       toast('✓ Projeto atualizado');
     } else {
       // Criar novo
       if (!S.projects) S.projects = [];
       S.projects.push(projectData);
+      console.log('[PROJETOS] Projeto criado. Total de projetos:', S.projects.length);
       toast('✓ Projeto criado');
     }
     
     // Salvar no Firebase
+    console.log('[PROJETOS] Salvando no Firebase...');
     if (typeof sv === 'function') {
       sv();
+      console.log('[PROJETOS] sv() chamado');
     } else {
-      console.warn('Função sv() não encontrada - salvando manualmente');
+      console.warn('[PROJETOS] Função sv() não encontrada - salvando manualmente');
       // Fallback: salvar diretamente
       if (window.S && window.db && window.auth && window.auth.currentUser) {
         const uid = window.auth.currentUser.uid;
         window.db.collection('users').doc(uid).set(JSON.parse(JSON.stringify(S)), {merge: true})
-          .catch(e => console.error('Erro ao salvar:', e));
+          .then(() => console.log('[PROJETOS] Salvo no Firebase com sucesso'))
+          .catch(e => console.error('[PROJETOS] Erro ao salvar:', e));
       }
     }
     
-    document.querySelector('.modal-overlay').remove();
+    console.log('[PROJETOS] Fechando modal...');
+    const modal = document.querySelector('.modal-overlay');
+    if (modal) {
+      modal.remove();
+      console.log('[PROJETOS] Modal removido');
+    }
+    
+    console.log('[PROJETOS] Atualizando lista...');
     rProjects();
+    console.log('[PROJETOS] saveProject() concluído');
+    
   } catch (error) {
-    console.error('Erro ao salvar projeto:', error);
+    console.error('[PROJETOS] Erro ao salvar projeto:', error);
     toast('❌ Erro ao salvar projeto: ' + error.message);
   }
 }
@@ -721,7 +774,7 @@ function saveProject() {
 // ═══════════════════════════════════════════
 // EXCLUIR PROJETO
 // ═══════════════════════════════════════════
-function deleteProject(idx) {
+window.deleteProject = function deleteProject(idx) {
   const proj = S.projects[idx];
   if (!proj) return;
   

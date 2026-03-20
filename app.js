@@ -5247,3 +5247,14 @@ function dreModelClear() {
     }
   );
 }
+
+// ═══════════════════════════════════════════
+// PROJETOS - Stub (implementação está em projects.js)
+// ═══════════════════════════════════════════
+// A função rProjects() é definida em projects.js
+// Este é apenas um placeholder para evitar erros se projects.js não carregar
+if (typeof rProjects === 'undefined') {
+  window.rProjects = function() {
+    console.warn('projects.js não carregado ainda');
+  };
+}
