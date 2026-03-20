@@ -1686,6 +1686,33 @@ async function rDiag(res,diagPageOnly){
     const txt=data.text||'';
     if(!txt)throw new Error('Resposta vazia');
     _renderDiag(el,txt,res,worst,best,MES[parseInt(mo)-1]+'/'+y);
+    
+    // Salva diagnosis e bullets em S.data
+    if (!S.data) S.data = {};
+    if (!S.data[S.sel]) S.data[S.sel] = {};
+    S.data[S.sel].diagnosis = txt;
+    
+    // Extrai bullets (alertas) para o dashboard executivo
+    const lines = txt.split('\n').map(l => l.trim()).filter(l => l);
+    const bullets = [];
+    let mode = null;
+    lines.forEach(line => {
+      const lu = line.toUpperCase();
+      if (lu.startsWith('ALERTAS') || lu.startsWith('ALERTA')) {
+        mode = 'alert';
+        return;
+      }
+      if (lu.startsWith('ACOES') || lu.startsWith('AÇÕES')) {
+        mode = null;
+        return;
+      }
+      if (mode === 'alert' && (line.startsWith('•') || line.startsWith('-'))) {
+        bullets.push(line.replace(/^[•\-]\s*/, ''));
+      }
+    });
+    S.data[S.sel].bullets = bullets.length > 0 ? bullets : null;
+    sv(); // Salva no Firebase
+    
     if(!S.diagCache)S.diagCache={};
     S.diagCache[S.sel]={key:cacheKey,html:el.innerHTML};
     // Mirror to diagPageBody if it exists and is different
