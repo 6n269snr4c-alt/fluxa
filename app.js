@@ -6419,7 +6419,7 @@ function showExecPlaceholders() {
   document.getElementById('execMargemVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
   document.getElementById('execReceita').textContent = '—';
   document.getElementById('execReceitaVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
-  document.getElementById('execDiag').innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados.</span>';
+  document.getElementById('execDiagBullets').innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem dados</div>';
   document.getElementById('execAcoes').innerHTML = '<div style="color:var(--mut);font-size:11px;padding:30px 0;text-align:center">Nenhuma ação salva</div>';
 }
 
@@ -6523,27 +6523,47 @@ function renderExecChart() {
 }
 
 function renderExecDiag() {
-  const diagEl = document.getElementById('execDiag');
+  const diagEl = document.getElementById('execDiagBullets');
   if (!diagEl) return;
   
   const known = getKnownMonths();
   if (!known || known.length === 0) {
-    diagEl.innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados do mês.</span>';
+    diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico será gerado ao salvar os dados.</div>';
     return;
   }
   
-  const latestKey = known[known.length - 1];
+  const latestKey = S.sel || known[known.length - 1];
   const latestData = S.data && S.data[latestKey] ? S.data[latestKey] : {};
   
-  if (!latestData.diagnosis) {
-    diagEl.innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados.</span>';
-    return;
+  // Busca bullets do dashboard antigo
+  if (latestData.bullets && latestData.bullets.length > 0) {
+    // Usa bullets já existentes (top 3)
+    diagEl.innerHTML = latestData.bullets.slice(0, 3).map(b => 
+      `<div style="display:flex;gap:8px;align-items:flex-start">
+        <span style="color:var(--teal);font-weight:700">•</span>
+        <span>${b}</span>
+      </div>`
+    ).join('');
+  } else if (latestData.diagnosis) {
+    // Tenta extrair 3 frases do diagnóstico
+    const sentences = latestData.diagnosis
+      .split(/[.!?]\s+/)
+      .filter(s => s.trim().length > 20)
+      .slice(0, 3);
+    
+    if (sentences.length > 0) {
+      diagEl.innerHTML = sentences.map(s => 
+        `<div style="display:flex;gap:8px;align-items:flex-start">
+          <span style="color:var(--teal);font-weight:700">•</span>
+          <span>${s.trim()}.</span>
+        </div>`
+      ).join('');
+    } else {
+      diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico disponível na expansão</div>';
+    }
+  } else {
+    diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico será gerado ao salvar os dados.</div>';
   }
-  
-  // Pega primeiro parágrafo do diagnóstico (resumo)
-  const diag = latestData.diagnosis;
-  const firstPara = diag.split('\n\n')[0] || diag.substring(0, 200);
-  diagEl.textContent = firstPara + (firstPara.length < diag.length ? '...' : '');
 }
 
 function renderExecGastos() {
@@ -6651,6 +6671,7 @@ function renderExecAcoes() {
   }).join('');
   
   document.getElementById('execAcoesBar').style.width = progress + '%';
+  document.getElementById('execAcoesCount').textContent = `${completed}/${actions.length}`;
 }
 
 function toggleExecAction(id) {
@@ -6787,7 +6808,8 @@ function toggleFullDash() {
     container.style.left = '0';
     container.style.right = '0';
     container.style.bottom = '0';
-    container.style.zIndex = '9999';
+    container.style.zIndex = '99999'; // ACIMA DE TUDO!
+    container.style.background = 'var(--bg)';
     btn.innerHTML = '⛶ Sair';
     btn.title = 'Sair do modo tela cheia';
   } else {
@@ -6800,27 +6822,236 @@ function toggleFullDash() {
     container.style.right = '';
     container.style.bottom = '';
     container.style.zIndex = '';
+    container.style.background = '';
     btn.innerHTML = '⛶ Expandir';
     btn.title = 'Expandir dashboard para tela cheia';
   }
 }
 
 function expandCard(cardType) {
-  // Por enquanto só mostra toast
-  // Pode implementar modal depois
+  // Cria modal real de expansão
+  let modalContent = '';
+  let modalTitle = '';
+  
   switch(cardType) {
     case 'roda':
-      toast('💡 Clique nas fatias da roda para ver detalhes de cada KPI');
+      modalTitle = '🎯 RODA DE KPIs';
+      modalContent = `
+        <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">
+          <div style="position:relative;width:600px;height:600px;max-width:90vw;max-height:90vh">
+            <svg id="hwModal" style="width:100%;height:100%"></svg>
+            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+              <div style="color:#dde8ff;font-size:72px;font-weight:800;line-height:1" id="snModal">—</div>
+              <div style="font-size:12px;letter-spacing:2px;color:var(--mut);font-weight:700;margin-top:8px">SAÚDE</div>
+              <div style="font-size:14px;font-weight:600;margin-top:4px" id="sgModal">Sem dados</div>
+            </div>
+          </div>
+        </div>
+      `;
       break;
+      
     case 'resumo':
-      toast('💡 Feature: Expandir gráfico em desenvolvimento');
+      modalTitle = '📊 RESUMO EXECUTIVO';
+      modalContent = `
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px;margin-bottom:32px">
+          <div style="text-align:center">
+            <div style="font-size:12px;letter-spacing:1.5px;color:var(--mut);font-weight:700;margin-bottom:8px">💰 LUCRO LÍQUIDO</div>
+            <div id="execLucroModal" style="font-size:48px;font-weight:800;line-height:1;color:var(--teal)">—</div>
+            <div id="execLucroVarModal" style="font-size:14px;font-weight:600;margin-top:8px"></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:12px;letter-spacing:1.5px;color:var(--mut);font-weight:700;margin-bottom:8px">📊 MARGEM LÍQUIDA</div>
+            <div id="execMargemModal" style="font-size:48px;font-weight:800;line-height:1">—</div>
+            <div id="execMargemVarModal" style="font-size:14px;font-weight:600;margin-top:8px"></div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:12px;letter-spacing:1.5px;color:var(--mut);font-weight:700;margin-bottom:8px">💵 RECEITA TOTAL</div>
+            <div id="execReceitaModal" style="font-size:48px;font-weight:800;line-height:1">—</div>
+            <div id="execReceitaVarModal" style="font-size:14px;font-weight:600;margin-top:8px"></div>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:24px">
+          <div style="font-size:12px;letter-spacing:1.5px;color:var(--mut);font-weight:700;margin-bottom:16px">📈 EVOLUÇÃO LUCRO (6 meses)</div>
+          <canvas id="execChartModal" style="width:100%;height:200px"></canvas>
+        </div>
+      `;
       break;
+      
     case 'diag':
-      go('diag', document.querySelector('[data-page=diag]'));
+      modalTitle = '🩺 DIAGNÓSTICO COMPLETO';
+      const diagData = S.data && S.data[S.sel] ? S.data[S.sel] : {};
+      const fullDiag = diagData.diagnosis || 'Diagnóstico não disponível para este período.';
+      modalContent = `<div style="font-size:14px;line-height:1.8;color:#c8dff5;white-space:pre-wrap">${fullDiag}</div>`;
       break;
+      
     case 'acoes':
-      go('advisor', document.querySelector('[data-page=advisor]'));
+      modalTitle = '✅ TODAS AS AÇÕES';
+      const allActions = S.actions || [];
+      if (allActions.length === 0) {
+        modalContent = '<div style="text-align:center;padding:60px 0;color:var(--mut)">Nenhuma ação salva</div>';
+      } else {
+        modalContent = `
+          <div style="display:flex;flex-direction:column;gap:12px">
+            ${allActions.map(a => {
+              const prazo = a.prazo ? parsePrazo(a.prazo) : null;
+              const isLate = prazo && prazo < new Date();
+              const daysLeft = prazo ? Math.ceil((prazo - new Date()) / (1000 * 60 * 60 * 24)) : null;
+              let prazoHtml = '';
+              if (a.prazo && !a.done) {
+                if (isLate) prazoHtml = `<span style="color:var(--red)">⚠️ Atrasado ${Math.abs(daysLeft)} dias</span>`;
+                else if (daysLeft <= 3) prazoHtml = `<span style="color:var(--amber)">⏱ Vence em ${daysLeft} dias</span>`;
+                else prazoHtml = `<span style="color:var(--mut)">⏱ Vence em ${daysLeft} dias</span>`;
+              }
+              const respHtml = a.responsible ? `<span style="color:var(--mut)">👤 ${a.responsible}</span>` : '';
+              return `
+                <label style="display:flex;gap:12px;padding:16px;background:rgba(255,255,255,.03);border-radius:10px;border:1px solid rgba(255,255,255,.06);cursor:pointer">
+                  <input type="checkbox" ${a.done ? 'checked' : ''} onchange="toggleExecAction('${a.id}');setTimeout(()=>expandCard('acoes'),100)" style="margin-top:2px;accent-color:var(--teal);width:16px;height:16px;cursor:pointer;flex-shrink:0">
+                  <div style="flex:1">
+                    <div style="font-size:14px;line-height:1.6;color:${a.done ? 'var(--mut)' : '#e8f0ff'};${a.done ? 'text-decoration:line-through' : ''}">${a.text}</div>
+                    ${prazoHtml || respHtml ? `<div style="font-size:12px;margin-top:6px;display:flex;gap:12px">${prazoHtml}${respHtml}</div>` : ''}
+                  </div>
+                </label>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
       break;
   }
+  
+  // Cria modal
+  const modal = document.createElement('div');
+  modal.id = 'expandModal';
+  modal.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,.9);
+    z-index: 999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    animation: fadeIn .2s;
+  `;
+  
+  modal.innerHTML = `
+    <div style="background:var(--glass);border:1px solid var(--bdr);border-radius:16px;max-width:1200px;width:100%;max-height:100%;overflow:auto;position:relative">
+      <div style="padding:24px 32px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--glass);z-index:1">
+        <div style="font-size:16px;font-weight:700;letter-spacing:1px">${modalTitle}</div>
+        <button onclick="closeExpandModal()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--mut);font-size:14px;padding:8px 16px;cursor:pointer;font-weight:600">✕ Fechar</button>
+      </div>
+      <div style="padding:32px">${modalContent}</div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Se for roda, redesenha com tamanho maior
+  if (cardType === 'roda') {
+    setTimeout(() => {
+      const svg = document.getElementById('hwModal');
+      if (svg) {
+        svg.setAttribute('viewBox', '0 0 600 600');
+        rWheel(window._lastDets || null, 600, 'hwModal');
+        document.getElementById('snModal').textContent = document.getElementById('sn').textContent;
+        document.getElementById('sgModal').textContent = document.getElementById('sg').textContent;
+      }
+    }, 50);
+  }
+  
+  // Se for resumo, copia dados e redesenha gráfico
+  if (cardType === 'resumo') {
+    setTimeout(() => {
+      document.getElementById('execLucroModal').textContent = document.getElementById('execLucro').textContent;
+      document.getElementById('execLucroVarModal').innerHTML = document.getElementById('execLucroVar').innerHTML;
+      document.getElementById('execMargemModal').textContent = document.getElementById('execMargem').textContent;
+      document.getElementById('execMargemVarModal').innerHTML = document.getElementById('execMargemVar').innerHTML;
+      document.getElementById('execReceitaModal').textContent = document.getElementById('execReceita').textContent;
+      document.getElementById('execReceitaVarModal').innerHTML = document.getElementById('execReceitaVar').innerHTML;
+      renderExecChartModal();
+    }, 50);
+  }
+}
+
+function closeExpandModal() {
+  const modal = document.getElementById('expandModal');
+  if (modal) modal.remove();
+}
+
+function renderExecChartModal() {
+  const canvas = document.getElementById('execChartModal');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width = canvas.offsetWidth * 2;
+  const height = canvas.height = 400;
+  
+  const known = getKnownMonths();
+  const months = known.slice(-6);
+  if (months.length === 0) return;
+  
+  const lucros = months.map(mk => {
+    const raw = S.raw && S.raw[mk] ? S.raw[mk] : {};
+    const kpis = calcKPIs(raw);
+    const margem = kpis.lucroliq || 0;
+    const receita = raw.f_fat || 0;
+    const ded = raw.f_ded || 0;
+    const receitaLiq = receita - ded;
+    return receitaLiq * (margem / 100);
+  });
+  
+  const max = Math.max(...lucros, 0);
+  const min = Math.min(...lucros, 0);
+  const range = max - min || 1;
+  
+  const padding = 40;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  const step = chartWidth / (months.length - 1 || 1);
+  
+  ctx.clearRect(0, 0, width, height);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (chartHeight / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(width - padding, y);
+    ctx.stroke();
+  }
+  
+  ctx.strokeStyle = 'rgba(0,232,155,0.8)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  lucros.forEach((val, i) => {
+    const x = padding + step * i;
+    const y = padding + chartHeight - ((val - min) / range) * chartHeight;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  
+  ctx.fillStyle = 'rgba(0,232,155,1)';
+  lucros.forEach((val, i) => {
+    const x = padding + step * i;
+    const y = padding + chartHeight - ((val - min) / range) * chartHeight;
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  
+  ctx.globalAlpha = 0.1;
+  ctx.fillStyle = 'rgba(0,232,155,1)';
+  ctx.beginPath();
+  ctx.moveTo(padding, height - padding);
+  lucros.forEach((val, i) => {
+    const x = padding + step * i;
+    const y = padding + chartHeight - ((val - min) / range) * chartHeight;
+    ctx.lineTo(x, y);
+  });
+  ctx.lineTo(padding + chartWidth, height - padding);
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
 }
 

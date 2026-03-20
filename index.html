@@ -122,7 +122,7 @@
 
         </div>
 
-        <!-- COLUNA DIREITA: RESUMO + AÇÕES -->
+        <!-- COLUNA DIREITA: RESUMO + DIAGNÓSTICO/AÇÕES -->
         <div style="display:flex;flex-direction:column;gap:20px">
           
           <!-- RESUMO EXECUTIVO -->
@@ -159,30 +159,33 @@
             </div>
           </div>
 
-          <!-- DIAGNÓSTICO -->
-          <div style="background:var(--glass);border:1px solid var(--bdr);border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;position:relative">
-            <button onclick="expandCard('diag')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--mut);font-size:10px;padding:4px 8px;cursor:pointer" title="Expandir">⛶</button>
-            <div style="flex:1;padding-right:40px">
-              <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;text-transform:uppercase;margin-bottom:6px">🩺 DIAGNÓSTICO</div>
-              <div id="execDiag" style="font-size:12px;line-height:1.6;color:#c8dff5">Carregando diagnóstico...</div>
-            </div>
-          </div>
-
-          <!-- AÇÕES PRIORITÁRIAS -->
-          <div style="background:var(--glass);border:1px solid var(--bdr);border-radius:14px;padding:20px;position:relative;flex:1">
-            <button onclick="expandCard('acoes')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--mut);font-size:10px;padding:4px 8px;cursor:pointer" title="Expandir">⛶</button>
-            <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;text-transform:uppercase;margin-bottom:12px">✅ AÇÕES PRIORITÁRIAS</div>
-            <div id="execAcoes" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;min-height:120px;max-height:calc(100% - 80px);overflow-y:auto">
-              <!-- Populated by JS -->
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-              <div id="execAcoesProgress" style="flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
-                <div id="execAcoesBar" style="height:100%;background:var(--teal);width:0;transition:width .3s"></div>
+          <!-- DIAGNÓSTICO + AÇÕES (lado a lado, quadrados) -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex:1">
+            
+            <!-- DIAGNÓSTICO (bullets) -->
+            <div style="background:var(--glass);border:1px solid var(--bdr);border-radius:14px;padding:20px;position:relative;display:flex;flex-direction:column">
+              <button onclick="expandCard('diag')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--mut);font-size:10px;padding:4px 8px;cursor:pointer" title="Expandir">⛶</button>
+              <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;text-transform:uppercase;margin-bottom:12px">🩺 DIAGNÓSTICO</div>
+              <div id="execDiagBullets" style="flex:1;display:flex;flex-direction:column;gap:8px;font-size:12px;line-height:1.6;color:#c8dff5">
+                <!-- Populated by JS with bullets -->
               </div>
-              <button onclick="go('advisor',document.querySelector('[data-page=advisor]'))" class="bs ghost" style="padding:6px 14px;font-size:11px;white-space:nowrap">
-                Ver todas →
-              </button>
             </div>
+
+            <!-- AÇÕES PRIORITÁRIAS -->
+            <div style="background:var(--glass);border:1px solid var(--bdr);border-radius:14px;padding:20px;position:relative;display:flex;flex-direction:column">
+              <button onclick="expandCard('acoes')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:var(--mut);font-size:10px;padding:4px 8px;cursor:pointer" title="Expandir">⛶</button>
+              <div style="font-size:10px;letter-spacing:2px;color:var(--mut);font-weight:700;text-transform:uppercase;margin-bottom:12px">✅ AÇÕES PRIORITÁRIAS</div>
+              <div id="execAcoes" style="flex:1;display:flex;flex-direction:column;gap:8px;overflow-y:auto">
+                <!-- Populated by JS -->
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">
+                <div id="execAcoesProgress" style="flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden">
+                  <div id="execAcoesBar" style="height:100%;background:var(--teal);width:0;transition:width .3s"></div>
+                </div>
+                <div id="execAcoesCount" style="font-size:10px;color:var(--mut);white-space:nowrap">0/0</div>
+              </div>
+            </div>
+
           </div>
 
         </div>
