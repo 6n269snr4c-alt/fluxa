@@ -6303,20 +6303,40 @@ if (window.speechSynthesis) {
 // ═══════════════════════════════════════════
 
 function renderExecutiveDashboard() {
-  if (!S.months || S.months.length === 0) return;
+  const known = getKnownMonths();
+  if (!known || known.length === 0) {
+    // Sem dados - mostra placeholders
+    document.getElementById('execLucro').textContent = '—';
+    document.getElementById('execLucroVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
+    document.getElementById('execMargem').textContent = '—';
+    document.getElementById('execMargemVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
+    document.getElementById('execReceita').textContent = '—';
+    document.getElementById('execReceitaVar').innerHTML = '<span style="color:var(--mut)">Sem dados</span>';
+    document.getElementById('execDiag').innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados.</span>';
+    document.getElementById('execGastos').innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem dados</div>';
+    document.getElementById('execAcoes').innerHTML = '<div style="color:var(--mut);font-size:11px;padding:30px 0;text-align:center">Nenhuma ação salva</div>';
+    document.getElementById('execAlertas').innerHTML = '<div style="color:var(--mut);font-size:11px">Sem dados suficientes</div>';
+    return;
+  }
   
-  const latest = S.months[S.months.length - 1];
-  const previous = S.months.length > 1 ? S.months[S.months.length - 2] : null;
+  const latestKey = known[known.length - 1];
+  const previousKey = known.length > 1 ? known[known.length - 2] : null;
+  
+  const latestRaw = S.raw && S.raw[latestKey] ? S.raw[latestKey] : {};
+  const previousRaw = previousKey && S.raw && S.raw[previousKey] ? S.raw[previousKey] : {};
+  
+  const latestKpis = calcKPIs(latestRaw);
+  const previousKpis = previousKey ? calcKPIs(previousRaw) : {};
   
   // Calcular métricas
-  const lucro = latest.net_profit || 0;
-  const receita = latest.revenue || 0;
-  const margem = receita > 0 ? (lucro / receita) * 100 : 0;
+  const lucro = latestKpis.lucroliq_val || 0;
+  const receita = latestKpis.receitatotal || 0;
+  const margem = latestKpis.lucroliq || 0;
   
   // Variações vs mês anterior
-  const lucroVar = previous ? ((lucro - (previous.net_profit || 0)) / Math.abs(previous.net_profit || 1)) * 100 : 0;
-  const receitaVar = previous ? ((receita - (previous.revenue || 0)) / (previous.revenue || 1)) * 100 : 0;
-  const margemVar = previous && previous.revenue > 0 ? margem - ((previous.net_profit || 0) / previous.revenue * 100) : 0;
+  const lucroVar = previousKey && previousKpis.lucroliq_val ? ((lucro - previousKpis.lucroliq_val) / Math.abs(previousKpis.lucroliq_val || 1)) * 100 : 0;
+  const receitaVar = previousKey && previousKpis.receitatotal ? ((receita - previousKpis.receitatotal) / (previousKpis.receitatotal || 1)) * 100 : 0;
+  const margemVar = previousKey && previousKpis.lucroliq ? margem - previousKpis.lucroliq : 0;
   
   // Atualizar cards de métricas
   document.getElementById('execLucro').textContent = fmt(lucro);
@@ -6325,7 +6345,7 @@ function renderExecutiveDashboard() {
   
   document.getElementById('execMargem').textContent = margem.toFixed(1) + '%';
   document.getElementById('execMargem').style.color = margem >= 10 ? 'var(--teal)' : margem >= 5 ? 'var(--amber)' : 'var(--red)';
-  document.getElementById('execMargemVar').innerHTML = formatVariation(margemVar, margem, '%');
+  document.getElementById('execMargemVar').innerHTML = formatVariation(margemVar, margem, 'pp');
   
   document.getElementById('execReceita').textContent = fmt(receita);
   document.getElementById('execReceita').style.color = '#c8dff5';
@@ -6364,13 +6384,19 @@ function renderExecChart() {
   if (!canvas) return;
   
   const ctx = canvas.getContext('2d');
-  const width = canvas.width = canvas.offsetWidth * 2; // 2x for retina
-  const height = canvas.height = 160; // 2x for retina (80px display)
+  const width = canvas.width = canvas.offsetWidth * 2;
+  const height = canvas.height = 160;
   
-  const months = S.months.slice(-6);
+  const known = getKnownMonths();
+  const months = known.slice(-6);
   if (months.length === 0) return;
   
-  const lucros = months.map(m => m.net_profit || 0);
+  const lucros = months.map(mk => {
+    const raw = S.raw && S.raw[mk] ? S.raw[mk] : {};
+    const kpis = calcKPIs(raw);
+    return kpis.lucroliq_val || 0;
+  });
+  
   const max = Math.max(...lucros, 0);
   const min = Math.min(...lucros, 0);
   const range = max - min || 1;
@@ -6380,10 +6406,9 @@ function renderExecChart() {
   const chartHeight = height - padding * 2;
   const step = chartWidth / (months.length - 1 || 1);
   
-  // Limpa canvas
   ctx.clearRect(0, 0, width, height);
   
-  // Desenha grid
+  // Grid
   ctx.strokeStyle = 'rgba(255,255,255,0.05)';
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -6394,7 +6419,7 @@ function renderExecChart() {
     ctx.stroke();
   }
   
-  // Desenha linha
+  // Linha
   ctx.strokeStyle = 'rgba(0,232,155,0.8)';
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -6410,7 +6435,7 @@ function renderExecChart() {
   });
   ctx.stroke();
   
-  // Desenha pontos
+  // Pontos
   ctx.fillStyle = 'rgba(0,232,155,1)';
   lucros.forEach((val, i) => {
     const x = padding + step * i;
@@ -6440,14 +6465,22 @@ function renderExecDiag() {
   const diagEl = document.getElementById('execDiag');
   if (!diagEl) return;
   
-  const latest = S.months[S.months.length - 1];
-  if (!latest || !latest.diagnosis) {
+  const known = getKnownMonths();
+  if (!known || known.length === 0) {
     diagEl.innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados do mês.</span>';
     return;
   }
   
+  const latestKey = known[known.length - 1];
+  const latestData = S.data && S.data[latestKey] ? S.data[latestKey] : {};
+  
+  if (!latestData.diagnosis) {
+    diagEl.innerHTML = '<span style="color:var(--mut)">Diagnóstico será gerado ao salvar os dados.</span>';
+    return;
+  }
+  
   // Pega primeiro parágrafo do diagnóstico (resumo)
-  const diag = latest.diagnosis;
+  const diag = latestData.diagnosis;
   const firstPara = diag.split('\n\n')[0] || diag.substring(0, 200);
   diagEl.textContent = firstPara + (firstPara.length < diag.length ? '...' : '');
 }
@@ -6456,21 +6489,29 @@ function renderExecGastos() {
   const gastosEl = document.getElementById('execGastos');
   if (!gastosEl) return;
   
-  const latest = S.months[S.months.length - 1];
-  if (!latest || !latest.lines) {
+  const known = getKnownMonths();
+  if (!known || known.length === 0) {
     gastosEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem dados</div>';
     return;
   }
   
+  const latestKey = known[known.length - 1];
+  const latestData = S.data && S.data[latestKey] ? S.data[latestKey] : {};
+  
+  if (!latestData.lines || latestData.lines.length === 0) {
+    gastosEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem dados do DRE</div>';
+    return;
+  }
+  
   // Pega linhas de despesa e ordena por valor
-  const expenses = latest.lines
+  const expenses = latestData.lines
     .filter(l => l.value < 0)
     .map(l => ({ name: l.name, value: Math.abs(l.value) }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 3);
   
   if (expenses.length === 0) {
-    gastosEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem despesas</div>';
+    gastosEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Sem despesas registradas</div>';
     return;
   }
   
@@ -6562,22 +6603,28 @@ function renderExecAlertas() {
   if (!alertasEl) return;
   
   const alerts = [];
+  const known = getKnownMonths();
   
-  if (S.months && S.months.length >= 2) {
-    const latest = S.months[S.months.length - 1];
-    const previous = S.months[S.months.length - 2];
+  if (known && known.length >= 2) {
+    const latestKey = known[known.length - 1];
+    const previousKey = known[known.length - 2];
     
-    const lucro = latest.net_profit || 0;
-    const receita = latest.revenue || 0;
-    const margem = receita > 0 ? (lucro / receita) * 100 : 0;
-    const prevMargem = previous.revenue > 0 ? ((previous.net_profit || 0) / previous.revenue * 100) : 0;
+    const latestRaw = S.raw && S.raw[latestKey] ? S.raw[latestKey] : {};
+    const previousRaw = S.raw && S.raw[previousKey] ? S.raw[previousKey] : {};
+    
+    const latestKpis = calcKPIs(latestRaw);
+    const previousKpis = calcKPIs(previousRaw);
+    
+    const lucro = latestKpis.lucroliq_val || 0;
+    const margem = latestKpis.lucroliq || 0;
+    const prevMargem = previousKpis.lucroliq || 0;
     const margemVar = margem - prevMargem;
     
     // Alerta: Margem caiu
     if (margemVar < -2) {
       alerts.push({
         icon: '🔴',
-        text: `Margem caiu ${Math.abs(margemVar).toFixed(1)}%`,
+        text: `Margem caiu ${Math.abs(margemVar).toFixed(1)}pp`,
         color: 'var(--red)'
       });
     }
@@ -6604,13 +6651,14 @@ function renderExecAlertas() {
     if (margemVar > 2) {
       alerts.push({
         icon: '🟢',
-        text: `Margem cresceu ${margemVar.toFixed(1)}%`,
+        text: `Margem cresceu ${margemVar.toFixed(1)}pp`,
         color: 'var(--teal)'
       });
     }
     
     // Boa notícia: Lucro cresceu
-    const lucroVar = previous.net_profit ? ((lucro - previous.net_profit) / Math.abs(previous.net_profit)) * 100 : 0;
+    const prevLucro = previousKpis.lucroliq_val || 0;
+    const lucroVar = prevLucro !== 0 ? ((lucro - prevLucro) / Math.abs(prevLucro)) * 100 : 0;
     if (lucroVar > 10) {
       alerts.push({
         icon: '🟢',
