@@ -110,6 +110,21 @@
     min-height: 100vh !important;
   }
 
+  /* ESCONDER botão de tela cheia */
+  #fullDashBtn {
+    display: none !important;
+  }
+
+  /* ESCONDER botão Tela Cheia da sidebar */
+  #fsBtnSide {
+    display: none !important;
+  }
+
+  /* ESCONDER botões de expandir (⛶) dos cards */
+  #dashContainer button[onclick*="expandCard"] {
+    display: none !important;
+  }
+
   /* Header - forçar coluna */
   #dashContainer > div:first-child {
     padding: 10px 12px !important;
