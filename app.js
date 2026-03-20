@@ -1104,36 +1104,161 @@ function confirmMod(){
 // ═══════════════════════════════════════════
 // DIAGNOSIS PAGE
 // ═══════════════════════════════════════════
+
+let _diagSel = null; // Seleção independente para página Diagnóstico
+
 function rDiagPage(){
-  if(!S.sel){return;}
-  const[y,mo]=S.sel.split('-');
-  const label=MES[parseInt(mo)-1]+'/'+y;
-  const pd=document.getElementById('diagPagePeriod');
-  if(pd)pd.textContent=label+(S.sector?' · '+S.sector:'');
-  // Render goal cards
-  rDiagGoals();
-  // Render full diagnosis (reuse cached or call API)
-  const res=calcScore(S.sel);
-  if(!res){
-    const body=document.getElementById('diagPageBody');
-    if(body)body.innerHTML='<div class="empty"><div class="eico">📊</div><p>Lance os dados do período para gerar o diagnóstico</p></div>';
+  // Popula seletores de mês/ano
+  const known = getKnownMonths();
+  if (!known || known.length === 0) {
+    const body = document.getElementById('diagPageBody');
+    if (body) body.innerHTML = '<div class="empty"><div class="eico">📊</div><p>Lance os dados do período para gerar o diagnóstico</p></div>';
     return;
   }
-  // Mirror diagC to diagPageBody
-  const diagC=document.getElementById('diagC');
-  const diagBody=document.getElementById('diagPageBody');
-  if(diagBody){
-    if(diagC&&diagC.innerHTML&&!diagC.innerHTML.includes('eico')){
-      diagBody.innerHTML=diagC.innerHTML;
-    } else {
-      // Call diagnosis and render in both places
-      rDiag(res,true);
+  
+  // Preenche seletores
+  const mesEl = document.getElementById('diagMesSel');
+  const anoEl = document.getElementById('diagAnoSel');
+  
+  if (mesEl && anoEl) {
+    // Se não tem seleção, usa o último período ou S.sel
+    if (!_diagSel) {
+      _diagSel = S.sel || known[known.length - 1];
+    }
+    
+    const [selY, selM] = _diagSel.split('-');
+    
+    // Preenche meses
+    mesEl.innerHTML = MES.map((m, i) => {
+      const idx = String(i + 1).padStart(2, '0');
+      return `<option value="${idx}">${m}</option>`;
+    }).join('');
+    mesEl.value = selM;
+    
+    // Preenche anos
+    const years = [...new Set(known.map(k => k.split('-')[0]))].sort();
+    anoEl.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
+    anoEl.value = selY;
+  }
+  
+  // Renderiza diagnóstico
+  renderDiagnosisPage();
+}
+
+function onDiagMonthChange() {
+  const mes = document.getElementById('diagMesSel').value;
+  const ano = document.getElementById('diagAnoSel').value;
+  _diagSel = ano + '-' + mes;
+  
+  console.log('📅 Diagnóstico: Mudou para', _diagSel);
+  
+  // Re-renderiza
+  renderDiagnosisPage();
+}
+
+async function renderDiagnosisPage() {
+  if (!_diagSel) return;
+  
+  console.log('🔄 Renderizando página Diagnóstico para:', _diagSel);
+  
+  // Renderiza goals
+  rDiagGoals();
+  
+  // Calcula score
+  const res = calcScore(_diagSel);
+  const body = document.getElementById('diagPageBody');
+  
+  if (!res) {
+    if (body) body.innerHTML = '<div class="empty"><div class="eico">📊</div><p>Lance os dados do período para gerar o diagnóstico</p></div>';
+    return;
+  }
+  
+  // Verifica se já tem diagnóstico salvo
+  const diagData = S.data && S.data[_diagSel] ? S.data[_diagSel] : {};
+  
+  if (diagData.diagnosis) {
+    // Já tem diagnóstico salvo - renderiza direto
+    console.log('✅ Diagnóstico já existe, renderizando...');
+    const [y, mo] = _diagSel.split('-');
+    _renderDiag(body, diagData.diagnosis, res, 
+      [...res.details].sort((a, b) => a.adjPct - b.adjPct).slice(0, 3),
+      [...res.details].sort((a, b) => a.adjPct - b.adjPct).slice(-2),
+      MES[parseInt(mo) - 1] + '/' + y
+    );
+  } else {
+    // Não tem diagnóstico - gera automaticamente
+    console.log('🔄 Gerando diagnóstico automaticamente...');
+    body.innerHTML = '<div class="dload"><div class="spin"></div><span>Analisando...</span></div>';
+    
+    const sorted = [...res.details].sort((a, b) => a.adjPct - b.adjPct);
+    const worst = sorted.slice(0, 3);
+    const best = sorted.slice(-2);
+    const [y, mo] = _diagSel.split('-');
+    const kpiAll = res.details.map(d => d.ind.name + ': ' + Math.round(d.adjPct) + '% da meta').join(' | ');
+    const scoreLabel = res.score >= 90 ? 'SAUDÁVEL' : res.score >= 70 ? 'ATENÇÃO' : res.score >= 50 ? 'CRÍTICO' : 'GRAVE';
+    
+    const prompt = 'Você é um CFO experiente analisando ' + S.company + (S.sector ? ' (' + S.sector + ')' : '') + '. ' +
+      'Mês: ' + MES[parseInt(mo) - 1] + '/' + y + '. Score: ' + res.score + '% (' + scoreLabel + '). ' +
+      'KPIs: ' + kpiAll + '. ' +
+      'Críticos: ' + worst.map(d => d.ind.name + ' ' + Math.round(d.adjPct) + '%').join(', ') + '. ' +
+      'Destaques: ' + best.map(d => d.ind.name + ' ' + Math.round(d.adjPct) + '%').join(', ') + '. ' +
+      'Escreva um diagnóstico executivo OBJETIVO em até 200 palavras. ' +
+      'Sem markdown. Formato: SITUACAO: [frase]. ALERTAS: • item1 • item2 • item3. ACOES: 1. acao 2. acao 3. acao';
+    
+    try {
+      const response = await fetch('/api/diagnose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      
+      const diagResult = await response.json();
+      if (diagResult.error) throw new Error(diagResult.error);
+      
+      const txt = diagResult.text || '';
+      if (!txt) throw new Error('Resposta vazia');
+      
+      // Salva diagnosis
+      if (!S.data[_diagSel]) S.data[_diagSel] = {};
+      S.data[_diagSel].diagnosis = txt;
+      
+      // Extrai bullets
+      const lines = txt.split('\n').map(l => l.trim()).filter(l => l);
+      const bullets = [];
+      let mode = null;
+      lines.forEach(line => {
+        const lu = line.toUpperCase();
+        if (lu.startsWith('ALERTAS') || lu.startsWith('ALERTA')) {
+          mode = 'alert';
+          return;
+        }
+        if (lu.startsWith('ACOES') || lu.startsWith('AÇÕES')) {
+          mode = null;
+          return;
+        }
+        if (mode === 'alert' && (line.startsWith('•') || line.startsWith('-'))) {
+          bullets.push(line.replace(/^[•\-]\s*/, ''));
+        }
+      });
+      
+      S.data[_diagSel].bullets = bullets.length > 0 ? bullets : null;
+      sv(); // Salva no Firebase
+      
+      console.log('✅ Diagnóstico gerado e salvo');
+      
+      // Renderiza
+      _renderDiag(body, txt, res, worst, best, MES[parseInt(mo) - 1] + '/' + y);
+      
+    } catch (error) {
+      console.error('❌ Erro ao gerar diagnóstico:', error);
+      body.innerHTML = '<div class="diag-box"><p style="color:var(--amber)">Erro ao gerar diagnóstico: ' + error.message + '</p></div>';
     }
   }
 }
+
 function rDiagGoals(){
   const el=document.getElementById('diagGoals');if(!el)return;
-  const res=S.sel?calcScore(S.sel):null;
+  const res = _diagSel ? calcScore(_diagSel) : null;
   if(!res){el.innerHTML='<div class="empty"><div class="eico">🎯</div><p>Lance os dados para ver as metas</p></div>';return;}
   el.innerHTML='';
   [...res.details].sort((a,b)=>a.pct-b.pct).forEach(d=>{

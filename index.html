@@ -226,7 +226,14 @@
       <div class="diag-header">
         <div>
           <div class="pt" style="font-size:16px">🤖 Diagnóstico IA</div>
-          <div class="ps" id="diagPagePeriod">Selecione um período no Dashboard</div>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:6px">
+            <select id="diagMesSel" class="m-sel" style="font-size:13px" onchange="onDiagMonthChange()">
+              <!-- Populated by JS -->
+            </select>
+            <select id="diagAnoSel" class="m-sel" style="font-size:13px;width:90px" onchange="onDiagMonthChange()">
+              <!-- Populated by JS -->
+            </select>
+          </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <button onclick="openMeeting()" class="adm" style="border-color:rgba(0,240,200,.4);color:var(--teal);font-weight:700">▶ Reunião</button>
