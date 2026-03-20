@@ -6551,19 +6551,29 @@ function renderExecChart() {
 
 function renderExecDiag() {
   const diagEl = document.getElementById('execDiagBullets');
-  if (!diagEl) return;
+  if (!diagEl) {
+    console.log('⚠️ execDiagBullets element not found');
+    return;
+  }
   
   const known = getKnownMonths();
   if (!known || known.length === 0) {
+    console.log('⚠️ No known months');
     diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico será gerado ao salvar os dados.</div>';
     return;
   }
   
   const latestKey = S.sel || known[known.length - 1];
+  console.log('📅 Mês selecionado para diagnóstico:', latestKey);
+  
   const latestData = S.data && S.data[latestKey] ? S.data[latestKey] : {};
+  console.log('💾 S.data[' + latestKey + ']:', latestData);
+  console.log('📋 Bullets disponíveis:', latestData.bullets);
+  console.log('📄 Diagnosis disponível:', latestData.diagnosis ? 'SIM' : 'NÃO');
   
   // Busca bullets do dashboard antigo
   if (latestData.bullets && latestData.bullets.length > 0) {
+    console.log('✅ Usando bullets salvos');
     // Usa bullets já existentes (top 3)
     diagEl.innerHTML = latestData.bullets.slice(0, 3).map(b => 
       `<div style="display:flex;gap:8px;align-items:flex-start">
@@ -6572,11 +6582,14 @@ function renderExecDiag() {
       </div>`
     ).join('');
   } else if (latestData.diagnosis) {
+    console.log('⚠️ Sem bullets, tentando extrair do diagnosis');
     // Tenta extrair 3 frases do diagnóstico
     const sentences = latestData.diagnosis
       .split(/[.!?]\s+/)
       .filter(s => s.trim().length > 20)
       .slice(0, 3);
+    
+    console.log('📝 Sentenças extraídas:', sentences);
     
     if (sentences.length > 0) {
       diagEl.innerHTML = sentences.map(s => 
@@ -6586,9 +6599,11 @@ function renderExecDiag() {
         </div>`
       ).join('');
     } else {
+      console.log('⚠️ Não conseguiu extrair sentenças');
       diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico disponível na expansão</div>';
     }
   } else {
+    console.log('❌ Sem diagnosis e sem bullets');
     diagEl.innerHTML = '<div style="color:var(--mut);font-size:11px;padding:20px 0;text-align:center">Diagnóstico será gerado ao salvar os dados.</div>';
   }
 }
@@ -7080,5 +7095,131 @@ function renderExecChartModal() {
   ctx.closePath();
   ctx.fill();
   ctx.globalAlpha = 1;
+}
+
+
+// ═══════════════════════════════════════════
+// GENERATE MISSING DIAGNOSES
+// ═══════════════════════════════════════════
+
+async function generateMissingDiagnoses() {
+  const known = getKnownMonths();
+  console.log('🔄 Verificando diagnósticos para:', known);
+  
+  let generated = 0;
+  for (const monthKey of known) {
+    const data = S.data && S.data[monthKey] ? S.data[monthKey] : {};
+    
+    // Se já tem diagnosis E bullets, pula
+    if (data.diagnosis && data.bullets && data.bullets.length > 0) {
+      console.log('✅', monthKey, '- Já tem diagnóstico completo');
+      continue;
+    }
+    
+    // Se tem diagnosis mas sem bullets, extrai bullets
+    if (data.diagnosis && (!data.bullets || data.bullets.length === 0)) {
+      console.log('⚙️', monthKey, '- Tem diagnosis, extraindo bullets...');
+      const lines = data.diagnosis.split('\n').map(l => l.trim()).filter(l => l);
+      const bullets = [];
+      let mode = null;
+      lines.forEach(line => {
+        const lu = line.toUpperCase();
+        if (lu.startsWith('ALERTAS') || lu.startsWith('ALERTA')) {
+          mode = 'alert';
+          return;
+        }
+        if (lu.startsWith('ACOES') || lu.startsWith('AÇÕES')) {
+          mode = null;
+          return;
+        }
+        if (mode === 'alert' && (line.startsWith('•') || line.startsWith('-'))) {
+          bullets.push(line.replace(/^[•\-]\s*/, ''));
+        }
+      });
+      
+      if (bullets.length > 0) {
+        if (!S.data[monthKey]) S.data[monthKey] = {};
+        S.data[monthKey].bullets = bullets;
+        console.log('✅', monthKey, '- Bullets extraídos:', bullets);
+        generated++;
+      }
+      continue;
+    }
+    
+    // Se não tem diagnosis, precisa gerar
+    console.log('🔄', monthKey, '- Gerando diagnóstico...');
+    const res = calcScore(monthKey);
+    if (!res) {
+      console.log('⚠️', monthKey, '- Sem dados para calcular score');
+      continue;
+    }
+    
+    try {
+      const sorted = [...res.details].sort((a, b) => a.adjPct - b.adjPct);
+      const worst = sorted.slice(0, 3);
+      const best = sorted.slice(-2);
+      const [y, mo] = monthKey.split('-');
+      const kpiAll = res.details.map(d => d.ind.name + ': ' + Math.round(d.adjPct) + '% da meta').join(' | ');
+      const scoreLabel = res.score >= 90 ? 'SAUDÁVEL' : res.score >= 70 ? 'ATENÇÃO' : res.score >= 50 ? 'CRÍTICO' : 'GRAVE';
+      
+      const prompt = 'Você é um CFO experiente analisando ' + S.company + (S.sector ? ' (' + S.sector + ')' : '') + '. ' +
+        'Mês: ' + MES[parseInt(mo) - 1] + '/' + y + '. Score: ' + res.score + '% (' + scoreLabel + '). ' +
+        'KPIs: ' + kpiAll + '. ' +
+        'Críticos: ' + worst.map(d => d.ind.name + ' ' + Math.round(d.adjPct) + '%').join(', ') + '. ' +
+        'Destaques: ' + best.map(d => d.ind.name + ' ' + Math.round(d.adjPct) + '%').join(', ') + '. ' +
+        'Escreva um diagnóstico executivo OBJETIVO em até 200 palavras. ' +
+        'Sem markdown. Formato: SITUACAO: [frase]. ALERTAS: • item1 • item2. ACOES: 1. acao 2. acao 3. acao';
+      
+      const response = await fetch('/api/diagnose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      
+      const diagData = await response.json();
+      if (diagData.error) throw new Error(diagData.error);
+      
+      const txt = diagData.text || '';
+      if (!txt) throw new Error('Resposta vazia');
+      
+      // Salva diagnosis
+      if (!S.data[monthKey]) S.data[monthKey] = {};
+      S.data[monthKey].diagnosis = txt;
+      
+      // Extrai bullets
+      const lines = txt.split('\n').map(l => l.trim()).filter(l => l);
+      const bullets = [];
+      let mode = null;
+      lines.forEach(line => {
+        const lu = line.toUpperCase();
+        if (lu.startsWith('ALERTAS') || lu.startsWith('ALERTA')) {
+          mode = 'alert';
+          return;
+        }
+        if (lu.startsWith('ACOES') || lu.startsWith('AÇÕES')) {
+          mode = null;
+          return;
+        }
+        if (mode === 'alert' && (line.startsWith('•') || line.startsWith('-'))) {
+          bullets.push(line.replace(/^[•\-]\s*/, ''));
+        }
+      });
+      
+      S.data[monthKey].bullets = bullets.length > 0 ? bullets : null;
+      console.log('✅', monthKey, '- Diagnóstico gerado e salvo');
+      generated++;
+      
+    } catch (error) {
+      console.error('❌', monthKey, '- Erro ao gerar:', error.message);
+    }
+  }
+  
+  if (generated > 0) {
+    sv(); // Salva tudo no Firebase
+    toast(`✓ ${generated} diagnóstico(s) gerado(s)`);
+    renderExecutiveDashboard(); // Atualiza dashboard
+  } else {
+    toast('✓ Todos os diagnósticos já estão atualizados');
+  }
 }
 
