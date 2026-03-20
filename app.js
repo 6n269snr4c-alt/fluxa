@@ -6299,6 +6299,18 @@ if (window.speechSynthesis) {
 }
 
 // ═══════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════
+
+function fmt(val) {
+  if (!val && val !== 0) return '—';
+  return 'R$ ' + Number(val).toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  });
+}
+
+// ═══════════════════════════════════════════
 // EXECUTIVE DASHBOARD
 // ═══════════════════════════════════════════
 
@@ -6343,18 +6355,26 @@ function renderExecutiveDashboard() {
   console.log('📈 KPIs anterior:', previousKpis);
   
   // Calcular métricas
-  const lucro = latestKpis.lucroliq_val || 0;
-  const receita = latestKpis.receitatotal || 0;
-  const margem = latestKpis.lucroliq || 0;
+  const margem = latestKpis.lucroliq || 0; // % já calculado
+  const receita = latestRaw.f_fat || 0; // Receita bruta
+  const ded = latestRaw.f_ded || 0;
+  const receitaLiq = receita - ded; // Receita líquida (base)
+  const lucro = receitaLiq * (margem / 100); // Lucro em R$ = base * margem%
   
-  console.log('💰 Lucro:', lucro);
+  console.log('💰 Lucro (calc):', lucro);
   console.log('💵 Receita:', receita);
   console.log('📊 Margem:', margem);
   
   // Variações vs mês anterior
-  const lucroVar = previousKey && previousKpis.lucroliq_val ? ((lucro - previousKpis.lucroliq_val) / Math.abs(previousKpis.lucroliq_val || 1)) * 100 : 0;
-  const receitaVar = previousKey && previousKpis.receitatotal ? ((receita - previousKpis.receitatotal) / (previousKpis.receitatotal || 1)) * 100 : 0;
-  const margemVar = previousKey && previousKpis.lucroliq ? margem - previousKpis.lucroliq : 0;
+  const prevMargem = previousKpis.lucroliq || 0;
+  const prevReceita = previousRaw.f_fat || 0;
+  const prevDed = previousRaw.f_ded || 0;
+  const prevReceitaLiq = prevReceita - prevDed;
+  const prevLucro = prevReceitaLiq * (prevMargem / 100);
+  
+  const lucroVar = previousKey && prevLucro !== 0 ? ((lucro - prevLucro) / Math.abs(prevLucro)) * 100 : 0;
+  const receitaVar = previousKey && prevReceita !== 0 ? ((receita - prevReceita) / prevReceita) * 100 : 0;
+  const margemVar = previousKey ? margem - prevMargem : 0;
   
   // Atualizar cards de métricas
   document.getElementById('execLucro').textContent = fmt(lucro);
@@ -6416,7 +6436,12 @@ function renderExecChart() {
   const lucros = months.map(mk => {
     const raw = S.raw && S.raw[mk] ? S.raw[mk] : {};
     const kpis = calcKPIs(raw);
-    return kpis.lucroliq_val || 0;
+    const margem = kpis.lucroliq || 0;
+    const receita = raw.f_fat || 0;
+    const ded = raw.f_ded || 0;
+    const receitaLiq = receita - ded;
+    const lucro = receitaLiq * (margem / 100);
+    return lucro;
   });
   
   const max = Math.max(...lucros, 0);
@@ -6637,9 +6662,18 @@ function renderExecAlertas() {
     const latestKpis = calcKPIs(latestRaw);
     const previousKpis = calcKPIs(previousRaw);
     
-    const lucro = latestKpis.lucroliq_val || 0;
     const margem = latestKpis.lucroliq || 0;
+    const receita = latestRaw.f_fat || 0;
+    const ded = latestRaw.f_ded || 0;
+    const receitaLiq = receita - ded;
+    const lucro = receitaLiq * (margem / 100);
+    
     const prevMargem = previousKpis.lucroliq || 0;
+    const prevReceita = previousRaw.f_fat || 0;
+    const prevDed = previousRaw.f_ded || 0;
+    const prevReceitaLiq = prevReceita - prevDed;
+    const prevLucro = prevReceitaLiq * (prevMargem / 100);
+    
     const margemVar = margem - prevMargem;
     
     // Alerta: Margem caiu
@@ -6679,7 +6713,6 @@ function renderExecAlertas() {
     }
     
     // Boa notícia: Lucro cresceu
-    const prevLucro = previousKpis.lucroliq_val || 0;
     const lucroVar = prevLucro !== 0 ? ((lucro - prevLucro) / Math.abs(prevLucro)) * 100 : 0;
     if (lucroVar > 10) {
       alerts.push({
