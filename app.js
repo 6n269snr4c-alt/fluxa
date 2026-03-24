@@ -218,39 +218,109 @@ function sv(){
     catch(e){console.warn('Save error:',e);}
   },1500);
 }
+// ═══════════════════════════════════════════
+// FUNÇÃO CORRIGIDA: loadUserData
+// ═══════════════════════════════════════════
+// FIX: Limpa todos os dados quando usuário não existe no Firestore
+//      e cria documento vazio para novos usuários
+// ═══════════════════════════════════════════
+
 async function loadUserData(uid){
   try{
-    const doc=await db.collection('users').doc(uid).get();
+    const doc = await db.collection('users').doc(uid).get();
+    
     if(doc.exists){
-      const d=doc.data();
-      if(d.company)S.company=d.company;
-      if(d.sector)S.sector=d.sector;
-      if(d.benchMode)S.benchMode=d.benchMode;
-      if(d.logo)S.logo=d.logo;
-      if(d.cfg)S.cfg=d.cfg;
-      if(d.goals)S.goals=d.goals;
-      if(d.months)S.months=d.months;
-      if(d.data)S.data=d.data;
-      if(d.raw)S.raw=d.raw;
-      if(d.forecast)S.forecast=d.forecast;
-      if(d.meetActions)S.meetActions=d.meetActions;
-      if(d.actions)S.actions=d.actions;
-      if(d.diagCache)S.diagCache=d.diagCache;
-      if(d.sel)S.sel=d.sel;
-      if(d.dreMappings)S.dreMappings=d.dreMappings;
-      if(d.dreLines)S.dreLines=d.dreLines;
-      if(d.dreModel)S.dreModel=d.dreModel;
-      if(d.userName)S.userName=d.userName;
-      if(d.advisor)S.advisor=d.advisor;
-      if(d.advisorHistory)S.advisorHistory=d.advisorHistory;
-      if(d.extratos)S.extratos=d.extratos;
-      if(d.contasBancarias)S.contasBancarias=d.contasBancarias;
-      if(d.whatsappPhoneE164)S.whatsappPhoneE164=d.whatsappPhoneE164;else delete S.whatsappPhoneE164;
-      if(d.whatsappLinkedAt!=null)S.whatsappLinkedAt=d.whatsappLinkedAt;else delete S.whatsappLinkedAt;
+      // ✅ Usuário existe - carrega dados normalmente
+      const d = doc.data();
+      if(d.company) S.company = d.company;
+      if(d.sector) S.sector = d.sector;
+      if(d.benchMode) S.benchMode = d.benchMode;
+      if(d.logo) S.logo = d.logo;
+      if(d.cfg) S.cfg = d.cfg;
+      if(d.goals) S.goals = d.goals;
+      if(d.months) S.months = d.months;
+      if(d.data) S.data = d.data;
+      if(d.raw) S.raw = d.raw;
+      if(d.forecast) S.forecast = d.forecast;
+      if(d.meetActions) S.meetActions = d.meetActions;
+      if(d.actions) S.actions = d.actions;
+      if(d.diagCache) S.diagCache = d.diagCache;
+      if(d.sel) S.sel = d.sel;
+      if(d.dreMappings) S.dreMappings = d.dreMappings;
+      if(d.dreLines) S.dreLines = d.dreLines;
+      if(d.dreModel) S.dreModel = d.dreModel;
+      if(d.userName) S.userName = d.userName;
+      if(d.advisor) S.advisor = d.advisor;
+      if(d.advisorHistory) S.advisorHistory = d.advisorHistory;
+      if(d.extratos) S.extratos = d.extratos;
+      if(d.contasBancarias) S.contasBancarias = d.contasBancarias;
+      if(d.whatsappPhoneE164) S.whatsappPhoneE164 = d.whatsappPhoneE164; else delete S.whatsappPhoneE164;
+      if(d.whatsappLinkedAt != null) S.whatsappLinkedAt = d.whatsappLinkedAt; else delete S.whatsappLinkedAt;
+      
+    } else {
+      // ✅ FIX: Usuário NÃO existe - limpa TUDO e cria documento vazio
+      console.log('🆕 Novo usuário detectado - criando documento e limpando state');
+      
+      // 1️⃣ LIMPA o objeto S (State) completamente
+      S.company = null;
+      S.sector = null;
+      S.benchMode = null;
+      S.logo = null;
+      S.cfg = {};
+      S.goals = {};
+      S.months = [];
+      S.data = {};
+      S.raw = {};
+      S.forecast = {};
+      S.meetActions = [];
+      S.actions = [];
+      S.diagCache = {};
+      S.sel = null;
+      S.dreMappings = {};
+      S.dreLines = [];
+      S.dreModel = null;
+      S.userName = null;
+      S.advisor = null;
+      S.advisorHistory = [];
+      S.extratos = [];
+      S.contasBancarias = [];
+      delete S.whatsappPhoneE164;
+      delete S.whatsappLinkedAt;
+      
+      // 2️⃣ CRIA documento vazio no Firestore para o novo usuário
+      await db.collection('users').doc(uid).set({
+        company: null,
+        sector: null,
+        benchMode: null,
+        logo: null,
+        cfg: {},
+        goals: {},
+        months: [],
+        data: {},
+        raw: {},
+        forecast: {},
+        meetActions: [],
+        actions: [],
+        diagCache: {},
+        sel: null,
+        dreMappings: {},
+        dreLines: [],
+        dreModel: null,
+        userName: null,
+        advisor: null,
+        advisorHistory: [],
+        extratos: [],
+        contasBancarias: [],
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
+      console.log('✅ Documento criado e state limpo com sucesso');
     }
-  }catch(e){console.warn('Load error:',e);}
+    
+  } catch(e) {
+    console.warn('❌ Erro ao carregar dados do usuário:', e);
+  }
 }
-
 // ═══════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════
