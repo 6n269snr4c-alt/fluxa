@@ -51,6 +51,7 @@ const FIELDS=[
   {id:'f_cv',    label:'Custos Variáveis',             unit:'R$',hint:'CMV, impostos sobre venda, comissões',       group:'rentab'},
   {id:'f_df',    label:'Despesas Fixas',               unit:'R$',hint:'Folha de pagamento, aluguel, serviços fixos',group:'rentab'},
   {id:'f_depfin',label:'Despesas Financeiras e Impostos s/ Lucro',unit:'R$',hint:'Juros, IOF, empréstimos e IR/CSLL do período',group:'rentab'},
+  {id:'f_recnop',label:'Receita Não Operacional',     unit:'R$',hint:'Receitas excepcionais, vendas de ativos, etc.',group:'rentab'},
 ];
 const FG={tracao:{label:'Vendas e Receita',  color:'var(--g-tracao)',bg:'rgba(59,130,246,.12)',icon:'📈'},
           rentab:{label:'DRE e Eficiência', color:'var(--g-rentab)',bg:'rgba(16,212,168,.10)',icon:'💰'}};
@@ -59,6 +60,7 @@ const FCAST_FIELDS=[
   {id:'f_dc',    label:'Desp. Comercial Prevista',      unit:'R$',group:'tracao'},
   {id:'f_cv',    label:'Custos Variáveis Previstos',    unit:'R$',group:'rentab'},
   {id:'f_df',    label:'Despesas Fixas Previstas',      unit:'R$',group:'rentab'},
+  {id:'f_recnop',label:'Receita Não Op. Prevista',    unit:'R$',group:'rentab'},
   {id:'f_depfin',label:'Desp. Financeiras Previstas',   unit:'R$',group:'rentab'},
 ];
 
@@ -73,6 +75,7 @@ function calcKPIs(r){
   const dc     = v('f_dc')||0;       // Despesa Comercial
   const pess   = v('f_pessoal')||0;  // Despesas com Pessoal
   const adm    = v('f_adm')||0;      // Despesas Administrativas
+  const recnop = v('f_recnop')||0;  // Receita Não Operacional
   const dep    = v('f_dep')||0;      // Depreciação/Amortização
   const depfin = v('f_depfin')||0;   // Despesas Financeiras + IR/CSLL
 
@@ -119,7 +122,7 @@ function calcKPIs(r){
 
   // Lucro Líquido R$ = EBITDA − Depreciação − Desp.Financeiras − IR/CSLL
   const lucro_r = ebitda_r !== null
-    ? ebitda_r - dep - depfin
+    ? ebitda_r - dep - depfin + recnop
     : null;
 
   // Despesas Operacionais Totais = DC + Pessoal + Adm
@@ -218,109 +221,44 @@ function sv(){
     catch(e){console.warn('Save error:',e);}
   },1500);
 }
-// ═══════════════════════════════════════════
-// FUNÇÃO CORRIGIDA: loadUserData
-// ═══════════════════════════════════════════
-// FIX: Limpa todos os dados quando usuário não existe no Firestore
-//      e cria documento vazio para novos usuários
-// ═══════════════════════════════════════════
-
 async function loadUserData(uid){
   try{
-    const doc = await db.collection('users').doc(uid).get();
-    
+    const doc=await db.collection('users').doc(uid).get();
     if(doc.exists){
-      // ✅ Usuário existe - carrega dados normalmente
-      const d = doc.data();
-      if(d.company) S.company = d.company;
-      if(d.sector) S.sector = d.sector;
-      if(d.benchMode) S.benchMode = d.benchMode;
-      if(d.logo) S.logo = d.logo;
-      if(d.cfg) S.cfg = d.cfg;
-      if(d.goals) S.goals = d.goals;
-      if(d.months) S.months = d.months;
-      if(d.data) S.data = d.data;
-      if(d.raw) S.raw = d.raw;
-      if(d.forecast) S.forecast = d.forecast;
-      if(d.meetActions) S.meetActions = d.meetActions;
-      if(d.actions) S.actions = d.actions;
-      if(d.diagCache) S.diagCache = d.diagCache;
-      if(d.sel) S.sel = d.sel;
-      if(d.dreMappings) S.dreMappings = d.dreMappings;
-      if(d.dreLines) S.dreLines = d.dreLines;
-      if(d.dreModel) S.dreModel = d.dreModel;
-      if(d.userName) S.userName = d.userName;
-      if(d.advisor) S.advisor = d.advisor;
-      if(d.advisorHistory) S.advisorHistory = d.advisorHistory;
-      if(d.extratos) S.extratos = d.extratos;
-      if(d.contasBancarias) S.contasBancarias = d.contasBancarias;
-      if(d.whatsappPhoneE164) S.whatsappPhoneE164 = d.whatsappPhoneE164; else delete S.whatsappPhoneE164;
-      if(d.whatsappLinkedAt != null) S.whatsappLinkedAt = d.whatsappLinkedAt; else delete S.whatsappLinkedAt;
-      
-    } else {
-      // ✅ FIX: Usuário NÃO existe - limpa TUDO e cria documento vazio
-      console.log('🆕 Novo usuário detectado - criando documento e limpando state');
-      
-      // 1️⃣ LIMPA o objeto S (State) completamente
-      S.company = null;
-      S.sector = null;
-      S.benchMode = null;
-      S.logo = null;
-      S.cfg = {};
-      S.goals = {};
-      S.months = [];
-      S.data = {};
-      S.raw = {};
-      S.forecast = {};
-      S.meetActions = [];
-      S.actions = [];
-      S.diagCache = {};
-      S.sel = null;
-      S.dreMappings = {};
-      S.dreLines = [];
-      S.dreModel = null;
-      S.userName = null;
-      S.advisor = null;
-      S.advisorHistory = [];
-      S.extratos = [];
-      S.contasBancarias = [];
-      delete S.whatsappPhoneE164;
-      delete S.whatsappLinkedAt;
-      
-      // 2️⃣ CRIA documento vazio no Firestore para o novo usuário
-      await db.collection('users').doc(uid).set({
-        company: null,
-        sector: null,
-        benchMode: null,
-        logo: null,
-        cfg: {},
-        goals: {},
-        months: [],
-        data: {},
-        raw: {},
-        forecast: {},
-        meetActions: [],
-        actions: [],
-        diagCache: {},
-        sel: null,
-        dreMappings: {},
-        dreLines: [],
-        dreModel: null,
-        userName: null,
-        advisor: null,
-        advisorHistory: [],
-        extratos: [],
-        contasBancarias: [],
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
-      console.log('✅ Documento criado e state limpo com sucesso');
+      const d=doc.data();
+      if(d.company)S.company=d.company;
+      if(d.sector)S.sector=d.sector;
+      if(d.benchMode)S.benchMode=d.benchMode;
+      if(d.logo)S.logo=d.logo;
+      if(d.cfg)S.cfg=d.cfg;
+      if(d.goals)S.goals=d.goals;
+      if(d.months)S.months=d.months;
+      if(d.data)S.data=d.data;
+      if(d.raw)S.raw=d.raw;
+      if(d.forecast)S.forecast=d.forecast;
+      if(d.meetActions)S.meetActions=d.meetActions;
+      if(d.actions)S.actions=d.actions;
+      if(d.diagCache)S.diagCache=d.diagCache;
+      if(d.sel)S.sel=d.sel;
+      if(d.dreMappings)S.dreMappings=d.dreMappings;
+      if(d.dreLines)S.dreLines=d.dreLines;
+      if(d.dreModel)S.dreModel=d.dreModel;
+      if(d.userName)S.userName=d.userName;
+      if(d.advisor)S.advisor=d.advisor;
+      if(d.advisorHistory)S.advisorHistory=d.advisorHistory;
+      if(d.extratos)S.extratos=d.extratos;
+      if(d.contasBancarias)S.contasBancarias=d.contasBancarias;
+      if(d.whatsappPhoneE164)S.whatsappPhoneE164=d.whatsappPhoneE164;else delete S.whatsappPhoneE164;
+      if(d.whatsappLinkedAt!=null)S.whatsappLinkedAt=d.whatsappLinkedAt;else delete S.whatsappLinkedAt;
+    }else{
+      console.log('New user - clearing state and creating document');
+      S.company=null;S.sector=null;S.benchMode=null;S.logo=null;S.cfg={};S.goals={};S.months=[];S.data={};S.raw={};S.forecast={};S.meetActions=[];S.actions=[];S.diagCache={};S.sel=null;S.dreMappings={};S.dreLines=[];S.dreModel=null;S.userName=null;S.advisor=null;S.advisorHistory=[];S.extratos=[];S.contasBancarias=[];delete S.whatsappPhoneE164;delete S.whatsappLinkedAt;
+      const keysToKeep=['firebase:authUser','firebase:host'];const keysToRemove=[];for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(key&&!keysToKeep.some(k=>key.includes(k)))keysToRemove.push(key);}keysToRemove.forEach(key=>localStorage.removeItem(key));sessionStorage.clear();
+      await db.collection('users').doc(uid).set({company:null,sector:null,benchMode:null,logo:null,cfg:{},goals:{},months:[],data:{},raw:{},forecast:{},meetActions:[],actions:[],diagCache:{},sel:null,dreMappings:{},dreLines:[],dreModel:null,userName:null,advisor:null,advisorHistory:[],extratos:[],contasBancarias:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()});
     }
-    
-  } catch(e) {
-    console.warn('❌ Erro ao carregar dados do usuário:', e);
-  }
+  }catch(e){console.warn('Load error:',e);}
 }
+
 // ═══════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════
@@ -4867,6 +4805,7 @@ const DRE_CATS = [
   {id:'despesa_financeira',       label:'Despesa Financeira',           color:'#ef4444', icon:'🏦'},
   {id:'imposto_lucro',            label:'Imposto s/ Lucro (IR/CSLL)',   color:'#dc2626', icon:'🏛'},
   {id:'depreciacao',              label:'Depreciação / Amortização',    color:'#64748b', icon:'📉'},
+  {id:'receita_nao_operacional',  label:'Receita Não Operacional',      color:'#10b981', icon:'💎'},
   {id:'ignorar',                  label:'Ignorar (total/subtotal)',     color:'#374151', icon:'🚫'},
 ];
 
@@ -5195,7 +5134,7 @@ function dreUpdateConf(idx, newConf) {
 }
 
 function dreAggregate() {
-  const a = { f_fat:0, f_ded:0, f_cmv:0, f_cvc:0, f_pessoal:0, f_adm:0, f_dep:0, f_dc:0, f_depfin:0 };
+  const a = { f_fat:0, f_ded:0, f_cmv:0, f_cvc:0, f_pessoal:0, f_adm:0, f_dep:0, f_dc:0, f_depfin:0, f_recnop:0 };
   _dreClassified.forEach(l => {
     const v = l.value;
     if      (l.category === 'receita_bruta')            a.f_fat     += v;
@@ -5208,6 +5147,7 @@ function dreAggregate() {
     else if (l.category === 'depreciacao')              a.f_dep     += v;
     else if (l.category === 'despesa_financeira')       a.f_depfin  += v;
     else if (l.category === 'imposto_lucro')            a.f_depfin  += v;
+    else if (l.category === 'receita_nao_operacional')  a.f_recnop  += v;
   });
   return a;
 }
