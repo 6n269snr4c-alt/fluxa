@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin DRE - Vital Diagnostic</title>
+  
+  <!-- React -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  
+  <!-- Sortable.js -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
+    
+    /* Login */
+    .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .login-box { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; }
+    .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo h1 { font-size: 32px; font-weight: 700; color: #00f0c8; margin-bottom: 8px; }
+    .login-logo p { color: #94a3b8; font-size: 14px; }
+    .login-form { display: flex; flex-direction: column; gap: 20px; }
+    
+    /* Form */
+    .form-group { margin-bottom: 0; }
+    .form-label { display: block; font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; }
+    .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; font-family: inherit; }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #00f0c8; background: rgba(255,255,255,0.08); }
+    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+    
+    /* Buttons */
+    .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; width: 100%; }
+    .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,240,200,0.3); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+    .icon-btn { width: 32px; height: 32px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: #e2e8f0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .icon-btn:hover { background: rgba(255,255,255,0.2); }
+    .icon-btn.delete:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
+    
+    /* App */
+    .app-container { padding: 20px; max-width: 1600px; margin: 0 auto; }
+    .header { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .header h1 { font-size: 28px; font-weight: 700; color: #00f0c8; display: flex; align-items: center; gap: 12px; }
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+    .user-info { font-size: 13px; color: #94a3b8; margin-right: 12px; }
+    
+    /* Tabs */
+    .tabs { display: flex; gap: 8px; margin-bottom: 24px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px; }
+    .tab { flex: 1; padding: 12px 24px; background: transparent; border: none; border-radius: 8px; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tab:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
+    .tab.active { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; }
+    
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; }
+    .stat-value { font-size: 36px; font-weight: 700; color: #00f0c8; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+    
+    /* Main Grid */
+    .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 24px; }
+    .panel { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .panel-title { font-size: 18px; font-weight: 600; color: #00f0c8; display: flex; align-items: center; gap: 8px; }
+    
+    /* Categories */
+    .category-item { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; margin-bottom: 12px; cursor: move; transition: all 0.2s; }
+    .category-item:hover { background: rgba(255,255,255,0.12); border-color: rgba(0,240,200,0.4); transform: translateX(4px); }
+    .category-item.result { background: rgba(100,200,255,0.1); border-left: 4px solid #64c8ff; cursor: default; }
+    .category-header { display: flex; align-items: center; justify-content: space-between; }
+    .category-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+    .category-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); }
+    .category-text { flex: 1; }
+    .category-label { font-size: 16px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
+    .category-meta { font-size: 12px; color: #94a3b8; display: flex; gap: 12px; }
+    .category-actions { display: flex; gap: 8px; }
+    .connector { display: flex; align-items: center; justify-content: center; margin: 8px 0; color: #64748b; font-size: 20px; }
+    .add-category-btn { width: 100%; padding: 16px; background: rgba(0,240,200,0.1); border: 2px dashed rgba(0,240,200,0.3); border-radius: 12px; color: #00f0c8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .add-category-btn:hover { background: rgba(0,240,200,0.15); border-color: rgba(0,240,200,0.5); }
+    
+    /* Alert */
+    .alert { padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px; animation: slideIn 0.3s ease-out; }
+    .alert-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+    .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
+    .alert-warning { background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; }
+    
+    /* Modal */
+    .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.2s ease-out; }
+    .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .modal-title { font-size: 24px; font-weight: 700; color: #00f0c8; }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
+    
+    /* Code Block */
+    .code-block { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; color: #00f0c8; overflow-x: auto; white-space: pre; margin: 16px 0; position: relative; }
+    .code-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .code-block-title { font-size: 14px; font-weight: 600; color: #94a3b8; font-family: -apple-system, sans-serif; }
+    .copy-btn { padding: 6px 12px; background: rgba(0,240,200,0.2); color: #00f0c8; border: 1px solid rgba(0,240,200,0.3); border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: -apple-system, sans-serif; }
+    .copy-btn:hover { background: rgba(0,240,200,0.3); }
+    .copy-btn.copied { background: rgba(34,197,94,0.2); color: #4ade80; border-color: rgba(34,197,94,0.3); }
+    
+    /* Animations */
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+    .fade-in { animation: fadeIn 0.3s ease-out; }
+    
+    /* Loading */
+    .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #94a3b8; }
+    .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,240,200,0.2); border-top-color: #00f0c8; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .error-message { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; }
+    
+    .color-picker-group { display: flex; gap: 8px; align-items: center; }
+    .color-preview { width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FIREBASE CONFIG - USANDO O MESMO DO FLUXA!
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyBBkP2KaV189LaCk1lck4ni8kDqoRhgwLw",
+      authDomain: "diagnostic-88787.firebaseapp.com",
+      projectId: "diagnostic-88787",
+      storageBucket: "diagnostic-88787.firebasestorage.app",
+      messagingSenderId: "735423883123",
+      appId: "1:735423883123:web:d0c72dcb93f430b5cac706"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIAL CONFIG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    const INITIAL_CATEGORIES = [
+      { id: 'receita_bruta', field: 'f_fat', label: 'Receita Bruta', icon: '💰', color: '#00e89b', type: 'income', order: 1 },
+      { id: 'deducao_receita', field: 'f_ded', label: 'Dedução de Receita', icon: '➖', color: '#f59e0b', type: 'expense', order: 2 },
+      { id: 'custo_variavel', field: 'f_cmv', label: 'CMV / Custo do Produto', icon: '📦', color: '#ef4444', type: 'expense', order: 3 },
+      { id: 'custo_variavel_comercial', field: 'f_cvc', label: 'Custo Variável Comercial', icon: '🤝', color: '#f97316', type: 'expense', order: 4 },
+      { id: 'despesa_comercial', field: 'f_dc', label: 'Despesa Comercial', icon: '📣', color: '#3b82f6', type: 'expense', order: 5 },
+      { id: 'despesa_pessoal', field: 'f_pessoal', label: 'Despesa com Pessoal', icon: '👥', color: '#a855f7', type: 'expense', order: 6 },
+      { id: 'despesa_administrativa', field: 'f_adm', label: 'Despesa Administrativa', icon: '🏢', color: '#f59e0b', type: 'expense', order: 7 },
+      { id: 'despesa_financeira', field: 'f_depfin', label: 'Despesa Financeira', icon: '🏦', color: '#ef4444', type: 'expense', order: 8 },
+      { id: 'imposto_lucro', field: 'f_depfin', label: 'Imposto s/ Lucro (IR/CSLL)', icon: '🏛', color: '#dc2626', type: 'expense', order: 9 },
+      { id: 'depreciacao', field: 'f_dep', label: 'Depreciação / Amortização', icon: '📉', color: '#64748b', type: 'expense', order: 10 },
+      { id: 'receita_nao_operacional', field: 'f_recnop', label: 'Receita Não Operacional', icon: '💎', color: '#10b981', type: 'income', order: 11 },
+      { id: 'ignorar', label: 'Ignorar (total/subtotal)', icon: '🚫', color: '#374151', type: null, order: 99 },
+    ];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MAIN APP
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function App() {
+      const [user, setUser] = useState(null);
+      const [loading, setLoading] = useState(true);
+
+      useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged(user => {
+          setUser(user);
+          setLoading(false);
+        });
+        return unsubscribe;
+      }, []);
+
+      if (loading) {
+        return (
+          <div className="loading">
+            <div className="spinner"></div>
+            Carregando...
+          </div>
+        );
+      }
+
+      if (!user) {
+        return <LoginScreen />;
+      }
+
+      return <DREAdmin user={user} />;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LOGIN SCREEN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function LoginScreen() {
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+        } catch (err) {
+          setError('Email ou senha incorretos');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      return (
+        <div className="login-container">
+          <div className="login-box fade-in">
+            <div className="login-logo">
+              <h1>🏗️ Admin DRE</h1>
+              <p>Vital Diagnostic / Fluxa</p>
+            </div>
+
+            <form className="login-form" onSubmit={handleLogin}>
+              {error && <div className="error-message">{error}</div>}
+
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Senha</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="btn btn-primary"
+                disabled={loading}
+              >
+                {loading ? 'Entrando...' : '🔐 Entrar'}
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DRE ADMIN MAIN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function DREAdmin({ user }) {
+      const [categories, setCategories] = useState(INITIAL_CATEGORIES);
+      const [showCategoryModal, setShowCategoryModal] = useState(false);
+      const [showCodeModal, setShowCodeModal] = useState(false);
+      const [editingCategory, setEditingCategory] = useState(null);
+      const [alert, setAlert] = useState(null);
+      const [isDirty, setIsDirty] = useState(false);
+      const [saving, setSaving] = useState(false);
+
+      // Carregar config do Firestore
+      useEffect(() => {
+        loadConfig();
+      }, []);
+
+      const loadConfig = async () => {
+        try {
+          const doc = await db.collection('system').doc('dre-admin-config').get();
+          if (doc.exists && doc.data().categories) {
+            setCategories(doc.data().categories);
+          }
+        } catch (err) {
+          console.error('Erro ao carregar:', err);
+        }
+      };
+
+      const handleLogout = async () => {
+        if (isDirty && !confirm('Tem alterações não salvas. Sair mesmo assim?')) return;
+        await auth.signOut();
+      };
+
+      const showAlert = (message, type = 'success') => {
+        setAlert({ message, type });
+        setTimeout(() => setAlert(null), 4000);
+      };
+
+      const handleSaveConfig = async () => {
+        setSaving(true);
+        try {
+          await db.collection('system').doc('dre-admin-config').set({
+            categories,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: user.email
+          });
+
+          setIsDirty(false);
+          showAlert('✅ Configuração salva no Firebase!', 'success');
+        } catch (err) {
+          showAlert('❌ Erro ao salvar: ' + err.message, 'error');
+        } finally {
+          setSaving(false);
+        }
+      };
+
+      const handleGenerateCode = () => {
+        setShowCodeModal(true);
+      };
+
+      const handleAddCategory = () => {
+        setEditingCategory(null);
+        setShowCategoryModal(true);
+      };
+
+      const handleEditCategory = (cat) => {
+        setEditingCategory(cat);
+        setShowCategoryModal(true);
+      };
+
+      const handleDeleteCategory = (id) => {
+        if (!confirm('Remover esta categoria?')) return;
+        setCategories(categories.filter(c => c.id !== id));
+        setIsDirty(true);
+        showAlert('Categoria removida!', 'success');
+      };
+
+      const handleSaveCategory = (categoryData) => {
+        if (editingCategory) {
+          setCategories(categories.map(c =>
+            c.id === editingCategory.id ? { ...c, ...categoryData } : c
+          ));
+        } else {
+          setCategories([...categories, { ...categoryData, order: categories.length + 1 }]);
+        }
+        setIsDirty(true);
+        setShowCategoryModal(false);
+        showAlert(editingCategory ? 'Categoria atualizada!' : 'Categoria adicionada!', 'success');
+      };
+
+      return (
+        <div className="app-container">
+          <div className="header fade-in">
+            <h1><span>🏗️</span>Configuração do DRE</h1>
+            <div className="header-actions">
+              <span className="user-info">👤 {user.email}</span>
+              {isDirty && <span style={{ color: '#fb923c', fontSize: '14px' }}>⚠️ Não salvo</span>}
+              <button className="btn btn-secondary" onClick={handleLogout}>🚪 Sair</button>
+              <button className="btn btn-secondary" onClick={handleGenerateCode}>📦 Gerar Código</button>
+              <button className="btn btn-primary" onClick={handleSaveConfig} disabled={saving}>
+                {saving ? '💾 Salvando...' : '💾 Salvar Config'}
+              </button>
+            </div>
+          </div>
+
+          {alert && (
+            <div className={`alert alert-${alert.type} fade-in`}>
+              <span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : '⚠️'}</span>
+              <span>{alert.message}</span>
+            </div>
+          )}
+
+          <div className="stats-grid fade-in">
+            <div className="stat-card">
+              <div className="stat-value">{categories.filter(c => c.id !== 'ignorar').length}</div>
+              <div className="stat-label">Categorias</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">2</div>
+              <div className="stat-label">Blocos de Código</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value">{isDirty ? '⚠️' : '✅'}</div>
+              <div className="stat-label">Status</div>
+            </div>
+          </div>
+
+          <div className="panel fade-in">
+            <div className="panel-header">
+              <div className="panel-title"><span>📊</span>Categorias do DRE</div>
+            </div>
+
+            {categories.filter(c => c.id !== 'ignorar').map(cat => (
+              <div key={cat.id} className="category-item">
+                <div className="category-header">
+                  <div className="category-info">
+                    <div className="category-icon" style={{ background: cat.color + '22' }}>
+                      {cat.icon}
+                    </div>
+                    <div className="category-text">
+                      <div className="category-label">{cat.label}</div>
+                      <div className="category-meta">
+                        <span>{cat.type === 'income' ? '➕ Receita' : '➖ Despesa'}</span>
+                        <span>🔖 {cat.field}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="category-actions">
+                    <button className="icon-btn" onClick={() => handleEditCategory(cat)}>✏️</button>
+                    <button className="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)}>🗑️</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button className="add-category-btn" onClick={handleAddCategory}>
+              <span>➕</span>Adicionar Nova Categoria
+            </button>
+          </div>
+
+          {showCategoryModal && (
+            <CategoryModal
+              category={editingCategory}
+              onSave={handleSaveCategory}
+              onClose={() => setShowCategoryModal(false)}
+              existingIds={categories.map(c => c.id)}
+            />
+          )}
+
+          {showCodeModal && (
+            <CodeModal
+              categories={categories}
+              onClose={() => setShowCodeModal(false)}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CATEGORY MODAL
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function CategoryModal({ category, onSave, onClose, existingIds }) {
+      const [formData, setFormData] = useState(category || {
+        id: '', field: '', label: '', icon: '📌', color: '#fb923c', type: 'expense'
+      });
+
+      const handleChange = (field, value) => {
+        setFormData({ ...formData, [field]: value });
+        if (field === 'label' && !category) {
+          const fieldName = 'f_' + value.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '');
+          setFormData(prev => ({ ...prev, field: fieldName }));
+        }
+      };
+
+      const handleSubmit = () => {
+        if (!formData.id || !formData.label || !formData.field) {
+          alert('Preencha todos os campos!');
+          return;
+        }
+        if (!category && existingIds.includes(formData.id)) {
+          alert('ID já existe!');
+          return;
+        }
+        onSave(formData);
+      };
+
+      return (
+        <div className="modal" onClick={onClose}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">{category ? '✏️ Editar' : '➕ Nova'} Categoria</div>
+              <button className="icon-btn" onClick={onClose}>✖️</button>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">ID *</label>
+              <input className="form-input" value={formData.id} onChange={e => handleChange('id', e.target.value)} disabled={!!category} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Nome *</label>
+              <input className="form-input" value={formData.label} onChange={e => handleChange('label', e.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Campo *</label>
+              <input className="form-input" value={formData.field} onChange={e => handleChange('field', e.target.value)} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Emoji</label>
+              <input className="form-input" value={formData.icon} onChange={e => handleChange('icon', e.target.value)} maxLength={2} />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Cor</label>
+              <div className="color-picker-group">
+                <div className="color-preview" style={{ background: formData.color }}></div>
+                <input type="color" value={formData.color} onChange={e => handleChange('color', e.target.value)} />
+                <input className="form-input" value={formData.color} onChange={e => handleChange('color', e.target.value)} style={{ flex: 1 }} />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Tipo *</label>
+              <select className="form-select" value={formData.type} onChange={e => handleChange('type', e.target.value)}>
+                <option value="expense">Despesa (subtrai)</option>
+                <option value="income">Receita (soma)</option>
+              </select>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleSubmit}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CODE MODAL
+    // ═══════════════════════════════════════════════════════════════════════
+
+    function CodeModal({ categories, onClose }) {
+      const [copiedBlock, setCopiedBlock] = useState(null);
+
+      const generateDRECatsCode = () => {
+        const cats = categories.filter(c => c.id !== 'ignorar').map(c => (
+          `  {id:'${c.id}', label:'${c.label}', color:'${c.color}', icon:'${c.icon}'}`
+        )).join(',\n');
+        return `const DRE_CATS = [\n${cats},\n  {id:'ignorar', label:'Ignorar (total/subtotal)', color:'#374151', icon:'🚫'},\n];`;
+      };
+
+      const handleCopy = (code, blockName) => {
+        navigator.clipboard.writeText(code);
+        setCopiedBlock(blockName);
+        setTimeout(() => setCopiedBlock(null), 2000);
+      };
+
+      const dreCatsCode = generateDRECatsCode();
+
+      return (
+        <div className="modal" onClick={onClose}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">📦 Código para Deploy</div>
+              <button className="icon-btn" onClick={onClose}>✖️</button>
+            </div>
+
+            <div style={{ marginBottom: '24px', padding: '16px', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: '8px' }}>
+              <div style={{ fontWeight: 600, marginBottom: '8px' }}>📋 Instruções:</div>
+              <ol style={{ marginLeft: '20px', fontSize: '14px', lineHeight: '1.8' }}>
+                <li>Copie o bloco abaixo</li>
+                <li>Vá no GitHub → fluxa-main → app.js</li>
+                <li>Encontre a linha <code>const DRE_CATS = [</code> (aproximadamente linha 4799)</li>
+                <li>Substitua TODO o bloco DRE_CATS</li>
+                <li>Commit → Vercel faz deploy automático</li>
+                <li>Pronto! ✅</li>
+              </ol>
+            </div>
+
+            <div className="code-block-header">
+              <div className="code-block-title">📄 Array DRE_CATS (linhas ~4799-4812)</div>
+              <button 
+                className={`copy-btn ${copiedBlock === 'cats' ? 'copied' : ''}`}
+                onClick={() => handleCopy(dreCatsCode, 'cats')}
+              >
+                {copiedBlock === 'cats' ? '✅ Copiado!' : '📋 Copiar'}
+              </button>
+            </div>
+            <div className="code-block">{dreCatsCode}</div>
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={onClose}>Fechar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RENDER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
