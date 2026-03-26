@@ -4810,6 +4810,58 @@ const DRE_CATS = [
   {id:'receita_nao_operacional',  label:'Receita Não Operacional',      color:'#10b981', icon:'💎'},
   {id:'ignorar',                  label:'Ignorar (total/subtotal)',     color:'#374151', icon:'🚫'},
 ];
+// ═══════════════════════════════════════════════════════════════════════
+// CARREGAR CATEGORIAS DRE DO FIREBASE
+// ═══════════════════════════════════════════════════════════════════════
+// 
+// INSTRUÇÕES:
+// 1. Adicione este código logo APÓS a linha que define DRE_CATS (linha ~4812)
+// 2. O sistema vai carregar categorias do Firebase automaticamente
+// 3. Admin salva no Firebase → App atualiza sozinho!
+//
+// ═══════════════════════════════════════════════════════════════════════
+
+// Função para carregar config do DRE do Firebase
+async function loadDREConfigFromFirebase() {
+  try {
+    const doc = await db.collection('system').doc('dre-admin-config').get();
+    
+    if (doc.exists && doc.data().categories && doc.data().categories.length > 0) {
+      const savedCategories = doc.data().categories;
+      
+      // ✅ ATUALIZAR DRE_CATS com as categorias do Firebase
+      window.DRE_CATS = savedCategories;
+      
+      console.log('✅ DRE categorias carregadas do Firebase:', savedCategories.length, 'categorias');
+      
+      // Salvar versão no localStorage para cache
+      localStorage.setItem('dre_cats_version', doc.data().updatedAt?.toMillis() || Date.now());
+      localStorage.setItem('dre_cats_cache', JSON.stringify(savedCategories));
+      
+      return true;
+    } else {
+      console.log('📋 Usando categorias padrão do código');
+      return false;
+    }
+  } catch (err) {
+    console.error('❌ Erro ao carregar DRE config do Firebase:', err);
+    return false;
+  }
+}
+
+// ✅ CARREGAR automaticamente ao iniciar
+if (typeof db !== 'undefined') {
+  loadDREConfigFromFirebase().then(loaded => {
+    if (loaded) {
+      // Se carregou do Firebase, recarregar elementos que dependem de DRE_CATS
+      console.log('🔄 DRE_CATS atualizado do Firebase');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// FIM DO CÓDIGO - Adicione isto logo após a definição de DRE_CATS
+// ═══════════════════════════════════════════════════════════════════════
 
 function dreInitPage() {
   // Fill year selector
