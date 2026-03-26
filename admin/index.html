@@ -15,14 +15,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
-  <!-- Sortable.js -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
     
-    /* Login */
     .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .login-box { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; }
     .login-logo { text-align: center; margin-bottom: 32px; }
@@ -30,17 +26,14 @@
     .login-logo p { color: #94a3b8; font-size: 14px; }
     .login-form { display: flex; flex-direction: column; gap: 20px; }
     
-    /* Form */
     .form-group { margin-bottom: 0; }
     .form-label { display: block; font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; }
-    .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; font-family: inherit; }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #00f0c8; background: rgba(255,255,255,0.08); }
-    .form-textarea { resize: vertical; min-height: 80px; }
+    .form-input, .form-select { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; font-family: inherit; }
+    .form-input:focus, .form-select:focus { outline: none; border-color: #00f0c8; background: rgba(255,255,255,0.08); }
     .form-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
     
-    /* Buttons */
     .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .btn-primary { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; width: 100%; }
+    .btn-primary { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; }
     .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,240,200,0.3); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; }
@@ -49,65 +42,49 @@
     .icon-btn:hover { background: rgba(255,255,255,0.2); }
     .icon-btn.delete:hover { background: rgba(239,68,68,0.2); color: #ef4444; }
     
-    /* App */
     .app-container { padding: 20px; max-width: 1600px; margin: 0 auto; }
-    .header { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+    .header { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
     .header h1 { font-size: 28px; font-weight: 700; color: #00f0c8; display: flex; align-items: center; gap: 12px; }
-    .header-actions { display: flex; gap: 12px; align-items: center; }
-    .user-info { font-size: 13px; color: #94a3b8; margin-right: 12px; }
+    .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .user-info { font-size: 13px; color: #94a3b8; }
     
-    /* Stats */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .stat-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; }
     .stat-value { font-size: 36px; font-weight: 700; color: #00f0c8; margin-bottom: 4px; }
     .stat-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
     
-    /* Panel */
     .panel { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); }
     .panel-title { font-size: 18px; font-weight: 600; color: #00f0c8; display: flex; align-items: center; gap: 8px; }
     
-    /* Categories */
     .category-item { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; }
     .category-item:hover { background: rgba(255,255,255,0.12); border-color: rgba(0,240,200,0.4); }
-    .category-header { display: flex; align-items: center; justify-content: space-between; }
-    .category-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-    .category-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); }
-    .category-text { flex: 1; }
+    .category-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .category-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .category-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+    .category-text { flex: 1; min-width: 0; }
     .category-label { font-size: 16px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
-    .category-meta { font-size: 12px; color: #94a3b8; display: flex; gap: 12px; }
-    .category-actions { display: flex; gap: 8px; }
+    .category-meta { font-size: 12px; color: #94a3b8; display: flex; gap: 12px; flex-wrap: wrap; }
+    .category-actions { display: flex; gap: 8px; flex-shrink: 0; }
     .add-category-btn { width: 100%; padding: 16px; background: rgba(0,240,200,0.1); border: 2px dashed rgba(0,240,200,0.3); border-radius: 12px; color: #00f0c8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .add-category-btn:hover { background: rgba(0,240,200,0.15); border-color: rgba(0,240,200,0.5); }
     
-    /* Alert */
     .alert { padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px; animation: slideIn 0.3s ease-out; }
     .alert-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
     .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
     .alert-warning { background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; }
+    .alert-info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
     
-    /* Modal */
     .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.2s ease-out; }
-    .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; max-width: 800px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
+    .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; animation: slideUp 0.3s ease-out; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .modal-title { font-size: 24px; font-weight: 700; color: #00f0c8; }
     .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
     
-    /* Code Block */
-    .code-block { background: #0f172a; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; color: #00f0c8; overflow-x: auto; white-space: pre; margin: 16px 0; position: relative; }
-    .code-block-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-    .code-block-title { font-size: 14px; font-weight: 600; color: #94a3b8; font-family: -apple-system, sans-serif; }
-    .copy-btn { padding: 6px 12px; background: rgba(0,240,200,0.2); color: #00f0c8; border: 1px solid rgba(0,240,200,0.3); border-radius: 6px; font-size: 12px; cursor: pointer; transition: all 0.2s; font-family: -apple-system, sans-serif; }
-    .copy-btn:hover { background: rgba(0,240,200,0.3); }
-    .copy-btn.copied { background: rgba(34,197,94,0.2); color: #4ade80; border-color: rgba(34,197,94,0.3); }
-    
-    /* Animations */
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
-    .fade-in { animation: fadeIn 0.3s ease-out; }
     
-    /* Loading */
     .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #94a3b8; flex-direction: column; gap: 16px; }
     .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,240,200,0.2); border-top-color: #00f0c8; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -116,18 +93,18 @@
     
     .color-picker-group { display: flex; gap: 8px; align-items: center; }
     .color-preview { width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
+    
+    .sync-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .sync-badge.synced { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .sync-badge.dirty { background: rgba(251,146,60,0.2); color: #fb923c; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect } = React;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // FIREBASE CONFIG - MESMO DO FLUXA
-    // ═══════════════════════════════════════════════════════════════════════
-    
     const firebaseConfig = {
       apiKey: "AIzaSyBBkP2KaV189LaCk1lck4ni8kDqoRhgwLw",
       authDomain: "diagnostic-88787.firebaseapp.com",
@@ -144,56 +121,27 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // CATEGORIAS ATUAIS DO SISTEMA (do app.js linha 4799)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    const CURRENT_CATEGORIES = [
-      {id:'receita_bruta',            label:'Receita Bruta',                color:'#00e89b', icon:'💰'},
-      {id:'deducao_receita',          label:'Dedução de Receita',           color:'#f59e0b', icon:'➖'},
-      {id:'custo_variavel',           label:'CMV / Custo do Produto',       color:'#ef4444', icon:'📦'},
-      {id:'custo_variavel_comercial', label:'Custo Variável Comercial',     color:'#f97316', icon:'🤝'},
-      {id:'despesa_comercial',        label:'Despesa Comercial',            color:'#3b82f6', icon:'📣'},
-      {id:'despesa_pessoal',          label:'Despesa com Pessoal',          color:'#a855f7', icon:'👥'},
-      {id:'despesa_administrativa',   label:'Despesa Administrativa',       color:'#f59e0b', icon:'🏢'},
-      {id:'despesa_financeira',       label:'Despesa Financeira',           color:'#ef4444', icon:'🏦'},
-      {id:'imposto_lucro',            label:'Imposto s/ Lucro (IR/CSLL)',   color:'#dc2626', icon:'🏛'},
-      {id:'depreciacao',              label:'Depreciação / Amortização',    color:'#64748b', icon:'📉'},
-      {id:'receita_nao_operacional',  label:'Receita Não Operacional',      color:'#10b981', icon:'💎'},
-      {id:'ignorar',                  label:'Ignorar (total/subtotal)',     color:'#374151', icon:'🚫'},
-    ];
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // MAIN APP
-    // ═══════════════════════════════════════════════════════════════════════
-
     function App() {
       const [user, setUser] = useState(null);
       const [isAdmin, setIsAdmin] = useState(false);
       const [loading, setLoading] = useState(true);
-      const [checkingAdmin, setCheckingAdmin] = useState(false);
 
       useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
           setUser(user);
           
           if (user) {
-            // ✅ VERIFICAR SE É ADMIN
-            setCheckingAdmin(true);
             try {
               const userDoc = await db.collection('users').doc(user.uid).get();
               const isAdminUser = userDoc.exists && userDoc.data().isAdmin === true;
               setIsAdmin(isAdminUser);
               
               if (!isAdminUser) {
-                // NÃO É ADMIN - FAZER LOGOUT
                 await auth.signOut();
               }
             } catch (err) {
               console.error('Erro ao verificar admin:', err);
               await auth.signOut();
-            } finally {
-              setCheckingAdmin(false);
             }
           }
           
@@ -202,7 +150,7 @@
         return unsubscribe;
       }, []);
 
-      if (loading || checkingAdmin) {
+      if (loading) {
         return (
           <div className="loading">
             <div className="spinner"></div>
@@ -218,10 +166,6 @@
       return <DREAdmin user={user} />;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // LOGIN SCREEN
-    // ═══════════════════════════════════════════════════════════════════════
-
     function LoginScreen() {
       const [email, setEmail] = useState('');
       const [password, setPassword] = useState('');
@@ -235,20 +179,15 @@
 
         try {
           await auth.signInWithEmailAndPassword(email, password);
-          // Verificação de admin acontece no useEffect do App
         } catch (err) {
-          if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
-            setError('Email ou senha incorretos');
-          } else {
-            setError('Erro ao fazer login. Tente novamente.');
-          }
+          setError('Email ou senha incorretos, ou você não tem permissão de admin');
           setLoading(false);
         }
       };
 
       return (
         <div className="login-container">
-          <div className="login-box fade-in">
+          <div className="login-box">
             <div className="login-logo">
               <h1>🏗️ Admin DRE</h1>
               <p>Vital Diagnostic / Fluxa</p>
@@ -260,34 +199,15 @@
 
               <div className="form-group">
                 <label className="form-label">Email</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="seu@email.com"
-                  required
-                  autoFocus
-                />
+                <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@email.com" required autoFocus />
               </div>
 
               <div className="form-group">
                 <label className="form-label">Senha</label>
-                <input
-                  type="password"
-                  className="form-input"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
               </div>
 
-              <button 
-                type="submit" 
-                className="btn btn-primary"
-                disabled={loading}
-              >
+              <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Verificando...' : '🔐 Entrar como Admin'}
               </button>
             </form>
@@ -296,45 +216,35 @@
       );
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // DRE ADMIN MAIN
-    // ═══════════════════════════════════════════════════════════════════════
-
     function DREAdmin({ user }) {
       const [categories, setCategories] = useState([]);
       const [loadingCategories, setLoadingCategories] = useState(true);
       const [showCategoryModal, setShowCategoryModal] = useState(false);
-      const [showCodeModal, setShowCodeModal] = useState(false);
       const [editingCategory, setEditingCategory] = useState(null);
       const [alert, setAlert] = useState(null);
       const [isDirty, setIsDirty] = useState(false);
       const [saving, setSaving] = useState(false);
 
-      // ✅ CARREGAR CATEGORIAS ATUAIS
       useEffect(() => {
-        loadCurrentCategories();
+        loadCategories();
       }, []);
 
-      const loadCurrentCategories = async () => {
+      const loadCategories = async () => {
         setLoadingCategories(true);
         try {
-          // Tentar carregar do Firestore primeiro
           const doc = await db.collection('system').doc('dre-admin-config').get();
           
           if (doc.exists && doc.data().categories && doc.data().categories.length > 0) {
-            // Tem config salva - usar ela
             setCategories(doc.data().categories);
-            showAlert('✅ Categorias carregadas do sistema!', 'success');
+            showAlert('✅ Categorias carregadas do Firebase (sistema atual)', 'success');
           } else {
-            // Não tem config salva - usar as categorias atuais do app.js
-            setCategories(CURRENT_CATEGORIES);
-            showAlert('📋 Mostrando categorias atuais do sistema', 'warning');
+            showAlert('⚠️ Nenhuma config salva. Adicione categorias ou copie do app.js', 'warning');
+            setCategories([]);
           }
         } catch (err) {
           console.error('Erro ao carregar:', err);
-          // Em caso de erro, usar as categorias atuais
-          setCategories(CURRENT_CATEGORIES);
-          showAlert('⚠️ Usando categorias padrão', 'warning');
+          showAlert('❌ Erro ao carregar categorias', 'error');
+          setCategories([]);
         } finally {
           setLoadingCategories(false);
         }
@@ -347,10 +257,15 @@
 
       const showAlert = (message, type = 'success') => {
         setAlert({ message, type });
-        setTimeout(() => setAlert(null), 4000);
+        setTimeout(() => setAlert(null), 5000);
       };
 
-      const handleSaveConfig = async () => {
+      const handleSave = async () => {
+        if (categories.length === 0) {
+          alert('Adicione pelo menos uma categoria antes de salvar!');
+          return;
+        }
+
         setSaving(true);
         try {
           await db.collection('system').doc('dre-admin-config').set({
@@ -360,20 +275,12 @@
           });
 
           setIsDirty(false);
-          showAlert('✅ Configuração salva! Clique em "Gerar Código" para aplicar.', 'success');
+          showAlert('🎉 SALVO! O app vai carregar automaticamente as novas categorias!', 'success');
         } catch (err) {
           showAlert('❌ Erro ao salvar: ' + err.message, 'error');
         } finally {
           setSaving(false);
         }
-      };
-
-      const handleGenerateCode = () => {
-        if (isDirty) {
-          alert('Salve as alterações antes de gerar o código!');
-          return;
-        }
-        setShowCodeModal(true);
       };
 
       const handleAddCategory = () => {
@@ -387,10 +294,6 @@
       };
 
       const handleDeleteCategory = (id) => {
-        if (id === 'ignorar') {
-          alert('Não pode remover a categoria "Ignorar"!');
-          return;
-        }
         if (!confirm('Remover esta categoria?')) return;
         setCategories(categories.filter(c => c.id !== id));
         setIsDirty(true);
@@ -403,96 +306,105 @@
             c.id === editingCategory.id ? { ...c, ...categoryData } : c
           ));
         } else {
-          setCategories([...categories.filter(c => c.id !== 'ignorar'), categoryData, categories.find(c => c.id === 'ignorar')]);
+          setCategories([...categories, categoryData]);
         }
         setIsDirty(true);
         setShowCategoryModal(false);
-        showAlert(editingCategory ? 'Categoria atualizada!' : 'Categoria adicionada!', 'success');
+        showAlert(editingCategory ? 'Categoria atualizada!' : 'Categoria adicionada!', 'info');
       };
 
       if (loadingCategories) {
         return (
           <div className="loading">
             <div className="spinner"></div>
-            <div>Carregando categorias atuais...</div>
+            <div>Carregando configuração...</div>
           </div>
         );
       }
 
       return (
         <div className="app-container">
-          <div className="header fade-in">
-            <h1><span>🏗️</span>Admin DRE - Categorias</h1>
+          <div className="header">
+            <h1><span>🏗️</span>Admin DRE</h1>
             <div className="header-actions">
               <span className="user-info">👤 {user.email}</span>
-              {isDirty && <span style={{ color: '#fb923c', fontSize: '14px', fontWeight: 600 }}>⚠️ NÃO SALVO</span>}
+              <span className={`sync-badge ${isDirty ? 'dirty' : 'synced'}`}>
+                {isDirty ? '⚠️ Não Salvo' : '✅ Sincronizado'}
+              </span>
               <button className="btn btn-secondary" onClick={handleLogout}>🚪 Sair</button>
-              <button className="btn btn-secondary" onClick={handleGenerateCode} disabled={isDirty}>
-                📦 Gerar Código
-              </button>
-              <button className="btn btn-primary" onClick={handleSaveConfig} disabled={saving || !isDirty}>
-                {saving ? '💾 Salvando...' : '💾 Salvar'}
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !isDirty}>
+                {saving ? '💾 Salvando...' : '💾 Salvar e Aplicar'}
               </button>
             </div>
           </div>
 
           {alert && (
-            <div className={`alert alert-${alert.type} fade-in`}>
-              <span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : '⚠️'}</span>
+            <div className={`alert alert-${alert.type}`}>
+              <span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : alert.type === 'info' ? 'ℹ️' : '⚠️'}</span>
               <span>{alert.message}</span>
             </div>
           )}
 
-          <div className="stats-grid fade-in">
+          <div className="stats-grid">
             <div className="stat-card">
-              <div className="stat-value">{categories.filter(c => c.id !== 'ignorar').length}</div>
-              <div className="stat-label">Categorias Ativas</div>
+              <div className="stat-value">{categories.length}</div>
+              <div className="stat-label">Categorias DRE</div>
             </div>
             <div className="stat-card">
               <div className="stat-value">{isDirty ? '⚠️' : '✅'}</div>
               <div className="stat-label">{isDirty ? 'Não Salvo' : 'Sincronizado'}</div>
             </div>
             <div className="stat-card">
-              <div className="stat-value">1</div>
-              <div className="stat-label">Bloco de Código</div>
+              <div className="stat-value">⚡</div>
+              <div className="stat-label">Atualização Instantânea</div>
             </div>
           </div>
 
-          <div className="panel fade-in">
+          <div className="panel">
             <div className="panel-header">
               <div className="panel-title">
                 <span>📊</span>
-                Categorias do DRE (Atuais do Sistema)
+                Categorias do DRE
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                Salvar → App atualiza automaticamente
               </div>
             </div>
 
-            {categories.map(cat => (
-              <div key={cat.id} className="category-item">
-                <div className="category-header">
-                  <div className="category-info">
-                    <div className="category-icon" style={{ background: cat.color + '22' }}>
-                      {cat.icon}
-                    </div>
-                    <div className="category-text">
-                      <div className="category-label">{cat.label}</div>
-                      <div className="category-meta">
-                        <span>🔖 {cat.id}</span>
-                        <span>🎨 {cat.color}</span>
+            {categories.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
+                <div style={{ fontSize: '16px', marginBottom: '8px', fontWeight: 600 }}>Nenhuma categoria configurada</div>
+                <div style={{ fontSize: '14px', marginBottom: '24px' }}>Adicione suas primeiras categorias para começar</div>
+              </div>
+            ) : (
+              categories.map(cat => (
+                <div key={cat.id} className="category-item">
+                  <div className="category-header">
+                    <div className="category-info">
+                      <div className="category-icon" style={{ background: cat.color + '22' }}>
+                        {cat.icon}
+                      </div>
+                      <div className="category-text">
+                        <div className="category-label">{cat.label}</div>
+                        <div className="category-meta">
+                          <span>🔖 {cat.id}</span>
+                          <span>🎨 {cat.color}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="category-actions">
-                    <button className="icon-btn" onClick={() => handleEditCategory(cat)}>✏️</button>
-                    {cat.id !== 'ignorar' && (
-                      <button className="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)}>🗑️</button>
-                    )}
+                    <div className="category-actions">
+                      <button className="icon-btn" onClick={() => handleEditCategory(cat)} title="Editar">✏️</button>
+                      <button className="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)} title="Remover">🗑️</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
 
             <button className="add-category-btn" onClick={handleAddCategory}>
-              <span>➕</span>Adicionar Nova Categoria
+              <span>➕</span>
+              Adicionar Nova Categoria
             </button>
           </div>
 
@@ -504,20 +416,9 @@
               existingIds={categories.map(c => c.id)}
             />
           )}
-
-          {showCodeModal && (
-            <CodeModal
-              categories={categories}
-              onClose={() => setShowCodeModal(false)}
-            />
-          )}
         </div>
       );
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // CATEGORY MODAL
-    // ═══════════════════════════════════════════════════════════════════════
 
     function CategoryModal({ category, onSave, onClose, existingIds }) {
       const [formData, setFormData] = useState(category || {
@@ -549,105 +450,40 @@
             </div>
 
             <div className="form-group">
-              <label className="form-label">ID *</label>
-              <input className="form-input" value={formData.id} onChange={e => handleChange('id', e.target.value)} disabled={!!category} />
+              <label className="form-label">ID da Categoria *</label>
+              <input className="form-input" value={formData.id} onChange={e => handleChange('id', e.target.value)} placeholder="receita_bruta" disabled={!!category} />
               <div className="form-hint">Identificador único (ex: despesa_terceiros)</div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Nome *</label>
-              <input className="form-input" value={formData.label} onChange={e => handleChange('label', e.target.value)} />
+              <label className="form-label">Nome da Categoria *</label>
+              <input className="form-input" value={formData.label} onChange={e => handleChange('label', e.target.value)} placeholder="Receita Bruta" />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Emoji</label>
-              <input className="form-input" value={formData.icon} onChange={e => handleChange('icon', e.target.value)} maxLength={2} />
+              <label className="form-label">Emoji/Ícone</label>
+              <input className="form-input" value={formData.icon} onChange={e => handleChange('icon', e.target.value)} placeholder="💰" maxLength={2} />
             </div>
 
             <div className="form-group">
               <label className="form-label">Cor</label>
               <div className="color-picker-group">
                 <div className="color-preview" style={{ background: formData.color }}></div>
-                <input type="color" value={formData.color} onChange={e => handleChange('color', e.target.value)} />
-                <input className="form-input" value={formData.color} onChange={e => handleChange('color', e.target.value)} style={{ flex: 1 }} />
+                <input type="color" value={formData.color} onChange={e => handleChange('color', e.target.value)} style={{ width: '60px', height: '40px', cursor: 'pointer', border: 'none', borderRadius: '8px' }} />
+                <input className="form-input" value={formData.color} onChange={e => handleChange('color', e.target.value)} placeholder="#fb923c" style={{ flex: 1 }} />
               </div>
             </div>
 
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleSubmit}>Salvar</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // CODE MODAL
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function CodeModal({ categories, onClose }) {
-      const [copiedBlock, setCopiedBlock] = useState(null);
-
-      const generateDRECatsCode = () => {
-        const cats = categories.map(c => (
-          `  {id:'${c.id}', label:'${c.label}', color:'${c.color}', icon:'${c.icon}'}`
-        )).join(',\n');
-        return `const DRE_CATS = [\n${cats},\n];`;
-      };
-
-      const handleCopy = (code, blockName) => {
-        navigator.clipboard.writeText(code);
-        setCopiedBlock(blockName);
-        setTimeout(() => setCopiedBlock(null), 2000);
-      };
-
-      const dreCatsCode = generateDRECatsCode();
-
-      return (
-        <div className="modal" onClick={onClose}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">📦 Código para Deploy</div>
-              <button className="icon-btn" onClick={onClose}>✖️</button>
-            </div>
-
-            <div style={{ marginBottom: '24px', padding: '16px', background: 'rgba(251,146,60,0.1)', border: '1px solid rgba(251,146,60,0.3)', borderRadius: '8px' }}>
-              <div style={{ fontWeight: 600, marginBottom: '8px' }}>📋 Instruções:</div>
-              <ol style={{ marginLeft: '20px', fontSize: '14px', lineHeight: '1.8' }}>
-                <li>Copie o bloco abaixo clicando em "Copiar"</li>
-                <li>Vá no GitHub → fluxa-main → app.js → Editar</li>
-                <li>Ctrl+F e procure: <code>const DRE_CATS = [</code></li>
-                <li>Encontrará na linha ~4799</li>
-                <li>Selecione TODO o bloco DRE_CATS (até o <code>];</code>)</li>
-                <li>Cole o código novo</li>
-                <li>Commit → Vercel faz deploy (~2 min)</li>
-                <li>Pronto! ✅</li>
-              </ol>
-            </div>
-
-            <div className="code-block-header">
-              <div className="code-block-title">📄 Array DRE_CATS (linhas ~4799-4812)</div>
-              <button 
-                className={`copy-btn ${copiedBlock === 'cats' ? 'copied' : ''}`}
-                onClick={() => handleCopy(dreCatsCode, 'cats')}
-              >
-                {copiedBlock === 'cats' ? '✅ Copiado!' : '📋 Copiar'}
+              <button className="btn btn-primary" onClick={handleSubmit}>
+                {category ? '💾 Salvar' : '➕ Adicionar'}
               </button>
             </div>
-            <div className="code-block">{dreCatsCode}</div>
-
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={onClose}>Fechar</button>
-            </div>
           </div>
         </div>
       );
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // RENDER
-    // ═══════════════════════════════════════════════════════════════════════
 
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
