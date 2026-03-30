@@ -21,21 +21,32 @@
     .login-box { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; }
     .login-logo { text-align: center; margin-bottom: 32px; }
     .login-logo-placeholder { width: 120px; height: 40px; background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); border-radius: 8px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0f172a; font-size: 20px; }
-    .login-logo h1 { font-size: 32px; font-weight: 700; color: #00f0c8; margin-bottom: 8px; }
-    .login-logo p { color: #94a3b8; font-size: 14px; }
     .login-form { display: flex; flex-direction: column; gap: 20px; }
     
     .form-group { margin-bottom: 0; }
     .form-label { display: block; font-size: 14px; font-weight: 600; color: #cbd5e1; margin-bottom: 8px; }
     .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; font-family: inherit; }
     .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #00f0c8; background: rgba(255,255,255,0.08); }
-    .form-textarea { min-height: 80px; resize: vertical; }
+    
+    .emoji-input-wrapper { position: relative; }
+    .emoji-input { width: 100%; padding: 12px; padding-right: 48px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 32px; text-align: center; cursor: pointer; }
+    .emoji-input:focus { outline: none; border-color: #00f0c8; }
+    .emoji-picker-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 6px; background: rgba(0,240,200,0.2); border: none; cursor: pointer; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .emoji-picker-btn:hover { background: rgba(0,240,200,0.3); transform: translateY(-50%) scale(1.1); }
+    
+    .emoji-picker { position: absolute; top: calc(100% + 8px); left: 0; right: 0; background: #1e293b; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 16px; z-index: 100; max-height: 300px; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+    .emoji-picker-search { width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 13px; margin-bottom: 12px; }
+    .emoji-picker-search:focus { outline: none; border-color: #00f0c8; }
+    .emoji-category-title { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; margin: 12px 0 8px 0; }
+    .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+    .emoji-item { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+    .emoji-item:hover { background: rgba(0,240,200,0.2); transform: scale(1.2); }
     
     .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-primary { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; }
     .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 16px rgba(0,240,200,0.3); }
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); padding: 10px 20px; }
+    .btn-secondary { background: rgba(255,255,255,0.1); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); }
     .btn-secondary:hover { background: rgba(255,255,255,0.15); }
     .btn-small { padding: 8px 16px; font-size: 13px; }
     .icon-btn { width: 32px; height: 32px; border: none; border-radius: 6px; background: rgba(255,255,255,0.1); color: #e2e8f0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
@@ -52,11 +63,6 @@
     .sync-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
     .sync-badge.synced { background: rgba(34,197,94,0.2); color: #4ade80; }
     .sync-badge.dirty { background: rgba(251,146,60,0.2); color: #fb923c; }
-    
-    .tabs { display: flex; gap: 8px; margin-bottom: 24px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px; flex-wrap: wrap; }
-    .tab { flex: 1; min-width: 150px; padding: 12px 20px; background: transparent; border: none; border-radius: 8px; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .tab:hover { color: #e2e8f0; background: rgba(255,255,255,0.05); }
-    .tab.active { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; }
     
     .panel { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 12px; }
@@ -80,13 +86,10 @@
     
     .formula-item-icon { font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
     .formula-item-name { flex: 1; font-size: 14px; font-weight: 500; color: #e2e8f0; }
-    .formula-item-op { min-width: 60px; }
     .op-badge { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; user-select: none; }
     .op-badge:hover { transform: scale(1.05); }
     .op-badge.add { background: rgba(34,197,94,0.2); color: #4ade80; }
     .op-badge.subtract { background: rgba(239,68,68,0.2); color: #f87171; }
-    .op-badge.multiply { background: rgba(147,51,234,0.2); color: #a78bfa; }
-    .op-badge.divide { background: rgba(59,130,246,0.2); color: #60a5fa; }
     
     .available-categories { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-top: 20px; }
     .available-title { font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 12px; }
@@ -129,7 +132,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBBkP2KaV189LaCk1lck4ni8kDqoRhgwLw",
@@ -143,6 +146,20 @@
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
+
+    // Emojis organizados por categoria
+    const EMOJI_CATEGORIES = {
+      'Dinheiro & Negócios': ['💰','💵','💴','💶','💷','💸','💳','💹','📈','📉','📊','🏦','🏢','💼','📋','📌','📍','🎯','🎪'],
+      'Símbolos & Matemática': ['➕','➖','✖️','➗','🟰','📐','📏','🔢','🔣','💯','🔺','🔻','◀️','▶️','🔼','🔽','⏫','⏬'],
+      'Comida & Bebida': ['🍕','🍔','🍟','🍿','🥤','☕','🍺','🍷','🍾','🥂','🍰','🧁','🍪','🍩','🎂','🍜','🍱','🍙'],
+      'Transporte': ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🚛','🚚','🚨','🚔','✈️','🛩️','🚁','🚀','🛸'],
+      'Pessoas & Corpo': ['👤','👥','👨','👩','👶','👴','👵','👮','👷','💂','👮','🕵️','👩‍⚕️','👨‍🌾','🧑‍🍳','👨‍🏫','👩‍💼','👨‍🔧'],
+      'Animais & Natureza': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🦆','🦅','🦋'],
+      'Objetos': ['📱','💻','⌨️','🖥️','🖨️','🖱️','💾','💿','📀','🎮','🕹️','📷','📹','🎥','📞','☎️','📟','📠'],
+      'Esportes': ['⚽','🏀','🏈','⚾','🎾','🏐','🏉','🥏','🎱','🏓','🏸','🏒','🏑','🥍','🏏','🥅','⛳','🏹'],
+      'Emoções': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗'],
+      'Diversos': ['🎨','🎬','🎤','🎧','🎼','🎹','🥁','🎺','🎷','🎸','🎻','🎲','♟️','🎯','🎳','🎮','🎰','🎪']
+    };
 
     const INITIAL_DATA = {
       categories: [
@@ -167,33 +184,69 @@
         {id:'lucro_liquido', label:'Lucro Líquido'},
       ],
       kpis: {
-        receita: {name:'Receita Bruta',short:'Receita',icon:'💰',unit:'R$',group:'tracao',goalDef:100000,hb:true,desc:'Receita total.',
-          numerator:[{id:'receita_bruta',operation:'add'}], denominator:[], operator:'value'},
-        cac: {name:'CAC %',short:'CAC%',icon:'🎯',unit:'%',group:'tracao',goalDef:8,hb:false,desc:'% da receita em despesas comerciais.',
-          numerator:[{id:'despesa_comercial',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        margbruta: {name:'Margem Bruta %',short:'Mg.Bruta',icon:'📦',unit:'%',group:'rentab',goalDef:45,hb:true,desc:'% após custo direto.',
-          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        margem: {name:'Margem Contribuição %',short:'Margem',icon:'💹',unit:'%',group:'rentab',goalDef:40,hb:true,desc:'% após custos variáveis.',
-          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        ebitda: {name:'EBITDA %',short:'EBITDA',icon:'📊',unit:'%',group:'rentab',goalDef:15,hb:true,desc:'Lucro operacional puro.',
-          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        despop: {name:'Desp. Op. %',short:'Desp.Op%',icon:'📋',unit:'%',group:'rentab',goalDef:35,hb:false,desc:'Peso despesas operacionais.',
-          numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        lucroliq: {name:'Lucro Líquido %',short:'Lucro Líq.',icon:'💰',unit:'%',group:'rentab',goalDef:10,hb:true,desc:'KPI mais importante.',
-          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'},{id:'depreciacao',operation:'subtract'},{id:'despesa_financeira',operation:'subtract'},{id:'imposto_lucro',operation:'subtract'},{id:'receita_nao_operacional',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        pessoal: {name:'Peso Pessoal %',short:'Pessoal%',icon:'👥',unit:'%',group:'rentab',goalDef:25,hb:false,desc:'% da receita em folha.',
-          numerator:[{id:'despesa_pessoal',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        admperc: {name:'Peso Adm %',short:'Adm%',icon:'🏢',unit:'%',group:'rentab',goalDef:12,hb:false,desc:'% em despesas administrativas.',
-          numerator:[{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        spread: {name:'Spread Financeiro %',short:'Spread Fin.',icon:'🏦',unit:'%',group:'rentab',goalDef:5,hb:false,desc:'Peso endividamento.',
-          numerator:[{id:'despesa_financeira',operation:'add'},{id:'imposto_lucro',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
-        eficiencia: {name:'Eficiência Op. %',short:'Eficiência',icon:'⚙️',unit:'%',group:'rentab',goalDef:65,hb:false,desc:'Quanto do Lucro Bruto é consumido.',
-          numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'lucro_bruto'}], operator:'divide'},
-        margseg: {name:'Margem Segurança %',short:'Mg.Seg.',icon:'🛡️',unit:'%',group:'rentab',goalDef:20,hb:true,desc:'Quanto a receita pode cair.',
-          numerator:[], denominator:[], operator:'custom'}
+        receita: {name:'Receita Bruta',short:'Receita',icon:'💰',unit:'R$',group:'tracao',goalDef:100000,hb:true,desc:'Receita total.',numerator:[{id:'receita_bruta',operation:'add'}],denominator:[],operator:'value'},
+        cac: {name:'CAC %',short:'CAC%',icon:'🎯',unit:'%',group:'tracao',goalDef:8,hb:false,desc:'% da receita em despesas comerciais.',numerator:[{id:'despesa_comercial',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        margbruta: {name:'Margem Bruta %',short:'Mg.Bruta',icon:'📦',unit:'%',group:'rentab',goalDef:45,hb:true,desc:'% após custo direto.',numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        margem: {name:'Margem Contribuição %',short:'Margem',icon:'💹',unit:'%',group:'rentab',goalDef:40,hb:true,desc:'% após custos variáveis.',numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        ebitda: {name:'EBITDA %',short:'EBITDA',icon:'📊',unit:'%',group:'rentab',goalDef:15,hb:true,desc:'Lucro operacional puro.',numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        despop: {name:'Desp. Op. %',short:'Desp.Op%',icon:'📋',unit:'%',group:'rentab',goalDef:35,hb:false,desc:'Peso despesas operacionais.',numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        lucroliq: {name:'Lucro Líquido %',short:'Lucro Líq.',icon:'💰',unit:'%',group:'rentab',goalDef:10,hb:true,desc:'KPI mais importante.',numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'},{id:'depreciacao',operation:'subtract'},{id:'despesa_financeira',operation:'subtract'},{id:'imposto_lucro',operation:'subtract'},{id:'receita_nao_operacional',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        pessoal: {name:'Peso Pessoal %',short:'Pessoal%',icon:'👥',unit:'%',group:'rentab',goalDef:25,hb:false,desc:'% da receita em folha.',numerator:[{id:'despesa_pessoal',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        admperc: {name:'Peso Adm %',short:'Adm%',icon:'🏢',unit:'%',group:'rentab',goalDef:12,hb:false,desc:'% em despesas administrativas.',numerator:[{id:'despesa_administrativa',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        spread: {name:'Spread Financeiro %',short:'Spread Fin.',icon:'🏦',unit:'%',group:'rentab',goalDef:5,hb:false,desc:'Peso endividamento.',numerator:[{id:'despesa_financeira',operation:'add'},{id:'imposto_lucro',operation:'add'}],denominator:[{id:'receita_liquida'}],operator:'divide'},
+        eficiencia: {name:'Eficiência Op. %',short:'Eficiência',icon:'⚙️',unit:'%',group:'rentab',goalDef:65,hb:false,desc:'Quanto do Lucro Bruto é consumido.',numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}],denominator:[{id:'lucro_bruto'}],operator:'divide'},
+        margseg: {name:'Margem Segurança %',short:'Mg.Seg.',icon:'🛡️',unit:'%',group:'rentab',goalDef:20,hb:true,desc:'Quanto a receita pode cair.',numerator:[],denominator:[],operator:'custom'}
       }
     };
 
+    // Componente seletor de emoji
+    function EmojiPicker({ value, onChange }) {
+      const [showPicker, setShowPicker] = useState(false);
+      const [search, setSearch] = useState('');
+      const pickerRef = useRef(null);
+
+      useEffect(() => {
+        const handleClickOutside = (e) => {
+          if (pickerRef.current && !pickerRef.current.contains(e.target)) setShowPicker(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+
+      const handleSelect = (emoji) => {
+        onChange(emoji);
+        setShowPicker(false);
+        setSearch('');
+      };
+
+      return (
+        <div className="emoji-input-wrapper" ref={pickerRef}>
+          <input className="emoji-input" value={value} onChange={(e) => onChange(e.target.value)} onClick={() => setShowPicker(!showPicker)} placeholder="😀" maxLength={2} />
+          <button type="button" className="emoji-picker-btn" onClick={() => setShowPicker(!showPicker)}>🎨</button>
+          {showPicker && (
+            <div className="emoji-picker">
+              <input className="emoji-picker-search" placeholder="Buscar emoji..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => {
+                const filtered = search ? emojis.filter(e => e.includes(search)) : emojis;
+                if (filtered.length === 0) return null;
+                return (
+                  <div key={category}>
+                    <div className="emoji-category-title">{category}</div>
+                    <div className="emoji-grid">
+                      {filtered.map(emoji => (
+                        <div key={emoji} className="emoji-item" onClick={() => handleSelect(emoji)}>{emoji}</div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // [Resto do código permanece igual - App, LoginScreen, DREAdmin, etc.]
     function App() {
       const [user, setUser] = useState(null);
       const [isAdmin, setIsAdmin] = useState(false);
@@ -246,8 +299,6 @@
           <div className="login-box">
             <div className="login-logo">
               <div className="login-logo-placeholder">FLUXA</div>
-              <h1>Admin Fluxa</h1>
-              <p>Sistema DRE</p>
             </div>
             <form className="login-form" onSubmit={handleLogin}>
               {error && <div className="error-message">{error}</div>}
@@ -309,7 +360,7 @@
             updatedBy: user.email
           }, { merge: true });
           setIsDirty(false);
-          showAlert('🎉 Salvo! Dashboard atualizado!', 'success');
+          showAlert('🎉 Salvo!', 'success');
         } catch (err) {
           showAlert('❌ Erro: ' + err.message, 'error');
         } finally {
@@ -326,7 +377,7 @@
         setConfig({ ...config, kpis: { ...config.kpis, [kpiId]: kpiData } });
         setIsDirty(true);
         setShowKPIModal(false);
-        showAlert('KPI atualizado! Clique em "Salvar" para aplicar.', 'info');
+        showAlert('KPI salvo!', 'info');
       };
 
       if (loading) return <div className="loading"><div className="spinner"></div><div>Carregando...</div></div>;
@@ -336,27 +387,22 @@
           <div className="header">
             <div className="header-logo">
               <div className="logo-placeholder">FLUXA</div>
-              <h1>Admin - Editor de Fórmulas</h1>
+              <h1>Editor de Fórmulas</h1>
             </div>
             <div className="header-actions">
               <span className="user-info">👤 {user.email}</span>
               <span className={`sync-badge ${isDirty ? 'dirty' : 'synced'}`}>{isDirty ? '⚠️ Modificado' : '✅ OK'}</span>
               <button className="btn btn-secondary" onClick={() => auth.signOut()}>Sair</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !isDirty}>{saving ? '💾 Salvando...' : '💾 Salvar Tudo'}</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !isDirty}>{saving ? '💾 Salvando...' : '💾 Salvar'}</button>
             </div>
           </div>
 
           {alert && <div className={`alert alert-${alert.type}`}><span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : 'ℹ️'}</span><span>{alert.message}</span></div>}
 
           <div className="panel">
-            <div className="panel-header"><div className="panel-title"><span>🎯</span>Editor Visual de Fórmulas KPIs</div></div>
+            <div className="panel-header"><div className="panel-title"><span>🎯</span>Editor Visual de Fórmulas</div></div>
 
-            <div className="info-box"><strong>💡 Como funciona:</strong><br/>
-            • Clique em "Editar Fórmula" para abrir o editor visual<br/>
-            • Monte o NUMERADOR: adicione categorias e escolha operação (+/−)<br/>
-            • Escolha o OPERADOR: ÷ × + − ou valor direto<br/>
-            • Monte o DENOMINADOR: adicione resultado ou categoria<br/>
-            • Veja o preview matemático em tempo real!</div>
+            <div className="info-box"><strong>💡 Dica do Emoji Picker:</strong> Quando adicionar categorias, clique no botão 🎨 ao lado do campo de emoji para abrir o seletor visual com centenas de emojis organizados por categoria!</div>
 
             {Object.entries(config.kpis).map(([kpiId, kpi]) => {
               const formulaText = generateFormulaText(kpi, config);
@@ -364,7 +410,7 @@
                 <div key={kpiId} className="kpi-card">
                   <div className="kpi-header">
                     <div><div className="kpi-title">{kpi.icon} {kpi.name}</div><div className="kpi-subtitle">{kpi.desc}</div></div>
-                    <button className="btn btn-secondary btn-small" onClick={() => handleEditKPI(kpiId)}>✏️ Editar Fórmula</button>
+                    <button className="btn btn-secondary btn-small" onClick={() => handleEditKPI(kpiId)}>✏️ Editar</button>
                   </div>
                   <div style={{ marginTop: '12px' }}><div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>Fórmula:</div><div className="formula-preview">{formulaText}</div></div>
                 </div>
@@ -383,11 +429,8 @@
         const cat = config.categories.find(c => c.id === item.id);
         return cat ? cat.label : 'Valor Direto';
       }
-      
       if (kpi.operator === 'custom') return 'Fórmula customizada';
-      
       let formula = '';
-      
       if (kpi.numerator.length > 0) {
         const parts = kpi.numerator.map(item => {
           const cat = config.categories.find(c => c.id === item.id);
@@ -396,9 +439,7 @@
         });
         formula = '(' + parts.join(' ') + ')';
       }
-      
       const opSymbol = kpi.operator === 'divide' ? '÷' : kpi.operator === 'multiply' ? '×' : kpi.operator === 'add' ? '+' : '−';
-      
       if (kpi.denominator.length > 0) {
         const denom = kpi.denominator[0];
         const result = config.results.find(r => r.id === denom.id);
@@ -406,9 +447,7 @@
         const denomLabel = result ? result.label : cat ? cat.label : denom.id;
         formula += ` ${opSymbol} ${denomLabel}`;
       }
-      
       if (kpi.unit === '%') formula += ' × 100';
-      
       return formula || 'Sem fórmula';
     }
 
@@ -416,30 +455,25 @@
       const [numerator, setNumerator] = useState(kpi.numerator || []);
       const [denominator, setDenominator] = useState(kpi.denominator || []);
       const [operator, setOperator] = useState(kpi.operator || 'divide');
+      const [icon, setIcon] = useState(kpi.icon || '📊');
 
       const addToNumerator = (catId) => {
         if (numerator.find(n => n.id === catId)) return;
         setNumerator([...numerator, { id: catId, operation: numerator.length === 0 ? 'add' : 'add' }]);
       };
 
-      const removeFromNumerator = (index) => {
-        setNumerator(numerator.filter((_, i) => i !== index));
-      };
-
+      const removeFromNumerator = (index) => setNumerator(numerator.filter((_, i) => i !== index));
       const toggleNumeratorOp = (index) => {
         const newNum = [...numerator];
         newNum[index].operation = newNum[index].operation === 'add' ? 'subtract' : 'add';
         setNumerator(newNum);
       };
 
-      const addToDenominator = (id, isResult = false) => {
-        setDenominator([{ id, isResult }]);
-      };
-
+      const addToDenominator = (id) => setDenominator([{ id }]);
       const clearDenominator = () => setDenominator([]);
 
       const handleSave = () => {
-        const kpiData = { ...kpi, numerator, denominator, operator };
+        const kpiData = { ...kpi, numerator, denominator, operator, icon };
         onSave(kpiId, kpiData);
       };
 
@@ -449,13 +483,21 @@
       return (
         <div className="modal" onClick={onClose}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><div className="modal-title">✏️ Editor: {kpi.name}</div><button className="icon-btn" onClick={onClose}>✖️</button></div>
+            <div className="modal-header">
+              <div className="modal-title">✏️ {kpi.name}</div>
+              <button className="icon-btn" onClick={onClose}>✖️</button>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Emoji / Ícone</label>
+              <EmojiPicker value={icon} onChange={setIcon} />
+            </div>
 
             <div className="formula-builder">
               <div className="formula-section">
                 <div className="formula-section-header">
                   <div className="formula-section-title"><span>📊</span>NUMERADOR</div>
-                  <span style={{fontSize:'12px',color:'#94a3b8'}}>Clique no +/− para mudar operação</span>
+                  <span style={{fontSize:'12px',color:'#94a3b8'}}>Clique +/− para mudar</span>
                 </div>
                 <div className="formula-items">
                   {numerator.length === 0 && <div style={{textAlign:'center',color:'#64748b',padding:'20px'}}>Adicione categorias abaixo</div>}
@@ -466,11 +508,7 @@
                       <div key={index} className="formula-item">
                         <div className="formula-item-icon" style={{background: cat.color + '22'}}>{cat.icon}</div>
                         <div className="formula-item-name">{cat.label}</div>
-                        <div className="formula-item-op">
-                          <span className={`op-badge ${item.operation}`} onClick={() => toggleNumeratorOp(index)}>
-                            {item.operation === 'add' ? '+' : '−'}
-                          </span>
-                        </div>
+                        <span className={`op-badge ${item.operation}`} onClick={() => toggleNumeratorOp(index)}>{item.operation === 'add' ? '+' : '−'}</span>
                         <button className="icon-btn delete" onClick={() => removeFromNumerator(index)}>✖</button>
                       </div>
                     );
@@ -480,11 +518,11 @@
 
               <div className="operator-section">
                 <div className="operator-selector">
-                  <button className={`operator-btn ${operator === 'divide' ? 'active' : ''}`} onClick={() => setOperator('divide')} title="Dividir">÷</button>
-                  <button className={`operator-btn ${operator === 'multiply' ? 'active' : ''}`} onClick={() => setOperator('multiply')} title="Multiplicar">×</button>
-                  <button className={`operator-btn ${operator === 'add' ? 'active' : ''}`} onClick={() => setOperator('add')} title="Somar">+</button>
-                  <button className={`operator-btn ${operator === 'subtract' ? 'active' : ''}`} onClick={() => setOperator('subtract')} title="Subtrair">−</button>
-                  <button className={`operator-btn ${operator === 'value' ? 'active' : ''}`} onClick={() => setOperator('value')} title="Valor direto">=</button>
+                  <button className={`operator-btn ${operator === 'divide' ? 'active' : ''}`} onClick={() => setOperator('divide')}>÷</button>
+                  <button className={`operator-btn ${operator === 'multiply' ? 'active' : ''}`} onClick={() => setOperator('multiply')}>×</button>
+                  <button className={`operator-btn ${operator === 'add' ? 'active' : ''}`} onClick={() => setOperator('add')}>+</button>
+                  <button className={`operator-btn ${operator === 'subtract' ? 'active' : ''}`} onClick={() => setOperator('subtract')}>−</button>
+                  <button className={`operator-btn ${operator === 'value' ? 'active' : ''}`} onClick={() => setOperator('value')}>=</button>
                 </div>
               </div>
 
@@ -495,15 +533,15 @@
                     {denominator.length > 0 && <button className="btn btn-small btn-secondary" onClick={clearDenominator}>Limpar</button>}
                   </div>
                   <div className="formula-items">
-                    {denominator.length === 0 && <div style={{textAlign:'center',color:'#64748b',padding:'20px'}}>Selecione um resultado ou categoria</div>}
+                    {denominator.length === 0 && <div style={{textAlign:'center',color:'#64748b',padding:'20px'}}>Selecione um resultado</div>}
                     {denominator.map((item, index) => {
                       const result = config.results.find(r => r.id === item.id);
                       const cat = config.categories.find(c => c.id === item.id);
                       const label = result ? result.label : cat ? cat.label : item.id;
-                      const icon = result ? '📊' : cat ? cat.icon : '❓';
+                      const icn = result ? '📊' : cat ? cat.icon : '❓';
                       return (
                         <div key={index} className="formula-item">
-                          <div className="formula-item-icon">{icon}</div>
+                          <div className="formula-item-icon">{icn}</div>
                           <div className="formula-item-name">{label}</div>
                           <button className="icon-btn delete" onClick={clearDenominator}>✖</button>
                         </div>
@@ -514,7 +552,7 @@
               )}
 
               <div className="available-categories">
-                <div className="available-title">📦 Categorias Disponíveis (clique para adicionar ao numerador)</div>
+                <div className="available-title">📦 Categorias (clique para adicionar)</div>
                 <div className="category-chips">
                   {config.categories.filter(c => c.id !== 'ignorar').map(cat => (
                     <div key={cat.id} className={`category-chip ${usedInNumerator.includes(cat.id) ? 'disabled' : ''}`} onClick={() => !usedInNumerator.includes(cat.id) && addToNumerator(cat.id)}>
@@ -526,10 +564,10 @@
 
               {operator !== 'value' && (
                 <div className="available-categories">
-                  <div className="available-title">🎯 Resultados Disponíveis (clique para usar no denominador)</div>
+                  <div className="available-title">🎯 Resultados (clique para denominador)</div>
                   <div className="category-chips">
                     {config.results.map(result => (
-                      <div key={result.id} className={`category-chip ${denominator.find(d => d.id === result.id) ? 'disabled' : ''}`} onClick={() => addToDenominator(result.id, true)}>
+                      <div key={result.id} className={`category-chip ${denominator.find(d => d.id === result.id) ? 'disabled' : ''}`} onClick={() => addToDenominator(result.id)}>
                         <span>📊</span><span>{result.label}</span>
                       </div>
                     ))}
@@ -538,14 +576,14 @@
               )}
 
               <div style={{marginTop:'24px'}}>
-                <div style={{fontSize:'13px',fontWeight:600,color:'#94a3b8',marginBottom:'12px'}}>📐 Preview da Fórmula:</div>
+                <div style={{fontSize:'13px',fontWeight:600,color:'#94a3b8',marginBottom:'12px'}}>📐 Preview:</div>
                 <div className="formula-preview">{preview}</div>
               </div>
             </div>
 
             <div className="modal-actions">
               <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
-              <button className="btn btn-primary" onClick={handleSave}>💾 Salvar Fórmula</button>
+              <button className="btn btn-primary" onClick={handleSave}>💾 Salvar</button>
             </div>
           </div>
         </div>
