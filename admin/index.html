@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin DRE - Sistema Completo v2</title>
+  <title>Admin Fluxa - Editor de Fórmulas</title>
   
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -13,8 +13,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
   
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
@@ -22,6 +20,7 @@
     .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
     .login-box { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 40px; width: 100%; max-width: 400px; }
     .login-logo { text-align: center; margin-bottom: 32px; }
+    .login-logo-placeholder { width: 120px; height: 40px; background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); border-radius: 8px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0f172a; font-size: 20px; }
     .login-logo h1 { font-size: 32px; font-weight: 700; color: #00f0c8; margin-bottom: 8px; }
     .login-logo p { color: #94a3b8; font-size: 14px; }
     .login-form { display: flex; flex-direction: column; gap: 20px; }
@@ -31,7 +30,6 @@
     .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #e2e8f0; font-size: 14px; font-family: inherit; }
     .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #00f0c8; background: rgba(255,255,255,0.08); }
     .form-textarea { min-height: 80px; resize: vertical; }
-    .form-hint { font-size: 12px; color: #94a3b8; margin-top: 4px; }
     
     .btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-primary { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; }
@@ -46,9 +44,14 @@
     
     .app-container { padding: 20px; max-width: 1600px; margin: 0 auto; }
     .header { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px 32px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-    .header h1 { font-size: 28px; font-weight: 700; color: #00f0c8; display: flex; align-items: center; gap: 12px; }
+    .header-logo { display: flex; align-items: center; gap: 16px; }
+    .logo-placeholder { width: 120px; height: 40px; background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0f172a; font-size: 18px; }
+    .header h1 { font-size: 24px; font-weight: 700; color: #e2e8f0; }
     .header-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
     .user-info { font-size: 13px; color: #94a3b8; }
+    .sync-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .sync-badge.synced { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .sync-badge.dirty { background: rgba(251,146,60,0.2); color: #fb923c; }
     
     .tabs { display: flex; gap: 8px; margin-bottom: 24px; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 8px; flex-wrap: wrap; }
     .tab { flex: 1; min-width: 150px; padding: 12px 20px; background: transparent; border: none; border-radius: 8px; color: #94a3b8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -59,46 +62,53 @@
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 12px; }
     .panel-title { font-size: 18px; font-weight: 600; color: #00f0c8; display: flex; align-items: center; gap: 8px; }
     
-    .category-item, .structure-item { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 16px; margin-bottom: 12px; transition: all 0.2s; cursor: grab; }
-    .category-item:hover, .structure-item:hover { background: rgba(255,255,255,0.12); border-color: rgba(0,240,200,0.4); }
-    .structure-item.result { background: rgba(100,200,255,0.1); border-left: 4px solid #64c8ff; cursor: default; }
-    .structure-item.dragging { opacity: 0.5; }
-    .category-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .category-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-    .category-icon { font-size: 24px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
-    .category-text { flex: 1; min-width: 0; }
-    .category-label { font-size: 16px; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; }
-    .category-meta { font-size: 12px; color: #94a3b8; display: flex; gap: 12px; flex-wrap: wrap; }
-    .category-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    
     .kpi-card { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
     .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; gap: 12px; }
     .kpi-title { font-size: 18px; font-weight: 600; color: #e2e8f0; }
     .kpi-subtitle { font-size: 12px; color: #94a3b8; margin-top: 4px; }
-    .kpi-meta { font-size: 12px; color: #94a3b8; }
-    .category-checkboxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; margin: 16px 0; }
-    .checkbox-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-    .checkbox-item:hover { background: rgba(255,255,255,0.08); }
-    .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; accent-color: #00f0c8; }
-    .checkbox-label { flex: 1; font-size: 14px; color: #e2e8f0; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-    .formula-preview { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 13px; color: #00f0c8; overflow-x: auto; line-height: 1.6; }
-    .formula-line { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-    .formula-op { color: #fb923c; font-weight: 700; min-width: 20px; }
-    .formula-cat { color: #e2e8f0; }
-    .formula-result { color: #60a5fa; font-weight: 600; }
     
-    .connector { display: flex; align-items: center; justify-content: center; margin: 8px 0; color: #64748b; font-size: 20px; }
-    .add-btn { width: 100%; padding: 16px; background: rgba(0,240,200,0.1); border: 2px dashed rgba(0,240,200,0.3); border-radius: 12px; color: #00f0c8; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .add-btn:hover { background: rgba(0,240,200,0.15); border-color: rgba(0,240,200,0.5); }
+    .formula-preview { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; font-family: 'Courier New', monospace; font-size: 14px; color: #00f0c8; line-height: 1.8; }
+    
+    .formula-builder { margin: 24px 0; }
+    .formula-section { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .formula-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .formula-section-title { font-size: 15px; font-weight: 600; color: #00f0c8; display: flex; align-items: center; gap: 8px; }
+    
+    .formula-items { display: flex; flex-direction: column; gap: 12px; min-height: 60px; }
+    .formula-item { display: flex; align-items: center; gap: 12px; padding: 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; transition: all 0.2s; }
+    .formula-item:hover { background: rgba(255,255,255,0.12); border-color: rgba(0,240,200,0.4); }
+    
+    .formula-item-icon { font-size: 20px; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; background: rgba(255,255,255,0.1); flex-shrink: 0; }
+    .formula-item-name { flex: 1; font-size: 14px; font-weight: 500; color: #e2e8f0; }
+    .formula-item-op { min-width: 60px; }
+    .op-badge { display: inline-flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; user-select: none; }
+    .op-badge:hover { transform: scale(1.05); }
+    .op-badge.add { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .op-badge.subtract { background: rgba(239,68,68,0.2); color: #f87171; }
+    .op-badge.multiply { background: rgba(147,51,234,0.2); color: #a78bfa; }
+    .op-badge.divide { background: rgba(59,130,246,0.2); color: #60a5fa; }
+    
+    .available-categories { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; margin-top: 20px; }
+    .available-title { font-size: 13px; font-weight: 600; color: #94a3b8; margin-bottom: 12px; }
+    .category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .category-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; font-size: 13px; color: #e2e8f0; cursor: pointer; transition: all 0.2s; }
+    .category-chip:hover { background: rgba(0,240,200,0.1); border-color: rgba(0,240,200,0.4); transform: translateY(-2px); }
+    .category-chip.disabled { opacity: 0.3; cursor: not-allowed; }
+    .category-chip.disabled:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); transform: none; }
+    
+    .operator-section { display: flex; align-items: center; justify-content: center; margin: 20px 0; }
+    .operator-selector { display: flex; gap: 12px; padding: 12px 20px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+    .operator-btn { width: 48px; height: 48px; border: 2px solid rgba(255,255,255,0.2); border-radius: 12px; background: rgba(255,255,255,0.05); color: #e2e8f0; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+    .operator-btn:hover { transform: scale(1.1); }
+    .operator-btn.active { background: linear-gradient(135deg, #00f0c8 0%, #00d4aa 100%); color: #0f172a; border-color: #00f0c8; }
     
     .alert { padding: 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px; animation: slideIn 0.3s ease-out; }
     .alert-success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
     .alert-error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; }
-    .alert-warning { background: rgba(251,146,60,0.15); border: 1px solid rgba(251,146,60,0.3); color: #fb923c; }
     .alert-info { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
     
     .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.2s ease-out; overflow-y: auto; }
-    .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; max-width: 700px; width: 100%; margin: 40px auto; animation: slideUp 0.3s ease-out; }
+    .modal-content { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 32px; max-width: 1000px; width: 100%; margin: 40px auto; animation: slideUp 0.3s ease-out; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .modal-title { font-size: 24px; font-weight: 700; color: #00f0c8; }
     .modal-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); flex-wrap: wrap; }
@@ -112,27 +122,14 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     
     .error-message { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: #f87171; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; }
-    .color-picker-group { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .color-preview { width: 40px; height: 40px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.2); }
-    .sync-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .sync-badge.synced { background: rgba(34,197,94,0.2); color: #4ade80; }
-    .sync-badge.dirty { background: rgba(251,146,60,0.2); color: #fb923c; }
-    
-    .operation-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; font-size: 16px; font-weight: 700; flex-shrink: 0; }
-    .operation-badge.add { background: rgba(34,197,94,0.2); color: #4ade80; }
-    .operation-badge.subtract { background: rgba(239,68,68,0.2); color: #f87171; }
-    .operation-badge.result { background: rgba(59,130,246,0.2); color: #60a5fa; }
-    
     .info-box { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 14px; color: #60a5fa; line-height: 1.6; }
-    .drag-handle { cursor: grab; padding: 4px; }
-    .drag-handle:active { cursor: grabbing; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect } = React;
 
     const firebaseConfig = {
       apiKey: "AIzaSyBBkP2KaV189LaCk1lck4ni8kDqoRhgwLw",
@@ -162,37 +159,38 @@
         {id:'receita_nao_operacional', label:'Receita Não Operacional', color:'#10b981', icon:'💎'},
         {id:'ignorar', label:'Ignorar (total/subtotal)', color:'#374151', icon:'🚫'},
       ],
-      structure: [
-        {id:'receita_bruta', type:'category', operation:'start'},
-        {id:'deducao_receita', type:'category', operation:'subtract'},
-        {id:'receita_liquida', type:'result', operation:'result', label:'Receita Líquida'},
-        {id:'custo_variavel', type:'category', operation:'subtract'},
-        {id:'lucro_bruto', type:'result', operation:'result', label:'Lucro Bruto'},
-        {id:'custo_variavel_comercial', type:'category', operation:'subtract'},
-        {id:'margem_contribuicao', type:'result', operation:'result', label:'Margem de Contribuição'},
-        {id:'despesa_comercial', type:'category', operation:'subtract'},
-        {id:'despesa_pessoal', type:'category', operation:'subtract'},
-        {id:'despesa_administrativa', type:'category', operation:'subtract'},
-        {id:'ebitda', type:'result', operation:'result', label:'EBITDA'},
-        {id:'depreciacao', type:'category', operation:'subtract'},
-        {id:'despesa_financeira', type:'category', operation:'subtract'},
-        {id:'imposto_lucro', type:'category', operation:'subtract'},
-        {id:'receita_nao_operacional', type:'category', operation:'add'},
-        {id:'lucro_liquido', type:'result', operation:'result', label:'Lucro Líquido'},
+      results: [
+        {id:'receita_liquida', label:'Receita Líquida'},
+        {id:'lucro_bruto', label:'Lucro Bruto'},
+        {id:'margem_contribuicao', label:'Margem de Contribuição'},
+        {id:'ebitda', label:'EBITDA'},
+        {id:'lucro_liquido', label:'Lucro Líquido'},
       ],
       kpis: {
-        receita: {name:'Receita Bruta',short:'Receita',icon:'💰',unit:'R$',group:'tracao',goalDef:100000,hb:true,formula:'Faturamento bruto do período',desc:'Receita total.',categories:['receita_bruta']},
-        cac: {name:'CAC (Despesa Comercial %)',short:'CAC%',icon:'🎯',unit:'%',group:'tracao',goalDef:8,hb:false,formula:'Despesa Comercial ÷ Receita Líquida × 100',desc:'% da receita em despesas comerciais.',categories:['despesa_comercial']},
-        margbruta: {name:'Margem Bruta %',short:'Mg.Bruta',icon:'📦',unit:'%',group:'rentab',goalDef:45,hb:true,formula:'(Receita Líquida − CMV) ÷ Receita Líquida × 100',desc:'% após custo direto.',categories:['receita_bruta','deducao_receita','custo_variavel']},
-        margem: {name:'Margem de Contribuição %',short:'Margem',icon:'💹',unit:'%',group:'rentab',goalDef:40,hb:true,formula:'(Lucro Bruto − Custo Variável Comercial) ÷ Receita Líquida × 100',desc:'% após custos variáveis.',categories:['receita_bruta','deducao_receita','custo_variavel','custo_variavel_comercial']},
-        ebitda: {name:'EBITDA %',short:'EBITDA',icon:'📊',unit:'%',group:'rentab',goalDef:15,hb:true,formula:'(MC − Desp. Comercial − Pessoal − Adm.) ÷ Receita Líquida × 100',desc:'Lucro operacional puro.',categories:['receita_bruta','deducao_receita','custo_variavel','custo_variavel_comercial','despesa_comercial','despesa_pessoal','despesa_administrativa']},
-        despop: {name:'Desp. Op. sobre Receita %',short:'Desp.Op%',icon:'📋',unit:'%',group:'rentab',goalDef:35,hb:false,formula:'(Desp. Comercial + Pessoal + Adm.) ÷ Receita Líquida × 100',desc:'Peso despesas operacionais.',categories:['despesa_comercial','despesa_pessoal','despesa_administrativa']},
-        lucroliq: {name:'Lucro Líquido %',short:'Lucro Líq.',icon:'💰',unit:'%',group:'rentab',goalDef:10,hb:true,formula:'(EBITDA − Depreciação − Desp. Financeiras − IR/CSLL + Receita Não Op.) ÷ Receita Líquida × 100',desc:'KPI mais importante.',categories:['receita_bruta','deducao_receita','custo_variavel','custo_variavel_comercial','despesa_comercial','despesa_pessoal','despesa_administrativa','depreciacao','despesa_financeira','imposto_lucro','receita_nao_operacional']},
-        pessoal: {name:'Peso do Pessoal %',short:'Pessoal%',icon:'👥',unit:'%',group:'rentab',goalDef:25,hb:false,formula:'Despesas com Pessoal ÷ Receita Líquida × 100',desc:'% da receita em folha.',categories:['despesa_pessoal']},
-        admperc: {name:'Peso Administrativo %',short:'Adm%',icon:'🏢',unit:'%',group:'rentab',goalDef:12,hb:false,formula:'Despesas Administrativas ÷ Receita Líquida × 100',desc:'% em despesas administrativas.',categories:['despesa_administrativa']},
-        spread: {name:'Spread Financeiro %',short:'Spread Fin.',icon:'🏦',unit:'%',group:'rentab',goalDef:5,hb:false,formula:'Desp. Financeiras + IR ÷ Receita Líquida × 100',desc:'Peso endividamento.',categories:['despesa_financeira','imposto_lucro']},
-        eficiencia: {name:'Índice de Eficiência Op. %',short:'Eficiência',icon:'⚙️',unit:'%',group:'rentab',goalDef:65,hb:false,formula:'Desp. Operacionais ÷ Lucro Bruto × 100',desc:'Quanto do Lucro Bruto é consumido.',categories:['despesa_comercial','despesa_pessoal','despesa_administrativa']},
-        margseg: {name:'Margem de Segurança Op. %',short:'Mg.Segurança',icon:'🛡️',unit:'%',group:'rentab',goalDef:20,hb:true,formula:'(Receita Bruta − Ponto de Equilíbrio) ÷ Receita Bruta × 100',desc:'Quanto a receita pode cair.',categories:[]}
+        receita: {name:'Receita Bruta',short:'Receita',icon:'💰',unit:'R$',group:'tracao',goalDef:100000,hb:true,desc:'Receita total.',
+          numerator:[{id:'receita_bruta',operation:'add'}], denominator:[], operator:'value'},
+        cac: {name:'CAC %',short:'CAC%',icon:'🎯',unit:'%',group:'tracao',goalDef:8,hb:false,desc:'% da receita em despesas comerciais.',
+          numerator:[{id:'despesa_comercial',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        margbruta: {name:'Margem Bruta %',short:'Mg.Bruta',icon:'📦',unit:'%',group:'rentab',goalDef:45,hb:true,desc:'% após custo direto.',
+          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        margem: {name:'Margem Contribuição %',short:'Margem',icon:'💹',unit:'%',group:'rentab',goalDef:40,hb:true,desc:'% após custos variáveis.',
+          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        ebitda: {name:'EBITDA %',short:'EBITDA',icon:'📊',unit:'%',group:'rentab',goalDef:15,hb:true,desc:'Lucro operacional puro.',
+          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        despop: {name:'Desp. Op. %',short:'Desp.Op%',icon:'📋',unit:'%',group:'rentab',goalDef:35,hb:false,desc:'Peso despesas operacionais.',
+          numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        lucroliq: {name:'Lucro Líquido %',short:'Lucro Líq.',icon:'💰',unit:'%',group:'rentab',goalDef:10,hb:true,desc:'KPI mais importante.',
+          numerator:[{id:'receita_bruta',operation:'add'},{id:'deducao_receita',operation:'subtract'},{id:'custo_variavel',operation:'subtract'},{id:'custo_variavel_comercial',operation:'subtract'},{id:'despesa_comercial',operation:'subtract'},{id:'despesa_pessoal',operation:'subtract'},{id:'despesa_administrativa',operation:'subtract'},{id:'depreciacao',operation:'subtract'},{id:'despesa_financeira',operation:'subtract'},{id:'imposto_lucro',operation:'subtract'},{id:'receita_nao_operacional',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        pessoal: {name:'Peso Pessoal %',short:'Pessoal%',icon:'👥',unit:'%',group:'rentab',goalDef:25,hb:false,desc:'% da receita em folha.',
+          numerator:[{id:'despesa_pessoal',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        admperc: {name:'Peso Adm %',short:'Adm%',icon:'🏢',unit:'%',group:'rentab',goalDef:12,hb:false,desc:'% em despesas administrativas.',
+          numerator:[{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        spread: {name:'Spread Financeiro %',short:'Spread Fin.',icon:'🏦',unit:'%',group:'rentab',goalDef:5,hb:false,desc:'Peso endividamento.',
+          numerator:[{id:'despesa_financeira',operation:'add'},{id:'imposto_lucro',operation:'add'}], denominator:[{id:'receita_liquida'}], operator:'divide'},
+        eficiencia: {name:'Eficiência Op. %',short:'Eficiência',icon:'⚙️',unit:'%',group:'rentab',goalDef:65,hb:false,desc:'Quanto do Lucro Bruto é consumido.',
+          numerator:[{id:'despesa_comercial',operation:'add'},{id:'despesa_pessoal',operation:'add'},{id:'despesa_administrativa',operation:'add'}], denominator:[{id:'lucro_bruto'}], operator:'divide'},
+        margseg: {name:'Margem Segurança %',short:'Mg.Seg.',icon:'🛡️',unit:'%',group:'rentab',goalDef:20,hb:true,desc:'Quanto a receita pode cair.',
+          numerator:[], denominator:[], operator:'custom'}
       }
     };
 
@@ -238,7 +236,7 @@
         try {
           await auth.signInWithEmailAndPassword(email, password);
         } catch (err) {
-          setError('Email ou senha incorretos, ou você não tem permissão de admin');
+          setError('Email ou senha incorretos');
           setLoading(false);
         }
       };
@@ -247,9 +245,9 @@
         <div className="login-container">
           <div className="login-box">
             <div className="login-logo">
-              <h1>🏗️ Admin Sistema DRE</h1>
-              <p>Vital Diagnostic / Fluxa</p>
-              <p style={{ marginTop: '8px', fontSize: '12px', color: '#64748b' }}>Apenas administradores</p>
+              <div className="login-logo-placeholder">FLUXA</div>
+              <h1>Admin Fluxa</h1>
+              <p>Sistema DRE</p>
             </div>
             <form className="login-form" onSubmit={handleLogin}>
               {error && <div className="error-message">{error}</div>}
@@ -262,7 +260,7 @@
                 <input type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required />
               </div>
               <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Verificando...' : '🔐 Entrar como Admin'}
+                {loading ? 'Verificando...' : '🔐 Entrar'}
               </button>
             </form>
           </div>
@@ -271,15 +269,12 @@
     }
 
     function DREAdmin({ user }) {
-      const [activeTab, setActiveTab] = useState('categories');
       const [config, setConfig] = useState(INITIAL_DATA);
       const [loading, setLoading] = useState(true);
       const [alert, setAlert] = useState(null);
       const [isDirty, setIsDirty] = useState(false);
       const [saving, setSaving] = useState(false);
-      const [showCategoryModal, setShowCategoryModal] = useState(false);
       const [showKPIModal, setShowKPIModal] = useState(false);
-      const [editingCategory, setEditingCategory] = useState(null);
       const [editingKPI, setEditingKPI] = useState(null);
 
       useEffect(() => { loadConfig(); }, []);
@@ -288,18 +283,12 @@
         setLoading(true);
         try {
           const doc = await db.collection('system').doc('dre-admin-config').get();
-          if (doc.exists && doc.data().categories) {
+          if (doc.exists && doc.data().kpis) {
             const data = doc.data();
-            setConfig({ categories: data.categories || INITIAL_DATA.categories, structure: data.structure || INITIAL_DATA.structure, kpis: data.kpis || INITIAL_DATA.kpis });
-            showAlert('✅ Config carregada', 'success');
-          } else {
-            setConfig(INITIAL_DATA);
-            showAlert('📋 Config padrão', 'warning');
+            setConfig({ ...INITIAL_DATA, kpis: data.kpis || INITIAL_DATA.kpis });
           }
         } catch (err) {
           console.error('Erro:', err);
-          setConfig(INITIAL_DATA);
-          showAlert('⚠️ Erro ao carregar', 'warning');
         } finally {
           setLoading(false);
         }
@@ -315,13 +304,12 @@
         try {
           await db.collection('system').doc('dre-admin-config').set({
             categories: config.categories,
-            structure: config.structure,
             kpis: config.kpis,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             updatedBy: user.email
-          });
+          }, { merge: true });
           setIsDirty(false);
-          showAlert('🎉 SALVO! Sistema atualizado!', 'success');
+          showAlert('🎉 Salvo! Dashboard atualizado!', 'success');
         } catch (err) {
           showAlert('❌ Erro: ' + err.message, 'error');
         } finally {
@@ -329,301 +317,236 @@
         }
       };
 
-      if (loading) return <div className="loading"><div className="spinner"></div><div>Carregando...</div></div>;
-
-      return (
-        <div className="app-container">
-          <div className="header">
-            <h1><span>🏗️</span>Admin Sistema DRE</h1>
-            <div className="header-actions">
-              <span className="user-info">👤 {user.email}</span>
-              <span className={`sync-badge ${isDirty ? 'dirty' : 'synced'}`}>{isDirty ? '⚠️ Não Salvo' : '✅ Sincronizado'}</span>
-              <button className="btn btn-secondary" onClick={() => auth.signOut()}>🚪 Sair</button>
-              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !isDirty}>{saving ? '💾 Salvando...' : '💾 Salvar Tudo'}</button>
-            </div>
-          </div>
-
-          {alert && <div className={`alert alert-${alert.type}`}><span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : alert.type === 'info' ? 'ℹ️' : '⚠️'}</span><span>{alert.message}</span></div>}
-
-          <div className="tabs">
-            <button className={`tab ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}><span>📊</span>Categorias DRE</button>
-            <button className={`tab ${activeTab === 'structure' ? 'active' : ''}`} onClick={() => setActiveTab('structure')}><span>🔗</span>Estrutura DRE</button>
-            <button className={`tab ${activeTab === 'kpis' ? 'active' : ''}`} onClick={() => setActiveTab('kpis')}><span>🎯</span>KPIs (12 Total)</button>
-          </div>
-
-          {activeTab === 'categories' && <CategoriesTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} showModal={showCategoryModal} setShowModal={setShowCategoryModal} editingCategory={editingCategory} setEditingCategory={setEditingCategory} />}
-          {activeTab === 'structure' && <StructureTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} />}
-          {activeTab === 'kpis' && <KPIsTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} showModal={showKPIModal} setShowModal={setShowKPIModal} editingKPI={editingKPI} setEditingKPI={setEditingKPI} />}
-        </div>
-      );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // CATEGORIAS (igual ao anterior)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function CategoriesTab({ config, setConfig, setIsDirty, showAlert, showModal, setShowModal, editingCategory, setEditingCategory }) {
-      const handleAddCategory = () => { setEditingCategory(null); setShowModal(true); };
-      const handleEditCategory = (cat) => { setEditingCategory(cat); setShowModal(true); };
-      const handleDeleteCategory = (id) => {
-        if (id === 'ignorar') { alert('Não pode remover "Ignorar"!'); return; }
-        if (!confirm('Remover esta categoria?')) return;
-        setConfig({ ...config, categories: config.categories.filter(c => c.id !== id), structure: config.structure.filter(s => s.id !== id) });
-        setIsDirty(true);
-        showAlert('Categoria removida!', 'warning');
-      };
-      const handleSaveCategory = (categoryData) => {
-        if (editingCategory) {
-          setConfig({ ...config, categories: config.categories.map(c => c.id === editingCategory.id ? { ...c, ...categoryData } : c) });
-        } else {
-          setConfig({ ...config, categories: [...config.categories, categoryData] });
-        }
-        setIsDirty(true);
-        setShowModal(false);
-        showAlert(editingCategory ? 'Categoria atualizada!' : 'Categoria adicionada!', 'info');
-      };
-
-      return (
-        <div className="panel">
-          <div className="panel-header"><div className="panel-title"><span>📊</span>Categorias do DRE</div></div>
-          {config.categories.map(cat => (
-            <div key={cat.id} className="category-item">
-              <div className="category-header">
-                <div className="category-info">
-                  <div className="category-icon" style={{ background: cat.color + '22' }}>{cat.icon}</div>
-                  <div className="category-text">
-                    <div className="category-label">{cat.label}</div>
-                    <div className="category-meta"><span>🔖 {cat.id}</span><span>🎨 {cat.color}</span></div>
-                  </div>
-                </div>
-                <div className="category-actions">
-                  <button className="icon-btn" onClick={() => handleEditCategory(cat)}>✏️</button>
-                  {cat.id !== 'ignorar' && <button className="icon-btn delete" onClick={() => handleDeleteCategory(cat.id)}>🗑️</button>}
-                </div>
-              </div>
-            </div>
-          ))}
-          <button className="add-btn" onClick={handleAddCategory}><span>➕</span>Adicionar Nova Categoria</button>
-          {showModal && <CategoryModal category={editingCategory} onSave={handleSaveCategory} onClose={() => setShowModal(false)} existingIds={config.categories.map(c => c.id)} />}
-        </div>
-      );
-    }
-
-    function CategoryModal({ category, onSave, onClose, existingIds }) {
-      const [formData, setFormData] = useState(category || { id: '', label: '', icon: '📌', color: '#fb923c' });
-      const handleSubmit = () => {
-        if (!formData.id || !formData.label) { alert('Preencha ID e Nome!'); return; }
-        if (!category && existingIds.includes(formData.id)) { alert('ID já existe!'); return; }
-        onSave(formData);
-      };
-
-      return (
-        <div className="modal" onClick={onClose}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <div className="modal-header"><div className="modal-title">{category ? '✏️ Editar' : '➕ Nova'} Categoria</div><button className="icon-btn" onClick={onClose}>✖️</button></div>
-            <div className="form-group"><label className="form-label">ID *</label><input className="form-input" value={formData.id} onChange={e => setFormData({ ...formData, id: e.target.value })} disabled={!!category} /></div>
-            <div className="form-group"><label className="form-label">Nome *</label><input className="form-input" value={formData.label} onChange={e => setFormData({ ...formData, label: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Emoji</label><input className="form-input" value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} maxLength={2} /></div>
-            <div className="form-group"><label className="form-label">Cor</label><div className="color-picker-group"><div className="color-preview" style={{ background: formData.color }}></div><input type="color" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} style={{ width: '60px', height: '40px', cursor: 'pointer', border: 'none', borderRadius: '8px' }} /><input className="form-input" value={formData.color} onChange={e => setFormData({ ...formData, color: e.target.value })} style={{ flex: 1 }} /></div></div>
-            <div className="modal-actions"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={handleSubmit}>Salvar</button></div>
-          </div>
-        </div>
-      );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ESTRUTURA DRE - EDITÁVEL COM DRAG & DROP
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function StructureTab({ config, setConfig, setIsDirty, showAlert }) {
-      const containerRef = useRef(null);
-
-      useEffect(() => {
-        if (!containerRef.current) return;
-        const sortable = Sortable.create(containerRef.current, {
-          animation: 150,
-          handle: '.drag-handle',
-          filter: '.structure-item.result',
-          onEnd: (evt) => {
-            const newStructure = [...config.structure];
-            const [moved] = newStructure.splice(evt.oldIndex, 1);
-            newStructure.splice(evt.newIndex, 0, moved);
-            setConfig({ ...config, structure: newStructure });
-            setIsDirty(true);
-            showAlert('Ordem alterada!', 'info');
-          }
-        });
-        return () => sortable.destroy();
-      }, [config.structure]);
-
-      const handleToggleOperation = (index) => {
-        const step = config.structure[index];
-        if (step.type === 'result') return;
-        const newOp = step.operation === 'add' ? 'subtract' : step.operation === 'subtract' ? 'start' : 'add';
-        const newStructure = [...config.structure];
-        newStructure[index] = { ...step, operation: newOp };
-        setConfig({ ...config, structure: newStructure });
-        setIsDirty(true);
-        showAlert('Operação alterada!', 'info');
-      };
-
-      const getCategoryById = (id) => config.categories.find(c => c.id === id);
-
-      return (
-        <div className="panel">
-          <div className="panel-header">
-            <div className="panel-title"><span>🔗</span>Estrutura do DRE (Editável)</div>
-            <div style={{ fontSize: '12px', color: '#94a3b8' }}>Arraste para reordenar • Clique na operação (+/-) para mudar</div>
-          </div>
-
-          <div className="info-box">
-            <strong>💡 Como editar:</strong><br/>
-            • Arraste os itens para reordenar<br/>
-            • Clique no círculo (+/-) para mudar a operação<br/>
-            • Resultados (=) não podem ser movidos
-          </div>
-
-          <div ref={containerRef}>
-            {config.structure.map((step, index) => {
-              if (step.type === 'result') {
-                return (
-                  <div key={step.id}>
-                    {index > 0 && <div className="connector">↓</div>}
-                    <div className="structure-item result">
-                      <div className="category-header">
-                        <div className="category-info">
-                          <div className="category-icon operation-badge result">=</div>
-                          <div className="category-text">
-                            <div className="category-label">{step.label}</div>
-                            <div className="category-meta"><span>📊 Resultado calculado</span><span>🔖 {step.id}</span></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-              const category = getCategoryById(step.id);
-              if (!category) return null;
-              return (
-                <div key={step.id}>
-                  {index > 0 && <div className="connector">↓</div>}
-                  <div className="structure-item">
-                    <div className="category-header">
-                      <div className="drag-handle" style={{ fontSize: '20px', color: '#94a3b8' }}>⠿</div>
-                      <div className="category-info">
-                        <div className={`operation-badge ${step.operation === 'add' ? 'add' : step.operation === 'subtract' ? 'subtract' : 'result'}`} onClick={() => handleToggleOperation(index)} style={{ cursor: 'pointer' }}>
-                          {step.operation === 'add' ? '+' : step.operation === 'subtract' ? '−' : '='}
-                        </div>
-                        <div className="category-icon" style={{ background: category.color + '22' }}>{category.icon}</div>
-                        <div className="category-text">
-                          <div className="category-label">{category.label}</div>
-                          <div className="category-meta"><span>{step.operation === 'add' ? '➕ Soma' : step.operation === 'subtract' ? '➖ Subtrai' : '🎯 Inicia'}</span><span>🔖 {category.id}</span></div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // KPIs - COM FÓRMULA DINÂMICA
-    // ═══════════════════════════════════════════════════════════════════════
-
-    function KPIsTab({ config, setConfig, setIsDirty, showAlert, showModal, setShowModal, editingKPI, setEditingKPI }) {
       const handleEditKPI = (kpiId) => {
         setEditingKPI({ id: kpiId, ...config.kpis[kpiId] });
-        setShowModal(true);
+        setShowKPIModal(true);
       };
 
       const handleSaveKPI = (kpiId, kpiData) => {
         setConfig({ ...config, kpis: { ...config.kpis, [kpiId]: kpiData } });
         setIsDirty(true);
-        setShowModal(false);
-        showAlert('KPI atualizado!', 'info');
+        setShowKPIModal(false);
+        showAlert('KPI atualizado! Clique em "Salvar" para aplicar.', 'info');
       };
 
-      const generateDynamicFormula = (kpiId, kpi) => {
-        if (!kpi.categories || kpi.categories.length === 0) return 'Nenhuma categoria selecionada';
-        
-        const lines = [];
-        kpi.categories.forEach(catId => {
-          const cat = config.categories.find(c => c.id === catId);
-          const structStep = config.structure.find(s => s.id === catId);
-          if (cat && structStep) {
-            const op = structStep.operation === 'add' ? '+' : structStep.operation === 'subtract' ? '−' : '';
-            lines.push(`${op} ${cat.label}`);
-          }
-        });
-        return lines.join('\n');
-      };
+      if (loading) return <div className="loading"><div className="spinner"></div><div>Carregando...</div></div>;
 
       return (
-        <div className="panel">
-          <div className="panel-header"><div className="panel-title"><span>🎯</span>KPIs (12 Total)</div><div style={{ fontSize: '12px', color: '#94a3b8' }}>Marcar categorias → Fórmula atualiza em tempo real</div></div>
-
-          <div className="info-box"><strong>💡 Como funciona:</strong> Marque as categorias que compõem cada KPI. A fórmula mostra as operações (+/−) baseadas na estrutura do DRE. O dashboard calcula automaticamente!</div>
-
-          {Object.entries(config.kpis).map(([kpiId, kpi]) => (
-            <div key={kpiId} className="kpi-card">
-              <div className="kpi-header">
-                <div>
-                  <div className="kpi-title">{kpi.icon} {kpi.name}</div>
-                  <div className="kpi-subtitle">{kpi.desc}</div>
-                </div>
-                <button className="btn btn-secondary btn-small" onClick={() => handleEditKPI(kpiId)}>✏️ Editar</button>
-              </div>
-              <div className="kpi-meta"><span>🔖 {kpiId}</span><span>📏 {kpi.unit}</span><span>🎯 Meta: {kpi.goalDef}{kpi.unit}</span><span>📂 {kpi.group === 'tracao' ? '📈 Tração' : '💰 Rentabilidade'}</span></div>
-              <div style={{ marginTop: '12px' }}><div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>Fórmula Dinâmica ({kpi.categories.length} categorias):</div><div className="formula-preview">{generateDynamicFormula(kpiId, kpi)}</div></div>
+        <div className="app-container">
+          <div className="header">
+            <div className="header-logo">
+              <div className="logo-placeholder">FLUXA</div>
+              <h1>Admin - Editor de Fórmulas</h1>
             </div>
-          ))}
+            <div className="header-actions">
+              <span className="user-info">👤 {user.email}</span>
+              <span className={`sync-badge ${isDirty ? 'dirty' : 'synced'}`}>{isDirty ? '⚠️ Modificado' : '✅ OK'}</span>
+              <button className="btn btn-secondary" onClick={() => auth.signOut()}>Sair</button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving || !isDirty}>{saving ? '💾 Salvando...' : '💾 Salvar Tudo'}</button>
+            </div>
+          </div>
 
-          {showModal && editingKPI && <KPIModal kpiId={editingKPI.id} kpi={editingKPI} config={config} onSave={handleSaveKPI} onClose={() => setShowModal(false)} />}
+          {alert && <div className={`alert alert-${alert.type}`}><span>{alert.type === 'success' ? '✅' : alert.type === 'error' ? '❌' : 'ℹ️'}</span><span>{alert.message}</span></div>}
+
+          <div className="panel">
+            <div className="panel-header"><div className="panel-title"><span>🎯</span>Editor Visual de Fórmulas KPIs</div></div>
+
+            <div className="info-box"><strong>💡 Como funciona:</strong><br/>
+            • Clique em "Editar Fórmula" para abrir o editor visual<br/>
+            • Monte o NUMERADOR: adicione categorias e escolha operação (+/−)<br/>
+            • Escolha o OPERADOR: ÷ × + − ou valor direto<br/>
+            • Monte o DENOMINADOR: adicione resultado ou categoria<br/>
+            • Veja o preview matemático em tempo real!</div>
+
+            {Object.entries(config.kpis).map(([kpiId, kpi]) => {
+              const formulaText = generateFormulaText(kpi, config);
+              return (
+                <div key={kpiId} className="kpi-card">
+                  <div className="kpi-header">
+                    <div><div className="kpi-title">{kpi.icon} {kpi.name}</div><div className="kpi-subtitle">{kpi.desc}</div></div>
+                    <button className="btn btn-secondary btn-small" onClick={() => handleEditKPI(kpiId)}>✏️ Editar Fórmula</button>
+                  </div>
+                  <div style={{ marginTop: '12px' }}><div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>Fórmula:</div><div className="formula-preview">{formulaText}</div></div>
+                </div>
+              );
+            })}
+
+            {showKPIModal && editingKPI && <KPIFormulaEditor kpiId={editingKPI.id} kpi={editingKPI} config={config} onSave={handleSaveKPI} onClose={() => setShowKPIModal(false)} />}
+          </div>
         </div>
       );
     }
 
-    function KPIModal({ kpiId, kpi, config, onSave, onClose }) {
-      const [formData, setFormData] = useState({ name: kpi.name, short: kpi.short, icon: kpi.icon, unit: kpi.unit, group: kpi.group, goalDef: kpi.goalDef, hb: kpi.hb, formula: kpi.formula, desc: kpi.desc, categories: kpi.categories || [] });
-
-      const handleToggleCategory = (catId) => {
-        const cats = formData.categories.includes(catId) ? formData.categories.filter(c => c !== catId) : [...formData.categories, catId];
-        setFormData({ ...formData, categories: cats });
-      };
-
-      const generatePreview = () => {
-        if (formData.categories.length === 0) return 'Nenhuma categoria selecionada';
-        const lines = [];
-        formData.categories.forEach(catId => {
-          const cat = config.categories.find(c => c.id === catId);
-          const structStep = config.structure.find(s => s.id === catId);
-          if (cat && structStep) {
-            const op = structStep.operation === 'add' ? '+' : structStep.operation === 'subtract' ? '−' : '';
-            lines.push(`${op} ${cat.label}`);
-          }
+    function generateFormulaText(kpi, config) {
+      if (kpi.operator === 'value') {
+        const item = kpi.numerator[0];
+        const cat = config.categories.find(c => c.id === item.id);
+        return cat ? cat.label : 'Valor Direto';
+      }
+      
+      if (kpi.operator === 'custom') return 'Fórmula customizada';
+      
+      let formula = '';
+      
+      if (kpi.numerator.length > 0) {
+        const parts = kpi.numerator.map(item => {
+          const cat = config.categories.find(c => c.id === item.id);
+          const op = item.operation === 'add' ? '+' : '−';
+          return `${op} ${cat ? cat.label : item.id}`;
         });
-        return lines.join('\n');
+        formula = '(' + parts.join(' ') + ')';
+      }
+      
+      const opSymbol = kpi.operator === 'divide' ? '÷' : kpi.operator === 'multiply' ? '×' : kpi.operator === 'add' ? '+' : '−';
+      
+      if (kpi.denominator.length > 0) {
+        const denom = kpi.denominator[0];
+        const result = config.results.find(r => r.id === denom.id);
+        const cat = config.categories.find(c => c.id === denom.id);
+        const denomLabel = result ? result.label : cat ? cat.label : denom.id;
+        formula += ` ${opSymbol} ${denomLabel}`;
+      }
+      
+      if (kpi.unit === '%') formula += ' × 100';
+      
+      return formula || 'Sem fórmula';
+    }
+
+    function KPIFormulaEditor({ kpiId, kpi, config, onSave, onClose }) {
+      const [numerator, setNumerator] = useState(kpi.numerator || []);
+      const [denominator, setDenominator] = useState(kpi.denominator || []);
+      const [operator, setOperator] = useState(kpi.operator || 'divide');
+
+      const addToNumerator = (catId) => {
+        if (numerator.find(n => n.id === catId)) return;
+        setNumerator([...numerator, { id: catId, operation: numerator.length === 0 ? 'add' : 'add' }]);
       };
+
+      const removeFromNumerator = (index) => {
+        setNumerator(numerator.filter((_, i) => i !== index));
+      };
+
+      const toggleNumeratorOp = (index) => {
+        const newNum = [...numerator];
+        newNum[index].operation = newNum[index].operation === 'add' ? 'subtract' : 'add';
+        setNumerator(newNum);
+      };
+
+      const addToDenominator = (id, isResult = false) => {
+        setDenominator([{ id, isResult }]);
+      };
+
+      const clearDenominator = () => setDenominator([]);
+
+      const handleSave = () => {
+        const kpiData = { ...kpi, numerator, denominator, operator };
+        onSave(kpiId, kpiData);
+      };
+
+      const usedInNumerator = numerator.map(n => n.id);
+      const preview = generateFormulaText({ numerator, denominator, operator, unit: kpi.unit }, config);
 
       return (
-        <div className="modal" onClick={onClose} style={{ alignItems: 'flex-start', paddingTop: '40px' }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ margin: '0 auto' }}>
-            <div className="modal-header"><div className="modal-title">✏️ Editar KPI: {kpi.name}</div><button className="icon-btn" onClick={onClose}>✖️</button></div>
-            <div className="form-group"><label className="form-label">Nome do KPI</label><input className="form-input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Nome Curto</label><input className="form-input" value={formData.short} onChange={e => setFormData({ ...formData, short: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Emoji</label><input className="form-input" value={formData.icon} onChange={e => setFormData({ ...formData, icon: e.target.value })} maxLength={2} /></div>
-            <div className="form-group"><label className="form-label">Unidade</label><input className="form-input" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Meta Padrão</label><input type="number" className="form-input" value={formData.goalDef} onChange={e => setFormData({ ...formData, goalDef: Number(e.target.value) })} /></div>
-            <div className="form-group"><label className="form-label">Fórmula (texto)</label><textarea className="form-textarea" value={formData.formula} onChange={e => setFormData({ ...formData, formula: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Descrição</label><textarea className="form-textarea" value={formData.desc} onChange={e => setFormData({ ...formData, desc: e.target.value })} /></div>
-            <div className="form-group"><label className="form-label">Categorias (marque para incluir no cálculo)</label><div className="category-checkboxes">{config.categories.filter(c => c.id !== 'ignorar').map(cat => (<label key={cat.id} className="checkbox-item"><input type="checkbox" checked={formData.categories.includes(cat.id)} onChange={() => handleToggleCategory(cat.id)} /><span className="checkbox-label"><span>{cat.icon}</span><span>{cat.label}</span></span></label>))}</div></div>
-            <div><div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>Preview da Fórmula:</div><div className="formula-preview">{generatePreview()}</div></div>
-            <div className="modal-actions"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={() => onSave(kpiId, formData)}>💾 Salvar KPI</button></div>
+        <div className="modal" onClick={onClose}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header"><div className="modal-title">✏️ Editor: {kpi.name}</div><button className="icon-btn" onClick={onClose}>✖️</button></div>
+
+            <div className="formula-builder">
+              <div className="formula-section">
+                <div className="formula-section-header">
+                  <div className="formula-section-title"><span>📊</span>NUMERADOR</div>
+                  <span style={{fontSize:'12px',color:'#94a3b8'}}>Clique no +/− para mudar operação</span>
+                </div>
+                <div className="formula-items">
+                  {numerator.length === 0 && <div style={{textAlign:'center',color:'#64748b',padding:'20px'}}>Adicione categorias abaixo</div>}
+                  {numerator.map((item, index) => {
+                    const cat = config.categories.find(c => c.id === item.id);
+                    if (!cat) return null;
+                    return (
+                      <div key={index} className="formula-item">
+                        <div className="formula-item-icon" style={{background: cat.color + '22'}}>{cat.icon}</div>
+                        <div className="formula-item-name">{cat.label}</div>
+                        <div className="formula-item-op">
+                          <span className={`op-badge ${item.operation}`} onClick={() => toggleNumeratorOp(index)}>
+                            {item.operation === 'add' ? '+' : '−'}
+                          </span>
+                        </div>
+                        <button className="icon-btn delete" onClick={() => removeFromNumerator(index)}>✖</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="operator-section">
+                <div className="operator-selector">
+                  <button className={`operator-btn ${operator === 'divide' ? 'active' : ''}`} onClick={() => setOperator('divide')} title="Dividir">÷</button>
+                  <button className={`operator-btn ${operator === 'multiply' ? 'active' : ''}`} onClick={() => setOperator('multiply')} title="Multiplicar">×</button>
+                  <button className={`operator-btn ${operator === 'add' ? 'active' : ''}`} onClick={() => setOperator('add')} title="Somar">+</button>
+                  <button className={`operator-btn ${operator === 'subtract' ? 'active' : ''}`} onClick={() => setOperator('subtract')} title="Subtrair">−</button>
+                  <button className={`operator-btn ${operator === 'value' ? 'active' : ''}`} onClick={() => setOperator('value')} title="Valor direto">=</button>
+                </div>
+              </div>
+
+              {operator !== 'value' && (
+                <div className="formula-section">
+                  <div className="formula-section-header">
+                    <div className="formula-section-title"><span>🎯</span>DENOMINADOR</div>
+                    {denominator.length > 0 && <button className="btn btn-small btn-secondary" onClick={clearDenominator}>Limpar</button>}
+                  </div>
+                  <div className="formula-items">
+                    {denominator.length === 0 && <div style={{textAlign:'center',color:'#64748b',padding:'20px'}}>Selecione um resultado ou categoria</div>}
+                    {denominator.map((item, index) => {
+                      const result = config.results.find(r => r.id === item.id);
+                      const cat = config.categories.find(c => c.id === item.id);
+                      const label = result ? result.label : cat ? cat.label : item.id;
+                      const icon = result ? '📊' : cat ? cat.icon : '❓';
+                      return (
+                        <div key={index} className="formula-item">
+                          <div className="formula-item-icon">{icon}</div>
+                          <div className="formula-item-name">{label}</div>
+                          <button className="icon-btn delete" onClick={clearDenominator}>✖</button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="available-categories">
+                <div className="available-title">📦 Categorias Disponíveis (clique para adicionar ao numerador)</div>
+                <div className="category-chips">
+                  {config.categories.filter(c => c.id !== 'ignorar').map(cat => (
+                    <div key={cat.id} className={`category-chip ${usedInNumerator.includes(cat.id) ? 'disabled' : ''}`} onClick={() => !usedInNumerator.includes(cat.id) && addToNumerator(cat.id)}>
+                      <span>{cat.icon}</span><span>{cat.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {operator !== 'value' && (
+                <div className="available-categories">
+                  <div className="available-title">🎯 Resultados Disponíveis (clique para usar no denominador)</div>
+                  <div className="category-chips">
+                    {config.results.map(result => (
+                      <div key={result.id} className={`category-chip ${denominator.find(d => d.id === result.id) ? 'disabled' : ''}`} onClick={() => addToDenominator(result.id, true)}>
+                        <span>📊</span><span>{result.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{marginTop:'24px'}}>
+                <div style={{fontSize:'13px',fontWeight:600,color:'#94a3b8',marginBottom:'12px'}}>📐 Preview da Fórmula:</div>
+                <div className="formula-preview">{preview}</div>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn btn-secondary" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" onClick={handleSave}>💾 Salvar Fórmula</button>
+            </div>
           </div>
         </div>
       );
