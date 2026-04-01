@@ -194,45 +194,61 @@
       }
     };
 
-    // 🎯 FUNÇÃO DE AUTO-UPDATE DE KPIs (chamada manualmente)
+    // 🎯 FUNÇÃO DE AUTO-UPDATE DE KPIs - CORRIGIDA!
     function autoUpdateKPIsFromStructure(structure, currentKPIs) {
       const updatedKPIs = {...currentKPIs};
       
-      // Mapear quais categorias estão entre cada resultado
+      // Mapear quais categorias LEVAM A cada resultado
+      // Categorias entre resultados pertencem ao range do PRÓXIMO resultado!
       const resultRanges = {};
-      let currentRange = [];
-      let currentResult = 'receita_liquida';
       
-      structure.forEach(step => {
+      // Achar todos os índices de resultados
+      const resultIndexes = [];
+      structure.forEach((step, idx) => {
         if (step.type === 'result') {
-          resultRanges[currentResult] = [...currentRange];
-          currentRange = [];
-          currentResult = step.id;
-        } else if (step.type === 'category') {
-          currentRange.push(step.id);
+          resultIndexes.push({idx, id: step.id});
         }
       });
-      resultRanges[currentResult] = [...currentRange];
+      
+      // Para cada resultado, pegar categorias ANTES dele
+      resultIndexes.forEach((result, i) => {
+        const startIdx = i === 0 ? 0 : resultIndexes[i-1].idx + 1;
+        const endIdx = result.idx;
+        
+        const cats = [];
+        for (let j = startIdx; j < endIdx; j++) {
+          if (structure[j].type === 'category') {
+            cats.push(structure[j].id);
+          }
+        }
+        resultRanges[result.id] = cats;
+      });
+      
+      console.log('✅ Ranges CORRETOS:', resultRanges);
       
       // Atualizar cada KPI baseado nos resultados que ele calcula
       Object.keys(updatedKPIs).forEach(kpiId => {
-        const kpi = updatedKPIs[kpiId];
         let newCategories = [];
         
         if (kpiId === 'margbruta') {
-          newCategories = ['receita_bruta', 'deducao_receita', ...resultRanges.lucro_bruto];
+          // Margem Bruta = Todas até Lucro Bruto
+          newCategories = [...(resultRanges.receita_liquida || []), ...(resultRanges.lucro_bruto || [])];
         }
         else if (kpiId === 'margem') {
-          newCategories = ['receita_bruta', 'deducao_receita', ...resultRanges.lucro_bruto, ...resultRanges.margem_contribuicao];
+          // Margem de Contribuição = Todas até Margem de Contribuição
+          newCategories = [...(resultRanges.receita_liquida || []), ...(resultRanges.lucro_bruto || []), ...(resultRanges.margem_contribuicao || [])];
         }
         else if (kpiId === 'ebitda') {
-          newCategories = ['receita_bruta', 'deducao_receita', ...resultRanges.lucro_bruto, ...resultRanges.margem_contribuicao, ...resultRanges.ebitda];
+          // EBITDA = Todas até EBITDA
+          newCategories = [...(resultRanges.receita_liquida || []), ...(resultRanges.lucro_bruto || []), ...(resultRanges.margem_contribuicao || []), ...(resultRanges.ebitda || [])];
         }
         else if (kpiId === 'despop' || kpiId === 'eficiencia') {
-          newCategories = resultRanges.ebitda;
+          // Despesas Operacionais = Categorias entre Margem de Contribuição e EBITDA
+          newCategories = [...(resultRanges.ebitda || [])];
         }
         else if (kpiId === 'lucroliq') {
-          newCategories = ['receita_bruta', 'deducao_receita', ...resultRanges.lucro_bruto, ...resultRanges.margem_contribuicao, ...resultRanges.ebitda, ...resultRanges.lucro_liquido];
+          // Lucro Líquido = TODAS as categorias
+          newCategories = [...(resultRanges.receita_liquida || []), ...(resultRanges.lucro_bruto || []), ...(resultRanges.margem_contribuicao || []), ...(resultRanges.ebitda || []), ...(resultRanges.lucro_liquido || [])];
         }
         
         if (newCategories.length > 0) {
@@ -536,7 +552,7 @@
         const updatedKPIs = autoUpdateKPIsFromStructure(config.structure, config.kpis);
         setConfig({ ...config, kpis: updatedKPIs });
         setIsDirty(true);
-        showAlert('🎉 KPIs atualizados baseado na estrutura atual!', 'success');
+        showAlert('🎉 KPIs atualizados! Verifique na aba KPIs!', 'success');
       };
 
       const getCategoryById = (id) => config.categories.find(c => c.id === id);
@@ -548,7 +564,7 @@
             <button className="btn btn-warning" onClick={handleUpdateKPIs}>🔄 Atualizar KPIs</button>
           </div>
 
-          <div className="info-box"><strong>💡 Como usar:</strong><br/>1. Arraste categorias para a posição correta<br/>2. Clique +/− para mudar operação (soma/subtrai)<br/>3. Quando terminar, clique <strong>"🔄 Atualizar KPIs"</strong> → Sistema analisa a estrutura e atualiza todos os KPIs automaticamente! 🎉</div>
+          <div className="info-box"><strong>💡 Como usar:</strong><br/>1. Arraste categorias para a posição correta<br/>2. Clique +/− para mudar operação (soma/subtrai)<br/>3. Quando terminar, clique <strong>"🔄 Atualizar KPIs"</strong> → Sistema analisa TODAS as categorias antes de cada resultado! 🎉</div>
 
           <div ref={containerRef}>
             {config.structure.map((step, index) => {
