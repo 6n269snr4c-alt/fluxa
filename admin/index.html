@@ -758,11 +758,11 @@
               
               const user = {
                 uid: doc.id,
-                name: data.name || (data.cfg && data.cfg.userName) || 'Sem nome',
-                email: data.email || 'N/A',
-                phone: data.phone || (data.cfg && data.cfg.whatsappPhone) || '-',
-                empresa: data.empresa || data.company || null,
-                createdAt: data.createdAt || (data.cfg && data.cfg.createdAt) || null,
+                name: data.userName || 'Sem nome',  // CORRIGIDO: userName está no nível raiz
+                email: 'Ver no Auth',  // Email não está no Firestore, apenas no Firebase Auth
+                phone: data.cfg?.whatsappPhone || '-',  // Telefone pode estar em cfg
+                empresa: data.company || null,  // CORRIGIDO: company não empresa
+                createdAt: data.createdAt || null,
                 isAdmin: data.isAdmin || false
               };
               
@@ -787,11 +787,9 @@
 
       const syncUsersFromAuth = async () => {
         setSyncing(true);
-        showAlert('🔄 Sincronizando com Firebase Auth...', 'info');
+        showAlert('🔄 Sincronizando dados...', 'info');
         
         try {
-          // Nota: Listar usuários do Firebase Auth requer Admin SDK (Cloud Functions)
-          // Por enquanto, vamos apenas garantir que os dados do Firestore estejam formatados
           const snapshot = await db.collection('users').get();
           let updated = 0;
           
@@ -799,15 +797,14 @@
             const data = doc.data();
             const updates = {};
             
-            // Se não tem os campos novos, adiciona
-            if (!data.name && data.cfg?.userName) {
-              updates.name = data.cfg.userName;
+            // Se userName está null mas tem em cfg, copia
+            if (!data.userName && data.cfg?.userName) {
+              updates.userName = data.cfg.userName;
             }
+            
+            // Se não tem telefone mas tem em cfg, adiciona
             if (!data.phone && data.cfg?.whatsappPhone) {
               updates.phone = data.cfg.whatsappPhone;
-            }
-            if (!data.createdAt && data.cfg?.createdAt) {
-              updates.createdAt = data.cfg.createdAt;
             }
             
             // Atualiza se houver mudanças
@@ -817,7 +814,7 @@
             }
           }
           
-          showAlert(`✅ ${updated} usuários sincronizados!`, 'success');
+          showAlert(`✅ ${updated} usuários atualizados!`, 'success');
           loadUsers();
         } catch (err) {
           console.error('Erro ao sincronizar:', err);
@@ -887,7 +884,7 @@
           </div>
 
           <div className="info-box" style={{ marginBottom: '16px' }}>
-            <strong>💡 Dica:</strong> Use "🔄 Sincronizar Dados" para atualizar informações dos usuários a partir dos dados existentes no Firestore.
+            <strong>💡 Sobre os dados:</strong> Os emails dos usuários estão no Firebase Auth e não são exibidos aqui por questões de segurança. Use "🔄 Sincronizar Dados" para atualizar nomes e telefones dos campos cfg.
           </div>
 
           {loadingUsers ? (
