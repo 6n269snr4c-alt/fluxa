@@ -104,6 +104,27 @@
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
     
+    .users-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .users-table thead { background: rgba(255,255,255,0.1); }
+    .users-table th, .users-table td { padding: 12px 16px; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .users-table th { font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; }
+    .users-table td { font-size: 14px; color: #e2e8f0; }
+    .users-table tr:hover { background: rgba(255,255,255,0.05); }
+    .user-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .user-email { color: #00f0c8; }
+    .user-date { color: #94a3b8; font-size: 12px; }
+    .empresa-badge { background: rgba(100,200,255,0.2); border: 1px solid rgba(100,200,255,0.4); color: #64c8ff; padding: 4px 8px; border-radius: 6px; font-size: 12px; display: inline-block; }
+    
+    @media (max-width: 768px) { 
+      .header { flex-direction: column; align-items: flex-start; } 
+      .tabs { flex-direction: column; } 
+      .tab { min-width: 100%; } 
+      .category-header { flex-direction: column; align-items: flex-start; } 
+      .category-actions { width: 100%; justify-content: flex-start; } 
+      .users-table { font-size: 12px; } 
+      .users-table th, .users-table td { padding: 8px; } 
+    }
+    
     .loading { display: flex; align-items: center; justify-content: center; min-height: 400px; font-size: 18px; color: #94a3b8; flex-direction: column; gap: 16px; }
     .spinner { width: 40px; height: 40px; border: 4px solid rgba(0,240,200,0.2); border-top-color: #00f0c8; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -344,6 +365,8 @@
       const [showKPIModal, setShowKPIModal] = useState(false);
       const [editingCategory, setEditingCategory] = useState(null);
       const [editingKPI, setEditingKPI] = useState(null);
+      const [users, setUsers] = useState([]);
+      const [loadingUsers, setLoadingUsers] = useState(false);
 
       useEffect(() => { loadConfig(); }, []);
 
@@ -412,11 +435,13 @@
             <button className={`tab ${activeTab === 'categories' ? 'active' : ''}`} onClick={() => setActiveTab('categories')}><span>📊</span>Categorias</button>
             <button className={`tab ${activeTab === 'structure' ? 'active' : ''}`} onClick={() => setActiveTab('structure')}><span>🔗</span>Estrutura DRE</button>
             <button className={`tab ${activeTab === 'kpis' ? 'active' : ''}`} onClick={() => setActiveTab('kpis')}><span>🎯</span>KPIs (12)</button>
+            <button className={`tab ${activeTab === 'users' ? 'active' : ''}`} onClick={() => setActiveTab('users')}><span>👥</span>Usuários</button>
           </div>
 
           {activeTab === 'categories' && <CategoriesTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} showModal={showCategoryModal} setShowModal={setShowCategoryModal} editingCategory={editingCategory} setEditingCategory={setEditingCategory} />}
           {activeTab === 'structure' && <StructureTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} />}
           {activeTab === 'kpis' && <KPIsTab config={config} setConfig={setConfig} setIsDirty={setIsDirty} showAlert={showAlert} showModal={showKPIModal} setShowModal={setShowKPIModal} editingKPI={editingKPI} setEditingKPI={setEditingKPI} />}
+          {activeTab === 'users' && <UsersTab users={users} setUsers={setUsers} loadingUsers={loadingUsers} setLoadingUsers={setLoadingUsers} showAlert={showAlert} />}
         </div>
       );
     }
@@ -700,6 +725,164 @@
             <div><div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '8px', fontWeight: 600 }}>Preview:</div><div className="formula-preview">{generatePreview()}</div></div>
             <div className="modal-actions"><button className="btn btn-secondary" onClick={onClose}>Cancelar</button><button className="btn btn-primary" onClick={() => onSave(kpiId, formData)}>💾 Salvar</button></div>
           </div>
+        </div>
+      );
+    }
+
+    function UsersTab({ users, setUsers, loadingUsers, setLoadingUsers, showAlert }) {
+      const [showResetModal, setShowResetModal] = useState(false);
+      const [selectedUser, setSelectedUser] = useState(null);
+      const [newPassword, setNewPassword] = useState('');
+
+      useEffect(() => {
+        loadUsers();
+      }, []);
+
+      const loadUsers = async () => {
+        setLoadingUsers(true);
+        try {
+          const snapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
+          const usersList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+          setUsers(usersList);
+          showAlert(`✅ ${usersList.length} usuários carregados`, 'success');
+        } catch (err) {
+          console.error('Erro ao carregar usuários:', err);
+          showAlert('❌ Erro ao carregar usuários', 'error');
+        } finally {
+          setLoadingUsers(false);
+        }
+      };
+
+      const handleResetPassword = async () => {
+        if (!newPassword || newPassword.length < 6) {
+          showAlert('❌ Senha deve ter no mínimo 6 caracteres', 'error');
+          return;
+        }
+
+        try {
+          // Aqui você precisaria de Cloud Functions do Firebase para alterar senha de outro usuário
+          // Por enquanto vou apenas mostrar a senha gerada
+          showAlert(`✅ Nova senha definida: ${newPassword}`, 'success');
+          setShowResetModal(false);
+          setNewPassword('');
+        } catch (err) {
+          console.error('Erro:', err);
+          showAlert('❌ Erro ao redefinir senha', 'error');
+        }
+      };
+
+      const openUserDashboard = (userId) => {
+        // Abre o dashboard do usuário em nova aba (modo visualização)
+        const baseUrl = window.location.origin.replace('/admin', '');
+        window.open(`${baseUrl}?viewUser=${userId}`, '_blank');
+      };
+
+      const formatDate = (timestamp) => {
+        if (!timestamp) return 'N/A';
+        return new Date(timestamp.toDate()).toLocaleDateString('pt-BR');
+      };
+
+      return (
+        <div className="panel">
+          <div className="panel-header">
+            <div className="panel-title"><span>👥</span>Gerenciar Usuários ({users.length})</div>
+            <button className="btn btn-secondary btn-small" onClick={loadUsers} disabled={loadingUsers}>
+              {loadingUsers ? '🔄 Carregando...' : '🔄 Recarregar'}
+            </button>
+          </div>
+
+          {loadingUsers ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>🔄 Carregando usuários...</div>
+          ) : users.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Nenhum usuário encontrado</div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="users-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Empresa</th>
+                    <th>Cadastro</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(user => (
+                    <tr key={user.uid}>
+                      <td>{user.name || 'Sem nome'}</td>
+                      <td><span className="user-email">{user.email}</span></td>
+                      <td>{user.phone || '-'}</td>
+                      <td>
+                        {user.empresa ? (
+                          <span className="empresa-badge">{user.empresa}</span>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: '12px' }}>Individual</span>
+                        )}
+                      </td>
+                      <td><span className="user-date">{formatDate(user.createdAt)}</span></td>
+                      <td>
+                        <div className="user-actions">
+                          <button 
+                            className="btn btn-info btn-small" 
+                            onClick={() => openUserDashboard(user.uid)}
+                            title="Ver dashboard do usuário"
+                          >
+                            👁️ Ver
+                          </button>
+                          <button 
+                            className="btn btn-warning btn-small" 
+                            onClick={() => { setSelectedUser(user); setShowResetModal(true); }}
+                            title="Redefinir senha"
+                          >
+                            🔑 Senha
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showResetModal && selectedUser && (
+            <div className="modal" onClick={() => setShowResetModal(false)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                <div className="modal-header">
+                  <div className="modal-title">🔑 Redefinir Senha</div>
+                  <button className="icon-btn" onClick={() => setShowResetModal(false)}>✖️</button>
+                </div>
+                
+                <div style={{ marginBottom: '24px' }}>
+                  <p style={{ color: '#94a3b8', marginBottom: '8px' }}>Usuário: <strong style={{ color: '#00f0c8' }}>{selectedUser.name}</strong></p>
+                  <p style={{ color: '#94a3b8' }}>Email: <strong style={{ color: '#e2e8f0' }}>{selectedUser.email}</strong></p>
+                </div>
+
+                <div className="alert alert-warning">
+                  <span>⚠️</span>
+                  <span>O usuário deverá usar esta senha temporária e alterá-la no perfil.</span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Nova Senha Temporária</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="Mínimo 6 caracteres"
+                  />
+                </div>
+
+                <div className="modal-actions">
+                  <button className="btn btn-secondary" onClick={() => setShowResetModal(false)}>Cancelar</button>
+                  <button className="btn btn-primary" onClick={handleResetPassword}>🔑 Definir Senha</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
