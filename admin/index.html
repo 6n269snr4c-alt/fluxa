@@ -759,7 +759,7 @@
               const user = {
                 uid: doc.id,
                 name: data.userName || 'Sem nome',  // CORRIGIDO: userName está no nível raiz
-                email: 'Ver no Auth',  // Email não está no Firestore, apenas no Firebase Auth
+                email: data.email || 'Não sincronizado',  // Email agora é salvo no Firestore quando usuário faz login
                 phone: data.cfg?.whatsappPhone || '-',  // Telefone pode estar em cfg
                 empresa: data.company || null,  // CORRIGIDO: company não empresa
                 createdAt: data.createdAt || null,
@@ -884,7 +884,7 @@
           </div>
 
           <div className="info-box" style={{ marginBottom: '16px' }}>
-            <strong>💡 Sobre os dados:</strong> Os emails dos usuários estão no Firebase Auth e não são exibidos aqui por questões de segurança. Use "🔄 Sincronizar Dados" para atualizar nomes e telefones dos campos cfg.
+            <strong>💡 Sobre os dados:</strong> Os emails são salvos automaticamente quando cada usuário faz login no app. Se um email aparecer como "Não sincronizado", significa que aquele usuário ainda não fez login após esta atualização. Use "🔄 Sincronizar Dados" para atualizar nomes e telefones.
           </div>
 
           {loadingUsers ? (
