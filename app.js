@@ -5801,7 +5801,8 @@ function renderDRETimeline(year, monthKeys) {
     const mk = `${year}-${String(m).padStart(2, '0')}`;
     const hasDRE = monthKeys.includes(mk);
     const raw = hasDRE && S.raw ? S.raw[mk] : null;
-    const score = hasDRE && S.data && S.data[mk] ? calcScore(mk).score : null;
+    const scoreRes = hasDRE && S.data && S.data[mk] ? calcScore(mk) : null;
+    const score = scoreRes ? scoreRes.score : null;
     
     timeline.push({
       month: m,
@@ -5839,7 +5840,8 @@ function renderDRETimeline(year, monthKeys) {
     const lbl = MES[parseInt(m) - 1] + '/' + y;
     const raw = S.raw && S.raw[selectedMk];
     const kpis = raw ? calcKPIs(raw) : {};
-    const score = S.data && S.data[selectedMk] ? calcScore(selectedMk).score : null;
+    const scoreResSel = S.data && S.data[selectedMk] ? calcScore(selectedMk) : null;
+    const score = scoreResSel ? scoreResSel.score : null;
     const g = score ? grade(score) : null;
     
     html += `
